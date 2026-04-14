@@ -2,30 +2,29 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import Dashboard from './components/Dashboard';
-import StudentList from './components/StudentList';
-import WritingStatusView from './components/WritingStatusView';
-import StudentDetail from './components/StudentDetail';
-import { DashboardData } from './types';
+import Dashboard from './components/dashboard/Dashboard';
+import StudentList from './components/students/StudentList';
+import WritingStatusView from './components/writing/WritingStatusView';
+import StudentDetail from './components/students/StudentDetail';
+import { DashboardData } from './types/index';
 import { BookOpen, Users, FileText, Settings, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { dataApi } from '@/src/services/api';
 
 export default function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const fetchData = async () => {
     try {
-      const configRes = await fetch('/api/config');
-      const configData = await configRes.json();
+      const configData = dataApi.getConfig();
       setConfig(configData);
 
       if (configData.isConfigured) {
-        const response = await fetch('/api/data');
-        if (!response.ok) throw new Error('Failed to fetch data');
-        const result = await response.json();
+        const result = await dataApi.fetchData();
         setData(result);
       }
     } catch (error: any) {
@@ -52,9 +51,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10">
-      <Tabs defaultValue="dashboard" className="w-full" onValueChange={() => setSelectedStudent(null)}>
+      <Tabs value={activeTab} onValueChange={(val) => {
+        setActiveTab(val);
+        if (val !== 'dashboard') {
+          setSelectedStudent(null);
+        }
+      }} className="w-full">
         {/* Semi-transparent blurred top bar with navigation */}
-        <header className="sticky top-0 z-50 w-full bg-white/60 backdrop-blur-xl border-b border-border/20">
+        <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-xl border-b border-border/20">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl">
             <div className="flex items-center gap-2 translate-x-1">
               <Button 
@@ -69,7 +73,7 @@ export default function App() {
             
             <div className="flex items-center gap-4">
               {/* Pill-style tabs moved to header */}
-              <TabsList className="bg-[#F7F9FF] p-1 rounded-full border-none shadow-none h-10">
+              <TabsList className="bg-[#f6f7f9] p-1 rounded-full border-none shadow-none h-10">
                 <TabsTrigger value="dashboard" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
                   <BookOpen className="w-4 h-4" />
                 </TabsTrigger>
@@ -89,7 +93,7 @@ export default function App() {
             <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-[2rem] text-amber-800">
               <div className="flex items-center gap-3 mb-2">
                 <Settings className="w-5 h-5" />
-                <h2 className="font-bold">구글 시트 설정이 필요합니다</h2>
+                <h2 className="font-semibold">구글 시트 설정이 필요합니다</h2>
               </div>
               <p className="text-sm">
                 애플리케이션을 사용하려면 GAS 웹 앱 URL 설정이 필요합니다.
@@ -111,7 +115,10 @@ export default function App() {
           </TabsContent>
           
           <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
-            <StudentList data={data} onRefresh={fetchData} />
+            <StudentList data={data} onRefresh={fetchData} onSelectStudent={(name) => {
+              setSelectedStudent(name);
+              setActiveTab('dashboard');
+            }} />
           </TabsContent>
           
           <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">

@@ -20,6 +20,7 @@ export interface Student {
   homeworkMissed: number;
   booksCompleted: number;
   homeworkChecked: boolean;
+  homeworkMissedToday: boolean;
 }
 
 export interface Curriculum {
@@ -35,7 +36,6 @@ export interface WritingStatus {
   date: string;
   name: string;
   bookTitle: string;
-  bookId: string;
   progress: '진행' | '완성';
 }
 
