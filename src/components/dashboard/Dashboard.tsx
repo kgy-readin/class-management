@@ -15,9 +15,15 @@ export default function Dashboard({ data, onRefresh, onSelectStudent }: Dashboar
   const attendingStudents = data.students
     .filter(s => s.isAttending)
     .sort((a, b) => {
-      if (!a.dismissalTime || a.dismissalTime === '미설정') return 1;
-      if (!b.dismissalTime || b.dismissalTime === '미설정') return -1;
-      return new Date(a.dismissalTime).getTime() - new Date(b.dismissalTime).getTime();
+      const timeA = a.dismissalTime || '미설정';
+      const timeB = b.dismissalTime || '미설정';
+      
+      if (timeA === '미설정' && timeB === '미설정') return 0;
+      if (timeA === '미설정') return 1;
+      if (timeB === '미설정') return -1;
+      
+      // Compare HH:mm strings directly
+      return timeA.localeCompare(timeB);
     });
 
   const getProgressList = (studentName: string) => {
