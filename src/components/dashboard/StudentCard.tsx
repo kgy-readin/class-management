@@ -3,9 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Student, Curriculum } from '../../types';
 import { toast } from 'sonner';
-import { LogOut, Save, Star, User, Library, PlusCircle, Heart, FilePlus } from 'lucide-react';
+import { LogOut, Save, Star, User, Library, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
-import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi } from '@/src/services/api';
+import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 interface StudentCardProps {
@@ -19,6 +19,22 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   const [updating, setUpdating] = useState<string | null>(null);
   const [localStatuses, setLocalStatuses] = useState<Record<string, { status?: string }>>({});
   const [writingConfirmItem, setWritingConfirmItem] = useState<Curriculum | null>(null);
+  const [isEditingSubProgram, setIsEditingSubProgram] = useState(false);
+  const [subProgramValue, setSubProgramValue] = useState(student.subProgram || '');
+
+  const handleSubProgramUpdate = async () => {
+    setUpdating(`${student.name}-subprogram`);
+    try {
+      await studentApi.update(student.name, { subProgram: subProgramValue });
+      toast.success('서브프로그램이 업데이트되었습니다.');
+      setIsEditingSubProgram(false);
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   const handleAddToWritingStatus = async (item: Curriculum) => {
     setUpdating(`writing-${student.name}-${item.bookId}`);
@@ -161,9 +177,60 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             <Library className="w-4 h-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-semibold text-foreground truncate block">
-              {student.subProgram || '서브프로그램 미설정'}
-            </span>
+            {isEditingSubProgram ? (
+              <input
+                className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-1 ring-primary/20 outline-none"
+                value={subProgramValue}
+                onChange={(e) => setSubProgramValue(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSubProgramUpdate();
+                  if (e.key === 'Escape') setIsEditingSubProgram(false);
+                }}
+              />
+            ) : (
+              <span className="text-sm font-semibold text-foreground truncate block">
+                {student.subProgram || '서브프로그램 미설정'}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-1 pr-[1.5px]">
+            {isEditingSubProgram ? (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+                  onClick={handleSubProgramUpdate}
+                  disabled={updating === `${student.name}-subprogram`}
+                >
+                  <Save className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary"
+                  onClick={() => {
+                    setIsEditingSubProgram(false);
+                    setSubProgramValue(student.subProgram || '');
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                onClick={() => {
+                  setSubProgramValue(student.subProgram || '');
+                  setIsEditingSubProgram(true);
+                }}
+              >
+                <PlusCircle className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 

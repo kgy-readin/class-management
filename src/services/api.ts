@@ -394,9 +394,14 @@ export const curriculumApi = {
       const rowBookId = String(row[4] || '').trim();
       const rowIndexVal = parseInt(row[1]) || 0;
       
-      return rowStudentName === String(data.studentName).trim() && 
-             rowBookId === String(data.bookId).trim() && 
-             rowIndexVal === data.index;
+      const isMatch = rowStudentName === String(data.studentName).trim() && 
+                     rowIndexVal === data.index;
+      
+      const targetBookId = String(data.bookId || '').trim();
+      if (targetBookId && targetBookId !== '-') {
+        return isMatch && rowBookId === targetBookId;
+      }
+      return isMatch;
     }) + 2;
     
     if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
@@ -421,6 +426,16 @@ export const studentApi = {
     await updateSheetData('학생정보', `A${studentRowIndex}:J${studentRowIndex}`, [studentRow]);
     await deleteRows('커리큘럼', 1, name);
 
+    return { success: true };
+  },
+  update: async (name: string, data: Partial<Student>) => {
+    const studentsRaw = await getSheetData('학생정보', 'A2:J');
+    const studentRowIndex = studentsRaw.findIndex((row: any[]) => row[0] === name) + 2;
+    if (studentRowIndex < 2) throw new Error('Student not found');
+
+    if (data.subProgram !== undefined) {
+      await updateSheetData('학생정보', `D${studentRowIndex}`, [[data.subProgram]]);
+    }
     return { success: true };
   }
 };

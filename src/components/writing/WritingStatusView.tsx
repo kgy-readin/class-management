@@ -88,7 +88,14 @@ export default function WritingStatusView() {
         return false;
       }
     })
-    .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    .sort((a, b) => {
+      if (selectedStudent) {
+        // Sort by date ascending when a student is selected
+        return a.date.localeCompare(b.date);
+      }
+      // Default sort by name ascending
+      return a.name.localeCompare(b.name, 'ko');
+    });
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
