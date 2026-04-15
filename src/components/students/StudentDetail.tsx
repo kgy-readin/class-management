@@ -148,7 +148,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                 <TableHead className="font-semibold text-xs uppercase tracking-widest">도서명</TableHead>
                 <TableHead className="w-[100px] text-center font-semibold text-xs uppercase tracking-widest">학원번호</TableHead>
                 <TableHead className="w-[120px] text-center font-semibold text-xs uppercase tracking-widest">상태</TableHead>
-                <TableHead className="w-[140px] text-center font-semibold text-xs uppercase tracking-widest">관리</TableHead>
+                <TableHead className="w-[140px] text-left font-semibold text-xs uppercase tracking-widest">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,9 +204,9 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-left">
                     {editingIndex === item.index ? (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-start gap-2">
                         <Button 
                           size="icon" 
                           variant="ghost" 
@@ -225,7 +225,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-start gap-2">
                         <Button 
                           variant="ghost" 
                           size="sm" 

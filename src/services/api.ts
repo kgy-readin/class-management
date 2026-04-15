@@ -296,11 +296,15 @@ export const curriculumApi = {
     originalIndex?: number;
   }) => {
     const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
-    const rowIndex = curriculumsRaw.findIndex((row: any[]) => 
-      String(row[0]).trim() === String(data.studentName).trim() && 
-      String(row[4]).trim() === String(data.bookId).trim() && 
-      parseInt(row[1]) === data.originalIndex
-    ) + 2;
+    const rowIndex = curriculumsRaw.findIndex((row: any[]) => {
+      const rowStudentName = String(row[0] || '').trim();
+      const rowBookId = String(row[4] || '').trim();
+      const rowIndexVal = parseInt(row[1]) || 0;
+      
+      return rowStudentName === String(data.studentName).trim() && 
+             rowBookId === String(data.bookId).trim() && 
+             rowIndexVal === data.originalIndex;
+    }) + 2;
     
     if (rowIndex < 2) throw new Error('Curriculum entry not found');
 
@@ -385,11 +389,15 @@ export const curriculumApi = {
   },
   remove: async (data: { studentName: string; bookId: string; index: number }) => {
     const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
-    const rowIndex = curriculumsRaw.findIndex((row: any[]) => 
-      String(row[0]).trim() === String(data.studentName).trim() && 
-      String(row[4]).trim() === String(data.bookId).trim() && 
-      parseInt(row[1]) === data.index
-    ) + 2;
+    const rowIndex = curriculumsRaw.findIndex((row: any[]) => {
+      const rowStudentName = String(row[0] || '').trim();
+      const rowBookId = String(row[4] || '').trim();
+      const rowIndexVal = parseInt(row[1]) || 0;
+      
+      return rowStudentName === String(data.studentName).trim() && 
+             rowBookId === String(data.bookId).trim() && 
+             rowIndexVal === data.index;
+    }) + 2;
     
     if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
 
