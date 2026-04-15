@@ -240,6 +240,11 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
                       <Hash className="w-2.5 h-2.5" />{book.type}
                     </span>
                   )}
+                  {book.career && (
+                    <span className="text-[11px] text-neutral-500 flex items-center gap-0.5">
+                      <Hash className="w-2.5 h-2.5" />{book.career}
+                    </span>
+                  )}
                 </div>
               </button>
             );
