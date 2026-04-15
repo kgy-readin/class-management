@@ -19,7 +19,6 @@ async function getSheetData(sheet: string, range: string) {
     // The response is wrapped in "google.visualization.Query.setResponse(...);"
     const jsonStr = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/)?.[1];
     if (!jsonStr) {
-      // If we get HTML instead of the expected callback, it's likely a permission issue
       if (text.includes('<!doctype html>')) {
         throw new Error('구글 시트 접근 권한이 없습니다. 시트의 공유 설정을 "링크가 있는 모든 사용자에게 공개(뷰어)"로 변경해 주세요.');
       }
@@ -31,18 +30,44 @@ async function getSheetData(sheet: string, range: string) {
       throw new Error(`Google Sheets Error: ${data.errors[0].detailed_message}`);
     }
     
+    // Determine expected column count from range (e.g., "A2:J" -> 10)
+    const rangeMatch = range.match(/([A-Z]+)\d*:([A-Z]+)/);
+    let expectedCols = 0;
+    if (rangeMatch) {
+      const start = rangeMatch[1].split('').reduce((acc, char) => acc * 26 + char.charCodeAt(0) - 64, 0);
+      const end = rangeMatch[2].split('').reduce((acc, char) => acc * 26 + char.charCodeAt(0) - 64, 0);
+      expectedCols = end - start + 1;
+    }
+
     // Convert gviz format to raw array format [[col1, col2, ...], ...]
-    return data.table.rows.map((row: any) => 
-      row.c.map((cell: any) => {
-        if (!cell) return null;
-        // gviz returns dates in a special format, but we mostly use strings/numbers
-        return cell.v;
-      })
-    );
+    return data.table.rows.map((row: any) => {
+      const cells = Array(expectedCols).fill(null);
+      if (row.c) {
+        row.c.forEach((cell: any, i: number) => {
+          if (i < expectedCols && cell && cell.v !== null && cell.v !== undefined) {
+            let val = cell.v;
+            
+            // Handle Google Sheets Date format: "Date(2024,3,15)"
+            // This avoids timezone shifts by manually parsing the string
+            if (typeof val === 'string' && val.startsWith('Date(')) {
+              const dMatch = val.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+              if (dMatch) {
+                const [_, y, m, d] = dMatch;
+                // Month is 0-indexed in gviz.
+                const year = y;
+                const month = String(Number(m) + 1).padStart(2, '0');
+                const day = String(d).padStart(2, '0');
+                val = `${year}-${month}-${day}`;
+              }
+            }
+            cells[i] = val;
+          }
+        });
+      }
+      return cells;
+    });
   } catch (error: any) {
-    console.error('Direct fetch failed, falling back to GAS if available:', error.message);
-    // If direct fetch fails (e.g. private sheet), we could try falling back to GAS
-    // but the user specifically asked to bypass GAS for loading.
+    console.error('Direct fetch failed:', error.message);
     throw error;
   }
 }
@@ -338,12 +363,14 @@ export const studentApi = {
 export const writingStatusApi = {
   get: async (): Promise<WritingStatus[]> => {
     const data = await getSheetData('글쓰기현황', 'A2:D');
-    return data.map((row: any[]) => ({
-      date: row[0] || '',
-      name: row[1] || '',
-      bookTitle: row[2] || '',
-      progress: row[3] as any || '진행',
-    }));
+    return data
+      .filter((row: any[]) => row && row[1]) // Filter out rows without a name
+      .map((row: any[]) => ({
+        date: row[0] || '',
+        name: row[1] || '',
+        bookTitle: row[2] || '',
+        progress: row[3] as any || '진행',
+      }));
   },
   update: async (data: { 
     name: string; 
