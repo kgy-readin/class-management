@@ -14,9 +14,25 @@ export const formatLevel = (level: any) => {
 
 export const formatTime = (timeStr: string) => {
   if (!timeStr || timeStr === '미설정') return '미설정';
+  
+  // Handle HH:mm format directly
+  if (/^\d{1,2}:\d{2}$/.test(timeStr)) {
+    const [h, m] = timeStr.split(':');
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+
   try {
+    // If it's a full ISO string or similar
     const date = new Date(timeStr);
-    if (isNaN(date.getTime())) return timeStr;
+    if (isNaN(date.getTime())) {
+      // Try parsing HH:mm:ss
+      const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        return `${match[1].padStart(2, '0')}:${match[2]}`;
+      }
+      return timeStr;
+    }
+    
     return date.toLocaleTimeString('ko-KR', { 
       hour: '2-digit', 
       minute: '2-digit', 

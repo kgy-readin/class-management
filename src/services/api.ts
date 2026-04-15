@@ -47,18 +47,35 @@ async function getSheetData(sheet: string, range: string) {
           if (i < expectedCols && cell && cell.v !== null && cell.v !== undefined) {
             let val = cell.v;
             
-            // Handle Google Sheets Date format: "Date(2024,3,15)"
-            // This avoids timezone shifts by manually parsing the string
+            // Handle Google Sheets Date/Time format: "Date(2024,3,15)" or "Date(1899,11,30,16,35,0)"
             if (typeof val === 'string' && val.startsWith('Date(')) {
               const dMatch = val.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
               if (dMatch) {
-                const [_, y, m, d] = dMatch;
-                // Month is 0-indexed in gviz.
+                const [_, y, m, d, h, min, s] = dMatch;
                 const year = y;
                 const month = String(Number(m) + 1).padStart(2, '0');
                 const day = String(d).padStart(2, '0');
-                val = `${year}-${month}-${day}`;
+                
+                if (h !== undefined && min !== undefined) {
+                  // If it has time components, it might be a Time value or a DateTime value
+                  const hour = String(h).padStart(2, '0');
+                  const minute = String(min).padStart(2, '0');
+                  const second = String(s || 0).padStart(2, '0');
+                  
+                  // If the year is 1899, it's likely a Time-only value from Google Sheets
+                  if (year === '1899') {
+                    val = `${hour}:${minute}`;
+                  } else {
+                    val = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                  }
+                } else {
+                  val = `${year}-${month}-${day}`;
+                }
               }
+            } else if (cell.f) {
+              // Prefer formatted value for display if it's not a special Date string
+              // This helps with currency, percentages, and specifically Time values if they come as numbers
+              val = cell.f;
             }
             cells[i] = val;
           }
@@ -126,6 +143,33 @@ async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
     return await response.json();
   } catch (error: any) {
     console.error('GAS Delete Failed:', error);
+    throw error;
+  }
+}
+
+// Helper to delete a specific row by its index
+async function deleteRow(sheet: string, rowIndex: number) {
+  if (!GAS_URL || !GAS_URL.startsWith('http')) {
+    throw new Error('데이터를 삭제하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+  }
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'deleteRow', sheet, row: rowIndex }),
+    });
+    
+    if (!response.ok) throw new Error(`GAS Delete Row Error: ${response.statusText}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다.');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('GAS Delete Row Failed:', error);
     throw error;
   }
 }
@@ -338,6 +382,19 @@ export const curriculumApi = {
 
     await updateSheetData('커리큘럼', `A${nextEmptyRow}:F${nextEmptyRow}`, [newRow]);
     return { success: true, index: nextIndex };
+  },
+  remove: async (data: { studentName: string; bookId: string; index: number }) => {
+    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
+    const rowIndex = curriculumsRaw.findIndex((row: any[]) => 
+      String(row[0]).trim() === String(data.studentName).trim() && 
+      String(row[4]).trim() === String(data.bookId).trim() && 
+      parseInt(row[1]) === data.index
+    ) + 2;
+    
+    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+
+    await deleteRow('커리큘럼', rowIndex);
+    return { success: true };
   }
 };
 

@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Save, PlusCircle, FilePlus } from 'lucide-react';
+import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
@@ -22,6 +22,8 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
   const [editValues, setEditValues] = useState<{ status: string; index: number; bookTitle: string } | null>(null);
   const [addingWriting, setAddingWriting] = useState<string | null>(null);
   const [writingConfirmItem, setWritingConfirmItem] = useState<any | null>(null);
+  const [deletingItem, setDeletingItem] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!data) return null;
 
@@ -73,6 +75,24 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleDeleteCurriculum = async (item: any) => {
+    setIsDeleting(true);
+    try {
+      await curriculumApi.remove({ 
+        studentName, 
+        bookId: item.bookId, 
+        index: item.index 
+      });
+      toast.success('항목이 삭제되었습니다.');
+      setDeletingItem(null);
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -267,6 +287,52 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                             </DialogContent>
                           </Dialog>
                         )}
+                        
+                        <Dialog open={deletingItem?.bookId === item.bookId && deletingItem?.index === item.index} onOpenChange={(open) => !open && setDeletingItem(null)}>
+                          <DialogTrigger render={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeletingItem(item)}
+                              title="삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          } />
+                          <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+                            <div className="p-8 text-center space-y-6">
+                              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                                <Trash2 className="w-8 h-8 text-destructive" />
+                              </div>
+                              <div className="space-y-2">
+                                <h3 className="text-lg font-extrabold text-foreground">항목 삭제</h3>
+                                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                                  <span className="text-destructive font-bold">'{item.bookTitle}'</span> 항목을<br />
+                                  목록에서 삭제하시겠습니까?
+                                </p>
+                              </div>
+                              <div className="flex gap-3">
+                                <DialogClose render={
+                                  <Button 
+                                    variant="secondary" 
+                                    className="flex-1 h-12 rounded-2xl font-bold"
+                                  >
+                                    취소
+                                  </Button>
+                                } />
+                                <Button 
+                                  variant="destructive"
+                                  className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
+                                  onClick={() => handleDeleteCurriculum(item)}
+                                  disabled={isDeleting}
+                                >
+                                  {isDeleting ? '삭제 중...' : '삭제'}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     )}
                   </TableCell>
