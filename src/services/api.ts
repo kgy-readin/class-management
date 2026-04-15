@@ -1,46 +1,122 @@
 import { Book, Student, Curriculum, WritingStatus, DashboardData } from '../types';
 
 const GAS_URL = import.meta.env.VITE_GAS_WEB_APP_URL;
+const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID;
 
-// Helper to get sheet data via GAS
+// Helper to get sheet data directly from Google Sheets (Read-only)
+// This bypasses GAS and works if the sheet is shared as "Anyone with the link can view"
 async function getSheetData(sheet: string, range: string) {
-  if (!GAS_URL) throw new Error('VITE_GAS_WEB_APP_URL is not set');
-  const url = `${GAS_URL}?action=read&sheet=${encodeURIComponent(sheet)}&range=${encodeURIComponent(range)}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`GAS Read Error: ${response.statusText}`);
-  return await response.json();
+  if (!SHEET_ID) throw new Error('VITE_GOOGLE_SHEETS_ID is not set');
+  
+  // Use Google Visualization API for direct JSON fetching
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&range=${encodeURIComponent(range)}`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Direct Read Error: ${response.statusText}`);
+    
+    const text = await response.text();
+    // The response is wrapped in "google.visualization.Query.setResponse(...);"
+    const jsonStr = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/)?.[1];
+    if (!jsonStr) {
+      // If we get HTML instead of the expected callback, it's likely a permission issue
+      if (text.includes('<!doctype html>')) {
+        throw new Error('구글 시트 접근 권한이 없습니다. 시트의 공유 설정을 "링크가 있는 모든 사용자에게 공개(뷰어)"로 변경해 주세요.');
+      }
+      throw new Error('Invalid response format from Google Sheets');
+    }
+    
+    const data = JSON.parse(jsonStr);
+    if (data.status === 'error') {
+      throw new Error(`Google Sheets Error: ${data.errors[0].detailed_message}`);
+    }
+    
+    // Convert gviz format to raw array format [[col1, col2, ...], ...]
+    return data.table.rows.map((row: any) => 
+      row.c.map((cell: any) => {
+        if (!cell) return null;
+        // gviz returns dates in a special format, but we mostly use strings/numbers
+        return cell.v;
+      })
+    );
+  } catch (error: any) {
+    console.error('Direct fetch failed, falling back to GAS if available:', error.message);
+    // If direct fetch fails (e.g. private sheet), we could try falling back to GAS
+    // but the user specifically asked to bypass GAS for loading.
+    throw error;
+  }
 }
 
-// Helper to update sheet data via GAS
+// Helper to update sheet data via GAS (Writing still requires GAS or OAuth)
 async function updateSheetData(sheet: string, range: string, values: any[][]) {
-  if (!GAS_URL) throw new Error('VITE_GAS_WEB_APP_URL is not set');
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'update', sheet, range, values }),
-  });
-  if (!response.ok) throw new Error(`GAS Update Error: ${response.statusText}`);
-  return await response.json();
+  if (!GAS_URL || !GAS_URL.startsWith('http')) {
+    throw new Error('데이터를 수정하려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+  }
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      // Use text/plain to avoid CORS preflight (OPTIONS) which GAS doesn't handle well
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'update', sheet, range, values }),
+    });
+    
+    if (!response.ok) throw new Error(`GAS Update Error: ${response.statusText}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정에서 "액세스 권한이 있는 사용자"를 "모든 사용자(Anyone)"로 설정했는지 확인하세요.');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('GAS Update Failed:', error);
+    if (error.message === 'Failed to fetch') {
+      throw new Error('GAS 서버에 연결할 수 없습니다. GAS URL이 정확한지, 그리고 배포 설정이 "모든 사용자(Anyone)"로 되어 있는지 확인해 주세요.');
+    }
+    throw error;
+  }
 }
 
 // Helper to delete rows via GAS
 async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
-  if (!GAS_URL) throw new Error('VITE_GAS_WEB_APP_URL is not set');
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'deleteRows', sheet, keyColumn, keyValue }),
-  });
-  if (!response.ok) throw new Error(`GAS Delete Error: ${response.statusText}`);
-  return await response.json();
+  if (!GAS_URL || !GAS_URL.startsWith('http')) {
+    throw new Error('데이터를 삭제하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+  }
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'deleteRows', sheet, keyColumn, keyValue }),
+    });
+    
+    if (!response.ok) throw new Error(`GAS Delete Error: ${response.statusText}`);
+    
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정에서 "액세스 권한이 있는 사용자"를 "모든 사용자(Anyone)"로 설정했는지 확인하세요.');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('GAS Delete Failed:', error);
+    throw error;
+  }
 }
 
 export const dataApi = {
   getConfig: () => ({
-    isConfigured: !!GAS_URL,
+    // Either SHEET_ID (for reading) or GAS_URL (for writing) is enough to start
+    isConfigured: !!SHEET_ID || (!!GAS_URL && GAS_URL.startsWith('http')),
     gasUrl: GAS_URL,
+    canWrite: !!GAS_URL && GAS_URL.startsWith('http')
   }),
   fetchData: async (refreshBooks = false): Promise<DashboardData> => {
+    // If we don't even have a SHEET_ID, we can't do anything
+    if (!SHEET_ID) {
+      throw new Error('VITE_GOOGLE_SHEETS_ID가 설정되지 않았습니다. 환경 변수를 확인해 주세요.');
+    }
     const fetchPromises = [
       getSheetData('학생정보', 'A2:J'),
       getSheetData('커리큘럼', 'A2:F'),
