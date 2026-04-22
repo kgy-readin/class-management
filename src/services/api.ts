@@ -274,13 +274,15 @@ export const attendanceApi = {
 
 export const homeworkApi = {
   update: async (data: { name: string; isDone: boolean }) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:J');
+    const studentsRaw = await getSheetData('학생정보', 'A2:I');
     const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
     if (rowIndex < 2) throw new Error('Student not found');
 
     const currentCount = Number(studentsRaw[rowIndex - 2][8]) || 0;
-    const newCount = data.isDone ? currentCount : currentCount + 1;
+    // If homework is done, count resets to 0. Otherwise, increments by 1.
+    const newCount = data.isDone ? 0 : currentCount + 1;
 
+    // G: 숙제검사, H: 미수행, I: 숙제안함
     await updateSheetData('학생정보', `G${rowIndex}:I${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
     return { success: true, newCount };
   }
