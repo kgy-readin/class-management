@@ -98,18 +98,18 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="gap-2 rounded-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Button variant="ghost" onClick={onBack} className="w-fit gap-2 rounded-xl">
           <ChevronLeft className="w-4 h-4" />
           뒤로 가기
         </Button>
-        <div className="flex items-center gap-2">
-          <h2 className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 목록</h2>
-          <div className="flex items-center gap-2 mt-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 items-start sm:items-center">
+          <h2 className="text-[21px] font-extrabold px-3 sm:px-0 text-left">{studentName} 학생 도서 목록</h2>
+          <div className="flex items-center justify-start gap-1 sm:gap-2 px-3 sm:px-0">
             <Dialog>
               <DialogTrigger render={
-                <Button className="rounded-xl gap-2">
-                  <Plus className="w-4 h-4" />
+                <Button className="rounded-xl gap-2 scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10">
+                  <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                   도서
                 </Button>
               } />
@@ -129,10 +129,10 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
 
             <Button 
               variant="outline"
-              className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff]"
+              className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
               onClick={() => handleAddCurriculum(undefined, true)}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
               글쓰기
             </Button>
           </div>
@@ -142,32 +142,32 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
       <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-white border-b border-border/50">
+            <TableHeader className="bg-white border-b border-border/50 text-xs sm:text-sm">
               <TableRow className="hover:bg-transparent border-border/30">
-                <TableHead className="w-[80px] text-center font-semibold text-xs uppercase tracking-widest">순서</TableHead>
-                <TableHead className="font-semibold text-xs uppercase tracking-widest">도서명</TableHead>
-                <TableHead className="w-[120px] text-center font-semibold text-xs uppercase tracking-widest">정보</TableHead>
-                <TableHead className="w-[100px] text-center font-semibold text-xs uppercase tracking-widest">학원번호</TableHead>
-                <TableHead className="w-[120px] text-center font-semibold text-xs uppercase tracking-widest">상태</TableHead>
-                <TableHead className="w-[140px] text-center font-semibold text-xs uppercase tracking-widest">관리</TableHead>
+                <TableHead className="w-[60px] text-center font-semibold uppercase tracking-widest px-1">순서</TableHead>
+                <TableHead className="font-semibold uppercase tracking-widest px-2">도서명</TableHead>
+                <TableHead className="w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
+                <TableHead className="w-[80px] lg:w-[110px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
+                <TableHead className="w-[90px] lg:w-[120px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
+                <TableHead className="w-[110px] lg:w-[150px] text-center font-semibold uppercase tracking-widest px-1">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {curriculum.map((item) => (
                 <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
-                  <TableCell className="text-center">
+                  <TableCell className="text-center px-1">
                     {editingIndex === item.index ? (
                       <input 
                         type="number"
-                        className="w-12 bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal text-center focus:ring-2 ring-primary/20 outline-none"
+                        className="w-10 bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal text-center focus:ring-2 ring-primary/20 outline-none"
                         value={editValues?.index}
                         onChange={(e) => setEditValues(prev => prev ? { ...prev, index: parseInt(e.target.value) || 0 } : null)}
                       />
                     ) : (
-                      <span className="font-normal text-muted-foreground text-sm">{item.index}</span>
+                      <span className="font-normal text-muted-foreground text-xs sm:text-sm">{item.index}</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2">
                     {editingIndex === item.index ? (
                       <input 
                         className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
@@ -176,31 +176,31 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       />
                     ) : (
                       <div className="flex flex-col">
-                        <span className="font-normal text-foreground text-sm">{item.bookTitle}</span>
+                        <span className="font-medium text-foreground text-xs sm:text-sm">{item.bookTitle}</span>
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
-                    <span className="font-normal text-muted-foreground text-sm">
+                  <TableCell className="text-center px-1">
+                    <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate" title={item.info}>
                       {item.info}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <span className="font-normal text-muted-foreground text-sm">
+                  <TableCell className="text-center px-1">
+                    <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate">
                       {item.bookId}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center px-1">
                     {editingIndex === item.index ? (
                       <select 
-                        className="bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none -translate-x-[2px]"
+                        className="w-full bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
                         value={editValues?.status}
                         onChange={(e) => setEditValues(prev => prev ? { ...prev, status: e.target.value } : null)}
                       >
                         {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     ) : (
-                      <Badge className={`rounded-lg font-normal text-sm ${
+                      <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
                         item.status === '통과' ? 'bg-green-100 text-green-700' :
                         item.status === '진행' ? 'bg-primary text-white' :
                         item.status === '불통' ? 'bg-destructive/10 text-destructive' :
@@ -210,7 +210,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-left">
+                  <TableCell className="text-left px-1">
                     {editingIndex === item.index ? (
                       <div className="flex items-center justify-start gap-1">
                         <Button 
@@ -219,7 +219,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                           className="h-8 w-8 text-primary hover:bg-primary/10"
                           onClick={() => handleUpdate(item.bookId)}
                         >
-                          <Save className="w-4 h-4" />
+                          <Save className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                         </Button>
                         <Button 
                           size="icon" 
@@ -227,15 +227,15 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                           className="h-8 w-8 text-muted-foreground hover:bg-secondary"
                           onClick={() => setEditingIndex(null)}
                         >
-                          <Plus className="w-4 h-4 rotate-45" />
+                          <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4 rotate-45" />
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-start gap-1">
+                      <div className="flex items-center justify-start gap-0 sm:gap-1">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-xs font-bold hover:text-primary h-8 px-2"
+                          className="text-xs font-bold hover:text-primary h-8 px-1 sm:px-2"
                           onClick={() => {
                             setEditingIndex(item.index);
                             setEditValues({ 
@@ -258,7 +258,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                                 disabled={addingWriting === item.bookId}
                                 title="글쓰기 현황 추가"
                               >
-                                <PlusCircle className="w-4 h-4" />
+                                <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                               </Button>
                             } />
                             <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
@@ -303,7 +303,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                               onClick={() => setDeletingItem(item)}
                               title="삭제"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                             </Button>
                           } />
                           <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
