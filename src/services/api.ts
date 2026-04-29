@@ -188,7 +188,7 @@ export const dataApi = {
     }
     const fetchPromises = [
       getSheetData('학생정보', 'A2:J'),
-      getSheetData('커리큘럼', 'A2:F'),
+      getSheetData('커리큘럼', 'A2:G'),
     ];
 
     const cachedBooksStr = localStorage.getItem('cachedBooks');
@@ -251,8 +251,9 @@ export const dataApi = {
         index: parseInt(row[1]) || 0,
         bookTitle: row[2] || '',
         bookLevel: row[3] || '',
-        bookId: row[4] || '',
-        status: row[5] as any || '예정',
+        info: row[4] || '',
+        bookId: row[5] || '',
+        status: row[6] as any || '예정',
       }));
 
     return { books, students, curriculums };
@@ -274,8 +275,9 @@ export const attendanceApi = {
 
 export const homeworkApi = {
   update: async (data: { name: string; isDone: boolean }) => {
+    // Fetch columns A to I to find the current missed count in column I
     const studentsRaw = await getSheetData('학생정보', 'A2:I');
-    const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
+    const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[0] || '').trim() === String(data.name).trim()) + 2;
     if (rowIndex < 2) throw new Error('Student not found');
 
     const currentCount = Number(studentsRaw[rowIndex - 2][8]) || 0;
@@ -283,6 +285,7 @@ export const homeworkApi = {
     const newCount = data.isDone ? 0 : currentCount + 1;
 
     // G: 숙제검사, H: 미수행, I: 숙제안함
+    // Update G (Check), H (MissedToday), I (Accumulated Missed)
     await updateSheetData('학생정보', `G${rowIndex}:I${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
     return { success: true, newCount };
   }
@@ -297,15 +300,20 @@ export const curriculumApi = {
     bookTitle?: string;
     originalIndex?: number;
   }) => {
-    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
+    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:G');
     const rowIndex = curriculumsRaw.findIndex((row: any[]) => {
       const rowStudentName = String(row[0] || '').trim();
-      const rowBookId = String(row[4] || '').trim();
+      const rowBookId = String(row[5] || '').trim();
       const rowIndexVal = parseInt(row[1]) || 0;
       
-      return rowStudentName === String(data.studentName).trim() && 
-             rowBookId === String(data.bookId).trim() && 
-             rowIndexVal === data.originalIndex;
+      const isMatch = rowStudentName === String(data.studentName).trim() && 
+                     rowIndexVal === data.originalIndex;
+      
+      const targetBookId = String(data.bookId || '').trim();
+      if (targetBookId && targetBookId !== '-') {
+        return isMatch && rowBookId === targetBookId;
+      }
+      return isMatch;
     }) + 2;
     
     if (rowIndex < 2) throw new Error('Curriculum entry not found');
@@ -313,9 +321,9 @@ export const curriculumApi = {
     const updates = [];
     if (data.index !== undefined) updates.push(updateSheetData('커리큘럼', `B${rowIndex}`, [[data.index]]));
     if (data.bookTitle !== undefined) updates.push(updateSheetData('커리큘럼', `C${rowIndex}`, [[data.bookTitle]]));
-    if (data.status !== undefined) updates.push(updateSheetData('커리큘럼', `F${rowIndex}`, [[data.status]]));
+    if (data.status !== undefined) updates.push(updateSheetData('커리큘럼', `G${rowIndex}`, [[data.status]]));
     
-    const previousStatus = String(curriculumsRaw[rowIndex - 2][5] || '').trim();
+    const previousStatus = String(curriculumsRaw[rowIndex - 2][6] || '').trim();
     const newStatus = String(data.status || '').trim();
     
     await Promise.all(updates);
@@ -364,36 +372,47 @@ export const curriculumApi = {
       localStorage.setItem('cachedBooks', JSON.stringify(books));
     }
 
-    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
+    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:G');
 
     let bookLevel = '';
     let bookId = '';
+    let info = '';
 
     if (data.isWriting) {
       bookLevel = '';
       bookId = '';
+      info = '';
     } else {
       const book = books.find(b => b.title === data.bookTitle);
       if (!book) throw new Error('Book not found');
       bookLevel = book.level;
       bookId = book.id;
+      info = `${book.therapy}/${book.difficulty}`;
     }
 
     const studentCurriculum = curriculumsRaw.filter((row: any[]) => row[0] === data.studentName);
     const indices = studentCurriculum.map((row: any[]) => Number(row[1]) || 0);
     const nextIndex = (indices.length > 0 ? Math.max(...indices) : 0) + 1;
 
-    const newRow = [data.studentName, nextIndex, data.isWriting ? '글쓰기' : data.bookTitle, bookLevel, bookId, '예정'];
+    const newRow = [
+      data.studentName, 
+      nextIndex, 
+      data.isWriting ? '글쓰기' : data.bookTitle, 
+      bookLevel, 
+      info, 
+      bookId, 
+      '예정'
+    ];
     const nextEmptyRow = curriculumsRaw.length + 2;
 
-    await updateSheetData('커리큘럼', `A${nextEmptyRow}:F${nextEmptyRow}`, [newRow]);
+    await updateSheetData('커리큘럼', `A${nextEmptyRow}:G${nextEmptyRow}`, [newRow]);
     return { success: true, index: nextIndex };
   },
   remove: async (data: { studentName: string; bookId: string; index: number }) => {
-    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:F');
+    const curriculumsRaw = await getSheetData('커리큘럼', 'A2:G');
     const rowIndex = curriculumsRaw.findIndex((row: any[]) => {
       const rowStudentName = String(row[0] || '').trim();
-      const rowBookId = String(row[4] || '').trim();
+      const rowBookId = String(row[5] || '').trim();
       const rowIndexVal = parseInt(row[1]) || 0;
       
       const isMatch = rowStudentName === String(data.studentName).trim() && 

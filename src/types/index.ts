@@ -29,6 +29,7 @@ export interface Curriculum {
   bookTitle: string;
   bookLevel: string;
   bookId: string;
+  info: string;
   status: '예정' | '진행' | '통과' | '불통';
 }
 

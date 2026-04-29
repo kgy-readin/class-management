@@ -146,6 +146,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
               <TableRow className="hover:bg-transparent border-border/30">
                 <TableHead className="w-[80px] text-center font-semibold text-xs uppercase tracking-widest">순서</TableHead>
                 <TableHead className="font-semibold text-xs uppercase tracking-widest">도서명</TableHead>
+                <TableHead className="w-[120px] text-center font-semibold text-xs uppercase tracking-widest">정보</TableHead>
                 <TableHead className="w-[100px] text-center font-semibold text-xs uppercase tracking-widest">학원번호</TableHead>
                 <TableHead className="w-[120px] text-center font-semibold text-xs uppercase tracking-widest">상태</TableHead>
                 <TableHead className="w-[140px] text-center font-semibold text-xs uppercase tracking-widest">관리</TableHead>
@@ -178,6 +179,11 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         <span className="font-normal text-foreground text-sm">{item.bookTitle}</span>
                       </div>
                     )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-normal text-muted-foreground text-sm">
+                      {item.info}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     <span className="font-normal text-muted-foreground text-sm">
