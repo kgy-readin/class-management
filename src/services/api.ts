@@ -387,7 +387,7 @@ export const curriculumApi = {
       if (!book) throw new Error('Book not found');
       bookLevel = book.level;
       bookId = book.id;
-      info = `${book.therapy}/${book.difficulty}`;
+      info = `${book.therapy} / ${book.difficulty}`;
     }
 
     const studentCurriculum = curriculumsRaw.filter((row: any[]) => row[0] === data.studentName);
