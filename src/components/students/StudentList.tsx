@@ -142,24 +142,24 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                       등원
                     </Button>
                   } />
-                  <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                    <div className="p-8 text-center space-y-6">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-extrabold text-foreground">{student.name} 학생 등원</h3>
-                        <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  <DialogContent className="sm:max-w-[380px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
+                    <div className="p-10 flex flex-col items-center text-center space-y-8">
+                      <div className="space-y-3">
+                        <h3 className="text-2xl font-black text-foreground tracking-tight">{student.name} 학생 등원</h3>
+                        <p className="text-[15px] text-muted-foreground font-medium px-4">
                           하원 예정 시간을 입력해 주세요.
                         </p>
                       </div>
                       
-                      <div className="space-y-3">
+                      <div className="w-full">
                         <Input 
                           type="time" 
                           onChange={(e) => setDismissalTime(e.target.value)}
-                          className="rounded-2xl h-12 border-border/50 bg-secondary/50 focus:ring-primary focus:bg-white transition-all text-center font-bold"
+                          className="w-full rounded-3xl h-16 border-border/40 bg-secondary/20 focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all text-center font-black text-2xl tracking-wider"
                         />
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 w-full">
                         <DialogClose render={
                           <Button 
                             variant="secondary" 
