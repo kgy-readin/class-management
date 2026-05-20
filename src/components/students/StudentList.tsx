@@ -143,7 +143,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     </Button>
                   } />
                   <DialogContent className="sm:max-w-[380px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
-                    <div className="p-10 flex flex-col items-center text-center space-y-8">
+                    <div className="w-full p-8 sm:p-10 flex flex-col items-center text-center space-y-6 sm:space-y-8">
                       <div className="space-y-3">
                         <h3 className="text-2xl font-black text-foreground tracking-tight">{student.name} 학생 등원</h3>
                         <p className="text-[15px] text-muted-foreground font-medium px-4">
@@ -151,11 +151,17 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                         </p>
                       </div>
                       
-                      <div className="w-full">
+                      <div className="w-full flex justify-center px-1">
                         <Input 
                           type="time" 
                           onChange={(e) => setDismissalTime(e.target.value)}
-                          className="w-full rounded-3xl h-16 border-border/40 bg-secondary/20 focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all text-center font-black text-2xl tracking-wider"
+                          className="w-full rounded-3xl h-16 border-border/40 bg-secondary/20 focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all text-center font-black text-2xl tracking-wider mx-auto"
+                          style={{
+                            textAlign: 'center',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'none',
+                            appearance: 'none',
+                          }}
                         />
                       </div>
 
