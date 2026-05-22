@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2 } from 'lucide-react';
+import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
@@ -149,12 +149,12 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
           <Table>
             <TableHeader className="bg-white border-b border-border/50 text-xs sm:text-sm">
               <TableRow className="hover:bg-transparent border-border/30">
-                <TableHead className="h-8 w-[60px] text-center font-semibold uppercase tracking-widest px-1">순서</TableHead>
-                <TableHead className="h-8 font-semibold uppercase tracking-widest px-2">도서명</TableHead>
+                <TableHead className="h-8 w-[68px] text-center font-semibold uppercase tracking-widest pl-2 pr-1">순서</TableHead>
+                <TableHead className="h-8 font-semibold uppercase tracking-widest px-3">도서명</TableHead>
                 <TableHead className="h-8 w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
-                <TableHead className="h-8 w-[80px] lg:w-[110px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
-                <TableHead className="h-8 w-[90px] lg:w-[120px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
-                <TableHead className="h-8 w-[110px] lg:w-[150px] text-center font-semibold uppercase tracking-widest px-1">관리</TableHead>
+                <TableHead className="h-8 w-[80px] lg:w-[114px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
+                <TableHead className="h-8 w-[94px] lg:w-[124px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
+                <TableHead className="h-8 w-[98px] lg:w-[130px] text-center font-semibold uppercase tracking-widest pl-1 pr-1">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -162,7 +162,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                 const isLast = idx === curriculum.length - 1;
                 return (
                   <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
-                    <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
+                    <TableCell className={`text-center pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
                         type="number"
@@ -174,7 +174,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       <span className="font-normal text-muted-foreground text-xs sm:text-sm">{item.index}</span>
                     )}
                   </TableCell>
-                  <TableCell className={`px-2 ${isLast ? 'pb-1' : ''}`}>
+                  <TableCell className={`px-3 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
                         className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
@@ -217,7 +217,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className={`text-left px-1 ${isLast ? 'pb-1' : ''}`}>
+                  <TableCell className={`text-left pl-1 pr-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <div className="flex items-center justify-start gap-1">
                         <Button 
@@ -238,11 +238,12 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-start gap-0 sm:gap-1">
+                      <div className="flex items-center justify-start gap-0">
                         <Button 
                           variant="ghost" 
-                          size="sm" 
-                          className="text-xs font-bold hover:text-primary h-8 px-1 sm:px-2"
+                          size="icon" 
+                          title="수정"
+                          className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
                           onClick={() => {
                             setEditingIndex(item.index);
                             setEditValues({ 
@@ -252,7 +253,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                             });
                           }}
                         >
-                          수정
+                          <Pencil className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                         </Button>
                         {item.bookTitle !== '글쓰기' && (
                           <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>

@@ -99,6 +99,15 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
       const searchLower = search.trim().toLowerCase();
       if (!searchLower) return true;
 
+      // Check if search match is purely for a day of week
+      const daysOfWeek = ['월', '화', '수', '목', '금', '토', '일'];
+      const targetDay = searchLower.replace('요일', '');
+      const isSearchDay = daysOfWeek.includes(targetDay);
+
+      if (isSearchDay) {
+        return (s.attendanceDays || '').includes(targetDay);
+      }
+
       const nameLower = s.name.toLowerCase();
       const gradeLower = s.grade.toLowerCase();
       const formattedLvl = formatLevel(s.level).toLowerCase();
@@ -118,16 +127,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
       const matchesLevel = levelStrings.some(lvlStr => lvlStr.toLowerCase().includes(searchLower));
 
-      // Day of week matches
-      const targetDays = ['월', '화', '수', '목', '금', '토'];
-      const matchedDays = targetDays.filter(d => searchLower === d || searchLower === `${d}요일`);
-      const matchesDay = matchedDays.length > 0 && matchedDays.some(d => (s.attendanceDays || '').includes(d));
-
       return (
         nameLower.includes(searchLower) ||
         gradeLower.includes(searchLower) ||
-        matchesLevel ||
-        matchesDay
+        matchesLevel
       );
     })
     .sort((a, b) => {
@@ -222,28 +225,21 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
   return (
     <div className="space-y-6">
       <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4 -mt-3 border-b border-border/10 mb-2">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
-            {/* Left Search and Counts */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-1">
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <Input
-                  placeholder="학생 이름, 학년 또는 레벨 검색"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 h-10 rounded-xl border-neutral-200"
-                />
-              </div>
-              <div className="flex gap-2 text-sm text-neutral-500 items-center justify-start shrink-0 px-2 sm:px-0">
-                <span>전체: <strong>{data.students.length}</strong>명</span>
-                <span>•</span>
-                <span>등원 중: <strong className="text-neutral-900">{attendingStudentsCount}</strong>명</span>
-              </div>
+        <div className="flex flex-col gap-2.5">
+          {/* 검색바 및 버튼 그룹 (동일 높이, 버튼 그룹 오른쪽 정렬) */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Input
+                placeholder="이름, 학년, 레벨, 요일"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 h-10 rounded-xl border-neutral-200 text-sm"
+              />
             </div>
 
-            {/* Right Control Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* 버튼 묶음 (오른쪽 정렬) */}
+            <div className="flex items-center gap-1.5 shrink-0">
               {/* 일괄 하원 버튼 */}
               <Dialog open={isBulkDismissOpen} onOpenChange={setIsBulkDismissOpen}>
                 <DialogTrigger render={
