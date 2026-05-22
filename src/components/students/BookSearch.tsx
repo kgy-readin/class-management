@@ -190,11 +190,11 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
       <ScrollArea className="h-[300px] rounded-xl border border-neutral-100 bg-neutral-50/50">
         <div className="p-2 space-y-1">
           {filteredBooks.length > 0 ? (
-            filteredBooks.map((book) => {
+            filteredBooks.map((book, idx) => {
               const isExisting = existingBookTitles.includes(book.title);
               return (
                 <button
-                  key={book.id}
+                  key={`${book.id}-${book.title}-${idx}`}
                   onClick={() => onSelect(book.title)}
                   className={`w-full text-left p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group border border-transparent hover:border-neutral-200 ${
                     isExisting ? 'bg-primary/5 opacity-80' : ''

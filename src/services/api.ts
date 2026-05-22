@@ -187,7 +187,7 @@ export const dataApi = {
       throw new Error('VITE_GOOGLE_SHEETS_ID가 설정되지 않았습니다. 환경 변수를 확인해 주세요.');
     }
     const fetchPromises = [
-      getSheetData('학생정보', 'A2:J'),
+      getSheetData('학생정보', 'A2:K'),
       getSheetData('커리큘럼', 'A2:G'),
     ];
 
@@ -236,12 +236,13 @@ export const dataApi = {
         grade: row[1] || '',
         level: row[2] || '',
         subProgram: row[3] || '',
-        isAttending: row[4] === true || row[4] === 'TRUE',
-        dismissalTime: row[5] || '',
-        homeworkChecked: row[6] === true || row[6] === 'TRUE',
-        homeworkMissedToday: row[7] === true || row[7] === 'TRUE',
-        homeworkMissed: Number(row[8]) || 0,
-        booksCompleted: Number(row[9]) || 0,
+        attendanceDays: row[4] || '',
+        isAttending: row[5] === true || row[5] === 'TRUE',
+        dismissalTime: row[6] || '',
+        homeworkChecked: row[7] === true || row[7] === 'TRUE',
+        homeworkMissedToday: row[8] === true || row[8] === 'TRUE',
+        homeworkMissed: Number(row[9]) || 0,
+        booksCompleted: Number(row[10]) || 0,
       }));
 
     const curriculums: Curriculum[] = curriculumsRaw
@@ -266,27 +267,44 @@ export const attendanceApi = {
     const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
     if (rowIndex < 2) throw new Error('Student not found');
 
-    await updateSheetData('학생정보', `E${rowIndex}:H${rowIndex}`, [
+    await updateSheetData('학생정보', `F${rowIndex}:I${rowIndex}`, [
       [data.isAttending ? 'TRUE' : 'FALSE', data.isAttending ? (data.dismissalTime || '') : '', 'FALSE', 'FALSE']
     ]);
+    return { success: true };
+  },
+  bulkDismiss: async () => {
+    const studentsRaw = await getSheetData('학생정보', 'A2:I');
+    const updatedFtoI = studentsRaw.map((row) => {
+      const isAttending = row[5] === true || row[5] === 'TRUE';
+      if (isAttending) {
+        return ['FALSE', '', 'FALSE', 'FALSE'];
+      } else {
+        const originalF = row[5] === true || row[5] === 'TRUE' ? 'TRUE' : 'FALSE';
+        const originalG = row[6] || '';
+        const originalH = row[7] === true || row[7] === 'TRUE' ? 'TRUE' : 'FALSE';
+        const originalI = row[8] === true || row[8] === 'TRUE' ? 'TRUE' : 'FALSE';
+        return [originalF, originalG, originalH, originalI];
+      }
+    });
+    await updateSheetData('학생정보', `F2:I${studentsRaw.length + 1}`, updatedFtoI);
     return { success: true };
   }
 };
 
 export const homeworkApi = {
   update: async (data: { name: string; isDone: boolean }) => {
-    // Fetch columns A to I to find the current missed count in column I
-    const studentsRaw = await getSheetData('학생정보', 'A2:I');
+    // Fetch columns A to J to find the current missed count in column J
+    const studentsRaw = await getSheetData('학생정보', 'A2:J');
     const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[0] || '').trim() === String(data.name).trim()) + 2;
     if (rowIndex < 2) throw new Error('Student not found');
 
-    const currentCount = Number(studentsRaw[rowIndex - 2][8]) || 0;
+    const currentCount = Number(studentsRaw[rowIndex - 2][9]) || 0;
     // If homework is done, count resets to 0. Otherwise, increments by 1.
     const newCount = data.isDone ? 0 : currentCount + 1;
 
-    // G: 숙제검사, H: 미수행, I: 숙제안함
-    // Update G (Check), H (MissedToday), I (Accumulated Missed)
-    await updateSheetData('학생정보', `G${rowIndex}:I${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
+    // H: 숙제검사, I: 미수행, J: 숙제안함
+    // Update H (Check), I (MissedToday), J (Accumulated Missed)
+    await updateSheetData('학생정보', `H${rowIndex}:J${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
     return { success: true, newCount };
   }
 };
@@ -332,18 +350,18 @@ export const curriculumApi = {
     
     if (isBook && data.status !== undefined && newStatus !== previousStatus) {
       if (newStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:J');
+        const studentsRaw = await getSheetData('학생정보', 'A2:K');
         const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][9]) || 0;
-          await updateSheetData('학생정보', `J${studentRowIndex}`, [[currentCompleted + 1]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][10]) || 0;
+          await updateSheetData('학생정보', `K${studentRowIndex}`, [[currentCompleted + 1]]);
         }
       } else if (previousStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:J');
+        const studentsRaw = await getSheetData('학생정보', 'A2:K');
         const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][9]) || 0;
-          await updateSheetData('학생정보', `J${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][10]) || 0;
+          await updateSheetData('학생정보', `K${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
         }
       }
     }
@@ -434,7 +452,7 @@ export const curriculumApi = {
 
 export const studentApi = {
   levelUp: async (name: string) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:J');
+    const studentsRaw = await getSheetData('학생정보', 'A2:K');
     const studentRowIndex = studentsRaw.findIndex((row: any[]) => row[0] === name) + 2;
     if (studentRowIndex < 2) throw new Error('Student not found');
 
@@ -442,20 +460,68 @@ export const studentApi = {
     const currentLevel = parseInt(studentRow[2]) || 0;
     
     studentRow[2] = currentLevel + 1;
-    studentRow[9] = 0;
+    studentRow[10] = 0;
     
-    await updateSheetData('학생정보', `A${studentRowIndex}:J${studentRowIndex}`, [studentRow]);
+    await updateSheetData('학생정보', `A${studentRowIndex}:K${studentRowIndex}`, [studentRow]);
     await deleteRows('커리큘럼', 1, name);
 
     return { success: true };
   },
   update: async (name: string, data: Partial<Student>) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:J');
-    const studentRowIndex = studentsRaw.findIndex((row: any[]) => row[0] === name) + 2;
+    const studentsRaw = await getSheetData('학생정보', 'A2:A');
+    const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === name.trim()) + 2;
     if (studentRowIndex < 2) throw new Error('Student not found');
 
+    if (data.grade !== undefined) {
+      await updateSheetData('학생정보', `B${studentRowIndex}`, [[data.grade]]);
+    }
+    if (data.level !== undefined) {
+      await updateSheetData('학생정보', `C${studentRowIndex}`, [[data.level]]);
+    }
     if (data.subProgram !== undefined) {
       await updateSheetData('학생정보', `D${studentRowIndex}`, [[data.subProgram]]);
+    }
+    if (data.attendanceDays !== undefined) {
+      await updateSheetData('학생정보', `E${studentRowIndex}`, [[data.attendanceDays]]);
+    }
+    if (data.homeworkMissed !== undefined) {
+      await updateSheetData('학생정보', `J${studentRowIndex}`, [[data.homeworkMissed]]);
+    }
+    if (data.booksCompleted !== undefined) {
+      await updateSheetData('학생정보', `K${studentRowIndex}`, [[data.booksCompleted]]);
+    }
+    return { success: true };
+  },
+  add: async (data: { name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number }) => {
+    const studentsRaw = await getSheetData('학생정보', 'A2:A');
+    const exists = studentsRaw.some((row: any[]) => String(row[0] || '').trim() === data.name.trim());
+    if (exists) {
+      throw new Error('이미 등록된 학생 이름입니다.');
+    }
+
+    const nextEmptyRow = studentsRaw.length + 2;
+    const newRow = [
+      data.name,
+      data.grade,
+      data.level,
+      data.subProgram,
+      data.attendanceDays,
+      'FALSE',
+      '',
+      'FALSE',
+      'FALSE',
+      0,
+      data.booksCompleted
+    ];
+    await updateSheetData('학생정보', `A${nextEmptyRow}:K${nextEmptyRow}`, [newRow]);
+    return { success: true };
+  },
+  delete: async (name: string) => {
+    await deleteRows('학생정보', 1, name);
+    try {
+      await deleteRows('커리큘럼', 1, name);
+    } catch (e) {
+      // fine if no curriculum entries
     }
     return { success: true };
   }

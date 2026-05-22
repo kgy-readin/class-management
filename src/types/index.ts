@@ -15,6 +15,7 @@ export interface Student {
   grade: string;
   level: string;
   subProgram: string;
+  attendanceDays: string;
   isAttending: boolean;
   dismissalTime: string;
   homeworkMissed: number;

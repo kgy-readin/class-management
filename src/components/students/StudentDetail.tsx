@@ -97,65 +97,72 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Button variant="ghost" onClick={onBack} className="w-fit gap-2 rounded-xl">
-          <ChevronLeft className="w-4 h-4" />
-          뒤로 가기
-        </Button>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 items-start sm:items-center">
-          <h2 className="text-[21px] font-extrabold px-3 sm:px-0 text-left">{studentName} 학생 도서 목록</h2>
-          <div className="flex items-center justify-start gap-1 sm:gap-2 px-3 sm:px-0">
-            <Dialog>
-              <DialogTrigger render={
-                <Button className="rounded-xl gap-2 scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10">
-                  <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                  도서
-                </Button>
-              } />
-              <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
-                </DialogHeader>
-                <div className="pt-4">
-                  <BookSearch 
-                    books={data.books} 
-                    existingBookTitles={curriculum.map(c => c.bookTitle)}
-                    onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4 -mt-3 border-b border-border/10 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Button variant="ghost" onClick={onBack} className="w-fit gap-2 rounded-xl">
+            <ChevronLeft className="w-4 h-4" />
+            뒤로 가기
+          </Button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 items-start sm:items-center">
+            <h2 className="text-[21px] font-extrabold px-3 sm:px-0 text-left">{studentName} 학생 도서 목록</h2>
+            <div className="flex items-center justify-start gap-1 sm:gap-2 px-3 sm:px-0">
+              <Dialog>
+                <DialogTrigger render={
+                  <Button 
+                    variant="outline"
+                    className="rounded-xl gap-2 bg-[#f0f7ff] text-primary border-[#dbeafe] shadow-sm hover:bg-[#e0efff] transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
+                  >
+                    <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                    도서
+                  </Button>
+                } />
+                <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
+                  </DialogHeader>
+                  <div className="pt-4">
+                    <BookSearch 
+                      books={data.books} 
+                      existingBookTitles={curriculum.map(c => c.bookTitle)}
+                      onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
 
-            <Button 
-              variant="outline"
-              className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
-              onClick={() => handleAddCurriculum(undefined, true)}
-            >
-              <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-              글쓰기
-            </Button>
+              <Button 
+                variant="outline"
+                className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] shadow-sm transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
+                onClick={() => handleAddCurriculum(undefined, true)}
+              >
+                <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                글쓰기
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white mt-2">
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-white border-b border-border/50 text-xs sm:text-sm">
               <TableRow className="hover:bg-transparent border-border/30">
-                <TableHead className="w-[60px] text-center font-semibold uppercase tracking-widest px-1">순서</TableHead>
-                <TableHead className="font-semibold uppercase tracking-widest px-2">도서명</TableHead>
-                <TableHead className="w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
-                <TableHead className="w-[80px] lg:w-[110px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
-                <TableHead className="w-[90px] lg:w-[120px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
-                <TableHead className="w-[110px] lg:w-[150px] text-center font-semibold uppercase tracking-widest px-1">관리</TableHead>
+                <TableHead className="h-8 w-[60px] text-center font-semibold uppercase tracking-widest px-1">순서</TableHead>
+                <TableHead className="h-8 font-semibold uppercase tracking-widest px-2">도서명</TableHead>
+                <TableHead className="h-8 w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
+                <TableHead className="h-8 w-[80px] lg:w-[110px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
+                <TableHead className="h-8 w-[90px] lg:w-[120px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
+                <TableHead className="h-8 w-[110px] lg:w-[150px] text-center font-semibold uppercase tracking-widest px-1">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {curriculum.map((item) => (
-                <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
-                  <TableCell className="text-center px-1">
+              {curriculum.map((item, idx) => {
+                const isLast = idx === curriculum.length - 1;
+                return (
+                  <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
+                    <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
                         type="number"
@@ -167,7 +174,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       <span className="font-normal text-muted-foreground text-xs sm:text-sm">{item.index}</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-2">
+                  <TableCell className={`px-2 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
                         className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
@@ -180,17 +187,17 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-center px-1">
+                  <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
                     <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate" title={item.info}>
                       {item.info}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center px-1">
+                  <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
                     <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate">
                       {item.bookId}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center px-1">
+                  <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <select 
                         className="w-full bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
@@ -210,7 +217,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-left px-1">
+                  <TableCell className={`text-left px-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <div className="flex items-center justify-start gap-1">
                         <Button 
@@ -343,7 +350,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              );})}
             </TableBody>
           </Table>
         </CardContent>
