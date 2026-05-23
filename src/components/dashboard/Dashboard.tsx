@@ -55,11 +55,11 @@ export default function Dashboard({ data, onRefresh, onSelectStudent }: Dashboar
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {attendingStudents.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-24 text-muted-foreground bg-white rounded-[2.5rem] border border-dashed border-border/50 shadow-sm">
-            <div className="w-20 h-20 bg-secondary rounded-[2rem] flex items-center justify-center mb-6">
-              <Users className="w-10 h-10 text-primary/40" />
+            <div className="w-20 h-20 bg-[#e6f2ff] rounded-[2rem] flex items-center justify-center mb-6">
+              <Users className="w-10 h-10 text-[#427fe1]" />
             </div>
-            <p className="text-xl font-extrabold text-foreground mb-2">현재 등원 중인 학생이 없습니다.</p>
-            <p className="text-sm font-medium opacity-60">학생 관리 탭에서 등원 체크를 해주세요.</p>
+            <p className="text-lg font-medium text-[#505358] mb-2">현재 등원 중인 학생이 없습니다.</p>
+            <p className="text-sm font-medium text-[#898f9b]">학생 관리 탭에서 등원 체크를 해주세요.</p>
           </div>
         ) : (
           attendingStudents.map(student => (

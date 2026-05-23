@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil } from 'lucide-react';
+import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
@@ -147,21 +147,34 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
       <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white mt-2">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-white border-b border-border/50 text-xs sm:text-sm">
+             <TableHeader className="bg-white border-b border-border/50 text-[11px] sm:text-[13px]">
               <TableRow className="hover:bg-transparent border-border/30">
-                <TableHead className="h-8 w-[68px] text-center font-semibold uppercase tracking-widest pl-2 pr-1">순서</TableHead>
-                <TableHead className="h-8 font-semibold uppercase tracking-widest px-3">도서명</TableHead>
-                <TableHead className="h-8 w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
-                <TableHead className="h-8 w-[80px] lg:w-[114px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
-                <TableHead className="h-8 w-[94px] lg:w-[124px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
-                <TableHead className="h-8 w-[98px] lg:w-[130px] text-center font-semibold uppercase tracking-widest pl-1 pr-1">관리</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[68px] text-center font-semibold uppercase tracking-widest pl-2 pr-1">순서</TableHead>
+                <TableHead className="h-[38px] pb-[6px] font-semibold uppercase tracking-widest px-3">도서명</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[80px] lg:w-[114px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[94px] lg:w-[124px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[98px] lg:w-[130px] text-center font-semibold uppercase tracking-widest pl-1 pr-1">관리</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {curriculum.map((item, idx) => {
-                const isLast = idx === curriculum.length - 1;
-                return (
-                  <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
+              {curriculum.length === 0 ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in-50 duration-300">
+                      <BookOpen className="w-10 h-10 opacity-20" />
+                      <div className="space-y-1">
+                        <p className="text-[18px] font-medium text-[#505358]">등록된 커리큘럼이 없습니다.</p>
+                        <p className="text-xs sm:text-sm font-medium text-[#898f9b]">상단 버튼을 클릭하여 추가해 주세요.</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                curriculum.map((item, idx) => {
+                  const isLast = idx === curriculum.length - 1;
+                  return (
+                    <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
                     <TableCell className={`text-center pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
@@ -171,7 +184,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         onChange={(e) => setEditValues(prev => prev ? { ...prev, index: parseInt(e.target.value) || 0 } : null)}
                       />
                     ) : (
-                      <span className="font-normal text-muted-foreground text-xs sm:text-sm">{item.index}</span>
+                      <span className="font-normal text-[#505358] text-xs sm:text-sm">{item.index}</span>
                     )}
                   </TableCell>
                   <TableCell className={`px-3 ${isLast ? 'pb-1' : ''}`}>
@@ -188,12 +201,12 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     )}
                   </TableCell>
                   <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
-                    <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate" title={item.info}>
+                    <span className="font-normal text-[#505358] text-xs sm:text-sm block truncate" title={item.info}>
                       {item.info}
                     </span>
                   </TableCell>
                   <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
-                    <span className="font-normal text-muted-foreground text-xs sm:text-sm block truncate">
+                    <span className="font-normal text-[#505358] text-xs sm:text-sm block truncate">
                       {item.bookId}
                     </span>
                   </TableCell>
@@ -351,7 +364,9 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     )}
                   </TableCell>
                 </TableRow>
-              );})}
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>

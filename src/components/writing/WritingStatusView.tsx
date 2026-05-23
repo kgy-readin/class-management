@@ -132,6 +132,7 @@ export default function WritingStatusView() {
               month={currentMonth}
               onMonthChange={setCurrentMonth}
               locale={ko}
+              weekStartsOn={1}
               className="mx-auto"
             />
           </CardContent>
@@ -193,13 +194,13 @@ export default function WritingStatusView() {
 
           <div className="bg-[#FFFFFF] rounded-[2rem] ring-1 ring-foreground/5 shadow-sm overflow-hidden flex-1 flex flex-col">
             <div className="px-5 py-3 border-b border-border/50 bg-secondary/10">
-              <h3 className="text-[12px] font-normal text-muted-foreground uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
+              <h3 className="text-[13px] font-normal text-[#64666e] uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
             </div>
             <div className="p-2.5 flex-1 overflow-y-auto custom-scrollbar max-h-[200px] sm:max-h-none lg:max-h-[300px]">
               <div className="grid grid-cols-3 gap-1.5 pb-2">
                 <Button
                   variant="ghost"
-                  className={`h-9 rounded-xl text-xs font-semibold justify-start px-3 ${!selectedStudent && selectedDate ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}
+                  className={`h-9 rounded-xl text-sm font-normal justify-center px-3 ${!selectedStudent && selectedDate ? 'bg-primary/10 text-primary font-medium' : 'text-[#64666e]'}`}
                   onClick={() => handleStudentSelect(null)}
                 >
                   전체
@@ -208,7 +209,7 @@ export default function WritingStatusView() {
                   <Button
                     key={name}
                     variant="ghost"
-                    className={`h-9 rounded-xl text-xs font-semibold justify-start px-3 truncate ${selectedStudent === name ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}
+                    className={`h-9 rounded-xl text-sm font-normal justify-center px-3 truncate ${selectedStudent === name ? 'bg-primary/10 text-primary font-medium' : 'text-[#64666e]'}`}
                     onClick={() => handleStudentSelect(name)}
                   >
                     {name}
@@ -233,7 +234,7 @@ export default function WritingStatusView() {
                    selectedDate ? format(selectedDate, 'yyyy년 MM월 dd일', { locale: ko }) : 
                    `${format(currentMonth, 'yyyy년 MM월')} 글쓰기 기록`}
                 </h2>
-                <p className="text-xs font-medium text-muted-foreground">총 {filteredStatuses.length}건의 기록</p>
+                <p className="text-[13px] font-medium text-[#64666e]">총 {filteredStatuses.length}건의 기록</p>
               </div>
             </div>
           </div>
@@ -242,11 +243,11 @@ export default function WritingStatusView() {
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-secondary/5">
-                  <th className="w-[13%] px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">날짜</th>
-                  <th className="w-[13%] px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">학생명</th>
-                  <th className="w-[48%] px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">도서명</th>
-                  <th className="w-[13%] px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest text-center">상태</th>
-                  <th className="w-[13%] px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest text-center">관리</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">날짜</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">학생명</th>
+                  <th className="w-[48%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">도서명</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest text-center">상태</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -255,7 +256,7 @@ export default function WritingStatusView() {
                     <td colSpan={5} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <CalendarIcon className="w-10 h-10 opacity-20" />
-                        <p className="font-semibold">해당 기간의 기록이 없습니다.</p>
+                        <p className="font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
                       </div>
                     </td>
                   </tr>
@@ -332,7 +333,7 @@ export default function WritingStatusView() {
               <div className="px-8 py-20 text-center">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                   <CalendarIcon className="w-10 h-10 opacity-20" />
-                  <p className="font-semibold">해당 기간의 기록이 없습니다.</p>
+                  <p className="font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
                 </div>
               </div>
             ) : (
