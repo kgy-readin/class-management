@@ -46,7 +46,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent }: Dashboar
     <div className="space-y-6">
       <div className="w-full bg-white border border-border/30 rounded-[1.5rem] py-4 px-6 flex items-center justify-center shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-[18px] font-medium text-foreground/80 tracking-tight">
+          <span className="text-[17px] font-medium text-foreground/80 tracking-tight">
             {dateString}
           </span>
         </div>
