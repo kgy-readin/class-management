@@ -17,12 +17,48 @@ interface StudentListProps {
 export default function StudentList({ data, onRefresh, onSelectStudent }: StudentListProps) {
   const [search, setSearch] = useState('');
   const [dismissalTime, setDismissalTime] = useState('');
+  const [arrivalTime, setArrivalTime] = useState('');
+  const [addedMinutes, setAddedMinutes] = useState(0);
 
   const getCurrentTimeHHMM = () => {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
+  };
+
+  const addMinutesToTime = (timeHHMM: string, mins: number): string => {
+    if (!timeHHMM) return '';
+    const [hStr, mStr] = timeHHMM.split(':');
+    let h = parseInt(hStr, 10);
+    let m = parseInt(mStr, 10);
+    if (isNaN(h) || isNaN(m)) return timeHHMM;
+
+    m += mins;
+    h += Math.floor(m / 60);
+    m = m % 60;
+    if (m < 0) {
+      m += 60;
+      h -= 1;
+    }
+    h = (h + 24) % 24;
+
+    const newH = String(h).padStart(2, '0');
+    const newM = String(m).padStart(2, '0');
+    return `${newH}:${newM}`;
+  };
+
+  const handleAddMinutes = (min: number) => {
+    setAddedMinutes(prev => {
+      const next = prev + min;
+      setDismissalTime(addMinutesToTime(arrivalTime, next));
+      return next;
+    });
+  };
+
+  const handleArrivalTimeChange = (newVal: string) => {
+    setArrivalTime(newVal);
+    setDismissalTime(addMinutesToTime(newVal, addedMinutes));
   };
 
   // States for new features
@@ -567,7 +603,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                   ) : (
                     <Dialog onOpenChange={(open) => {
                       if (open) {
-                        setDismissalTime(getCurrentTimeHHMM());
+                        const nowHHMM = getCurrentTimeHHMM();
+                        setArrivalTime(nowHHMM);
+                        setDismissalTime(nowHHMM);
+                        setAddedMinutes(0);
                       }
                     }}>
                       <DialogTrigger render={
@@ -579,28 +618,67 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                           등원
                         </Button>
                       } />
-                      <DialogContent className="sm:max-w-[380px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
-                        <div className="w-full p-8 sm:p-10 flex flex-col items-center text-center space-y-6 sm:space-y-8">
-                          <div className="space-y-3">
-                            <h3 className="text-2xl font-black text-foreground tracking-tight">{student.name} 학생 등원</h3>
-                            <p className="text-[15px] text-muted-foreground font-medium px-4">
-                              하원 예정 시간을 입력해 주세요.
-                            </p>
+                      <DialogContent className="sm:max-w-[400px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
+                        <div className="w-full p-8 sm:p-10 flex flex-col items-center text-center space-y-6 sm:space-y-7">
+                          <div className="space-y-2">
+                            <h3 className="text-[22px] font-extrabold text-foreground tracking-tight">{student.name} 학생 등원</h3>
                           </div>
                           
-                          <div className="w-full flex justify-center px-1">
-                            <Input 
-                              type="time" 
-                              value={dismissalTime}
-                              onChange={(e) => setDismissalTime(e.target.value)}
-                              className="w-full rounded-3xl h-16 border-border/40 bg-secondary/20 focus:ring-4 focus:ring-primary/10 focus:bg-white transition-all text-center font-black text-2xl tracking-wider mx-auto"
-                              style={{
-                                textAlign: 'center',
-                                WebkitAppearance: 'none',
-                                MozAppearance: 'none',
-                                appearance: 'none',
-                              }}
-                            />
+                          <div className="w-full space-y-5 px-1 text-left">
+                            {/* Horizontal parallel section */}
+                            <div className="flex items-center justify-center gap-4 w-full">
+                              {/* Left Column: Arrival Time Input directly */}
+                              <div className="flex flex-col items-center">
+                                <Input 
+                                  type="time" 
+                                  value={arrivalTime}
+                                  onChange={(e) => handleArrivalTimeChange(e.target.value)}
+                                  className="w-[125px] rounded-2xl h-[68px] border-border/40 bg-secondary/10 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-lg tracking-wide transition-all"
+                                />
+                              </div>
+
+                              {/* Right Column: Minute Addition Buttons & Counter, 3 columns x 2 rows */}
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="grid grid-cols-3 gap-1 w-[180px]">
+                                  {[15, 30, 60, 90, 120, 180].map((min) => (
+                                    <Button
+                                      key={min}
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => handleAddMinutes(min)}
+                                      className="h-8 text-[13px] font-bold p-0 rounded-lg border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors"
+                                    >
+                                      {min}
+                                    </Button>
+                                  ))}
+                                </div>
+                                {addedMinutes > 0 && (
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      setAddedMinutes(0);
+                                      setDismissalTime(arrivalTime);
+                                    }}
+                                    className="text-[10px] text-destructive hover:underline font-extrabold cursor-pointer mt-0.5"
+                                  >
+                                    +{addedMinutes}분 초기화
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Final Calculated Dismissal Time Input */}
+                            <div className="flex items-center justify-center gap-3 border-t border-solid border-neutral-200 pt-4">
+                              <label className="text-[14px] font-medium text-[#427fe1] leading-tight text-center w-[84px] shrink-0">
+                                하원 예정
+                              </label>
+                              <Input 
+                                type="time" 
+                                value={dismissalTime}
+                                onChange={(e) => setDismissalTime(e.target.value)}
+                                className="w-[216px] rounded-2xl h-11 border-primary/20 bg-primary/5 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-black text-lg tracking-wider text-primary transition-all"
+                              />
+                            </div>
                           </div>
 
                           <div className="flex gap-3 w-full">
