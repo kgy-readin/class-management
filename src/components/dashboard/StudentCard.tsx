@@ -102,7 +102,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       <div className="px-6 py-2 w-full mb-[-8px]">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h3 className="text-[20px] font-extrabold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
+            <h3 className="text-[19px] font-extrabold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
               <span className="text-sm font-bold text-foreground/60">{formatTime(student.dismissalTime)}</span>
             </div>
@@ -238,19 +238,30 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
           const key = `${student.name}-${item.bookId}-${item.index}`;
           const currentStatus = localStatuses[key] || { status: item.status };
           const isWriting = item.bookTitle === '글쓰기';
+          const isProgressing = currentStatus.status === '진행';
 
           return (
             <div 
               key={item.index} 
               className={`flex items-center gap-3 p-2 rounded-2xl border h-[44px] ${
-                isWriting ? 'bg-[#faf5ff] border-[#f3e8ff]' : 'bg-secondary/20 border-border/30'
+                isProgressing
+                  ? 'bg-[#fffbeb] border-amber-200/60'
+                  : isWriting 
+                    ? 'bg-[#faf5ff] border-[#f3e8ff]' 
+                    : 'bg-secondary/20 border-border/30'
               }`}
             >
               <Button
                 size="icon"
                 variant="ghost"
                 className={`h-8 w-8 rounded-xl shrink-0 ${
-                  updating === key ? 'animate-pulse' : isWriting ? 'text-purple-600 hover:bg-purple-100' : 'text-primary hover:bg-primary/10'
+                  updating === key 
+                    ? 'animate-pulse' 
+                    : isProgressing
+                      ? 'text-amber-600 hover:bg-amber-100'
+                      : isWriting 
+                        ? 'text-purple-600 hover:bg-purple-100' 
+                        : 'text-primary hover:bg-primary/10'
                 }`}
                 onClick={() => handleStatusUpdate(item.bookId, item.index)}
                 disabled={updating === key}
@@ -260,15 +271,31 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
               
               <div className="flex-1 min-w-0">
                 <p className="text-sm truncate">
-                  <span className={`font-semibold ${isWriting ? 'text-purple-900' : 'text-black'}`}>{item.bookTitle}</span>
-                  {!isWriting && <span className="text-primary font-medium ml-1.5">{item.bookId}</span>}
+                  <span className={`font-semibold ${
+                    isProgressing
+                      ? 'text-amber-900'
+                      : isWriting 
+                        ? 'text-purple-900' 
+                        : 'text-black'
+                  }`}>{item.bookTitle}</span>
+                  {!isWriting && (
+                    <span className={`${
+                      isProgressing
+                        ? 'text-amber-700'
+                        : 'text-primary'
+                    } font-medium ml-1.5`}>{item.bookId}</span>
+                  )}
                 </p>
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
                 <select 
                   className={`bg-white border-none rounded-full px-2 py-1 text-[11px] font-normal focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
-                    isWriting ? 'ring-purple-400 text-purple-900' : 'ring-primary/20 text-foreground'
+                    isProgressing
+                      ? 'ring-amber-400 text-amber-900'
+                      : isWriting 
+                        ? 'ring-purple-400 text-purple-900' 
+                        : 'ring-primary/20 text-foreground'
                   }`}
                   value={currentStatus.status}
                   onChange={(e) => setLocalStatuses(prev => ({
@@ -285,7 +312,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 rounded-full text-primary/40 hover:text-primary hover:bg-primary/10"
+                        className={`h-7 w-7 rounded-full ${
+                          isProgressing
+                            ? 'text-amber-500/60 hover:text-amber-600 hover:bg-amber-100'
+                            : 'text-primary/40 hover:text-primary hover:bg-primary/10'
+                        }`}
                         onClick={() => setWritingConfirmItem(item)}
                         disabled={updating === `writing-${student.name}-${item.bookId}`}
                       >
@@ -325,8 +356,12 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                   </Dialog>
                 )}
                 {isWriting && (
-                  <div className="h-7 w-7 flex items-center justify-center text-purple-400/60">
-                    <Heart className="w-4 h-4 fill-purple-400/40" />
+                  <div className={`h-7 w-7 flex items-center justify-center ${
+                    isProgressing ? 'text-amber-400/60' : 'text-purple-400/60'
+                  }`}>
+                    <Heart className={`w-4 h-4 ${
+                      isProgressing ? 'fill-amber-400/40' : 'fill-purple-400/40'
+                    }`} />
                   </div>
                 )}
               </div>
