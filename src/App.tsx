@@ -7,7 +7,8 @@ import StudentList from './components/students/StudentList';
 import WritingStatusView from './components/writing/WritingStatusView';
 import StudentDetail from './components/students/StudentDetail';
 import { DashboardData } from './types/index';
-import { BookOpen, Users, FileText, Settings, Heart } from 'lucide-react';
+import { BookOpen, Users, FileText, Settings, Heart, Briefcase } from 'lucide-react';
+import TaskManager from './components/tasks/TaskManager';
 import { Button } from '@/components/ui/button';
 import { dataApi } from '@/src/services/api';
 
@@ -83,6 +84,9 @@ export default function App() {
                 <TabsTrigger value="writing" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
                   <FileText className="w-4 h-4" />
                 </TabsTrigger>
+                <TabsTrigger value="tasks" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all" title="업무 할일 관리">
+                  <Briefcase className="w-4 h-4" />
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -123,6 +127,10 @@ export default function App() {
           
           <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
             <WritingStatusView />
+          </TabsContent>
+          
+          <TabsContent value="tasks" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
+            <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />
           </TabsContent>
         </div>
       </Tabs>

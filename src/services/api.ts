@@ -1,4 +1,4 @@
-import { Book, Student, Curriculum, WritingStatus, DashboardData } from '../types';
+import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note } from '../types';
 
 const GAS_URL = import.meta.env.VITE_GAS_WEB_APP_URL;
 const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID;
@@ -574,6 +574,104 @@ export const writingStatusApi = {
   },
   clear: async () => {
     await updateSheetData('글쓰기현황', 'A2:D1000', Array(999).fill(['', '', '', '']));
+    return { success: true };
+  }
+};
+
+export const taskApi = {
+  get: async (): Promise<Task[]> => {
+    const data = await getSheetData('업무', 'A2:G');
+    return data
+      .map((row: any[], index: number) => ({
+        sheetRowIndex: index + 2,
+        date: row[0] || '',
+        name: row[1] || '',
+        category: row[2] || '',
+        familyClass: row[3] || '',
+        todo: row[4] || '',
+        status: row[5] || '예정',
+        memo: row[6] || '',
+      }))
+      .filter((task: Task) => task.todo || task.category || task.name);
+  },
+  add: async (task: Omit<Task, 'sheetRowIndex'>) => {
+    const existing = await getSheetData('업무', 'A2:G');
+    const nextEmptyRow = existing.length + 2;
+    const newRow = [
+      task.date,
+      task.name,
+      task.category,
+      task.familyClass,
+      task.todo,
+      task.status,
+      task.memo
+    ];
+    await updateSheetData('업무', `A${nextEmptyRow}:G${nextEmptyRow}`, [newRow]);
+    return { success: true, sheetRowIndex: nextEmptyRow };
+  },
+  update: async (sheetRowIndex: number, task: Omit<Task, 'sheetRowIndex'>) => {
+    const updatedRow = [
+      task.date,
+      task.name,
+      task.category,
+      task.familyClass,
+      task.todo,
+      task.status,
+      task.memo
+    ];
+    await updateSheetData('업무', `A${sheetRowIndex}:G${sheetRowIndex}`, [updatedRow]);
+    return { success: true };
+  },
+  remove: async (sheetRowIndex: number) => {
+    await deleteRow('업무', sheetRowIndex);
+    return { success: true };
+  }
+};
+
+export const noteApi = {
+  get: async (): Promise<Note[]> => {
+    try {
+      const data = await getSheetData('노트', 'A2:B');
+      return data
+        .map((row: any[], index: number) => ({
+          sheetRowIndex: index + 2,
+          parent: String(row[0] || '').trim(),
+          memo: String(row[1] || '').trim(),
+        }))
+        .filter((note: Note) => note.memo || note.parent);
+    } catch (e) {
+      console.error('Failed to fetch notes:', e);
+      return [];
+    }
+  },
+  
+  saveAll: async (notes: Omit<Note, 'sheetRowIndex'>[]) => {
+    const values = notes.map(note => [note.parent, note.memo]);
+    // Pad with empty rows to clear anything left behind
+    const paddedValues = [...values];
+    for (let i = 0; i < 50; i++) {
+      paddedValues.push(['', '']);
+    }
+    await updateSheetData('노트', `A2:B${paddedValues.length + 1}`, paddedValues);
+    return { success: true };
+  },
+
+  add: async (note: Omit<Note, 'sheetRowIndex'>) => {
+    const existing = await getSheetData('노트', 'A2:B');
+    const nextEmptyRow = existing.length + 2;
+    const newRow = [note.parent, note.memo];
+    await updateSheetData('노트', `A${nextEmptyRow}:B${nextEmptyRow}`, [newRow]);
+    return { success: true, sheetRowIndex: nextEmptyRow };
+  },
+
+  update: async (sheetRowIndex: number, note: Omit<Note, 'sheetRowIndex'>) => {
+    const updatedRow = [note.parent, note.memo];
+    await updateSheetData('노트', `A${sheetRowIndex}:B${sheetRowIndex}`, [updatedRow]);
+    return { success: true };
+  },
+
+  remove: async (sheetRowIndex: number) => {
+    await deleteRow('노트', sheetRowIndex);
     return { success: true };
   }
 };
