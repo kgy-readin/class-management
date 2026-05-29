@@ -1,7 +1,22 @@
 import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note } from '../types';
 
+function cleanSpreadsheetId(idOrUrl: string | undefined): string {
+  if (!idOrUrl) return '';
+  const trimmed = idOrUrl.trim();
+  const match = trimmed.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  const firstSlash = trimmed.indexOf('/');
+  if (firstSlash !== -1) {
+    return trimmed.substring(0, firstSlash);
+  }
+  return trimmed;
+}
+
 const GAS_URL = import.meta.env.VITE_GAS_WEB_APP_URL;
-const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID;
+const SHEET_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_SHEETS_ID);
+const DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_DOCS_ID);
 
 // Helper to get sheet data directly from Google Sheets (Read-only)
 // This bypasses GAS and works if the sheet is shared as "Anyone with the link can view"
@@ -629,49 +644,107 @@ export const taskApi = {
 };
 
 export const noteApi = {
-  get: async (): Promise<Note[]> => {
+  getRawText: async (): Promise<string> => {
+    if (!GAS_URL || !GAS_URL.startsWith('http')) {
+      throw new Error('메모 데이터를 불러오려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+    }
     try {
-      const data = await getSheetData('노트', 'A2:B');
-      return data
-        .map((row: any[], index: number) => ({
-          sheetRowIndex: index + 2,
-          parent: String(row[0] || '').trim(),
-          memo: String(row[1] || '').trim(),
-        }))
-        .filter((note: Note) => note.memo || note.parent);
-    } catch (e) {
-      console.error('Failed to fetch notes:', e);
-      return [];
+      const response = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'getRawText', spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+      });
+      if (!response.ok) throw new Error(`GAS GetMemo Error: ${response.statusText}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+      }
+      
+      const res = await response.json();
+      if (res.error) throw new Error(res.error);
+      return res.text || '';
+    } catch (e: any) {
+      console.error('GAS getRawText Failed:', e);
+      throw e;
     }
   },
-  
-  saveAll: async (notes: Omit<Note, 'sheetRowIndex'>[]) => {
-    const values = notes.map(note => [note.parent, note.memo]);
-    // Pad with empty rows to clear anything left behind
-    const paddedValues = [...values];
-    for (let i = 0; i < 50; i++) {
-      paddedValues.push(['', '']);
+
+  saveRawText: async (text: string): Promise<{ success: boolean }> => {
+    if (!GAS_URL || !GAS_URL.startsWith('http')) {
+      throw new Error('메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.');
     }
-    await updateSheetData('노트', `A2:B${paddedValues.length + 1}`, paddedValues);
-    return { success: true };
+    try {
+      const response = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveRawText', text, spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+      });
+      if (!response.ok) throw new Error(`GAS SaveMemo Error: ${response.statusText}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+      }
+
+      const res = await response.json();
+      if (res.error) throw new Error(res.error);
+      return { success: !!res.success };
+    } catch (e: any) {
+      console.error('GAS saveRawText Failed:', e);
+      throw e;
+    }
   },
 
-  add: async (note: Omit<Note, 'sheetRowIndex'>) => {
-    const existing = await getSheetData('노트', 'A2:B');
-    const nextEmptyRow = existing.length + 2;
-    const newRow = [note.parent, note.memo];
-    await updateSheetData('노트', `A${nextEmptyRow}:B${nextEmptyRow}`, [newRow]);
-    return { success: true, sheetRowIndex: nextEmptyRow };
+  getTabsData: async (): Promise<any[]> => {
+    if (!GAS_URL || !GAS_URL.startsWith('http')) {
+      throw new Error('메모 데이터를 불러오려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+    }
+    try {
+      const response = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'getTabsData', spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+      });
+      if (!response.ok) throw new Error(`GAS GetTabs Error: ${response.statusText}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+      }
+      
+      const res = await response.json();
+      if (res.error) throw new Error(res.error);
+      return res.tabs || [];
+    } catch (e: any) {
+      console.error('GAS getTabsData Failed:', e);
+      throw e;
+    }
   },
 
-  update: async (sheetRowIndex: number, note: Omit<Note, 'sheetRowIndex'>) => {
-    const updatedRow = [note.parent, note.memo];
-    await updateSheetData('노트', `A${sheetRowIndex}:B${sheetRowIndex}`, [updatedRow]);
-    return { success: true };
-  },
+  saveTabSpecification: async (tabId: string, text: string): Promise<{ success: boolean }> => {
+    if (!GAS_URL || !GAS_URL.startsWith('http')) {
+      throw new Error('메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+    }
+    try {
+      const response = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+      });
+      if (!response.ok) throw new Error(`GAS SaveTab Error: ${response.statusText}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+      }
 
-  remove: async (sheetRowIndex: number) => {
-    await deleteRow('노트', sheetRowIndex);
-    return { success: true };
+      const res = await response.json();
+      if (res.error) throw new Error(res.error);
+      return { success: !!res.success };
+    } catch (e: any) {
+      console.error('GAS saveTabSpecification Failed:', e);
+      throw e;
+    }
   }
 };
