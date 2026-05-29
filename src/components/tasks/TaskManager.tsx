@@ -15,7 +15,7 @@ import {
   Filter
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
-import { format, isSameDay, isThisWeek, startOfDay, addMonths, addDays } from 'date-fns';
+import { format, isSameDay, isThisWeek, startOfDay, addMonths, addDays, differenceInCalendarDays, startOfWeek, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { taskApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -550,20 +550,59 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     return format(d, 'M월 d일', { locale: ko });
   };
 
+  const formatRelativeTaskDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = parseTaskDate(dateStr);
+    if (!d) return dateStr;
+
+    const today = new Date();
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const targetZero = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    const diffDays = differenceInCalendarDays(targetZero, todayZero);
+
+    if (diffDays === 0) return '오늘';
+    if (diffDays === 1) return '내일';
+    if (diffDays === -1) return '어제';
+    if (diffDays === 2) return '모레';
+    if (diffDays === -2) return '그저께';
+
+    if (Math.abs(diffDays) <= 7) {
+      const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+      const dayOfWeek = weekdays[getDay(targetZero)];
+
+      const todayWeekStart = startOfWeek(todayZero, { weekStartsOn: 0 });
+      const targetWeekStart = startOfWeek(targetZero, { weekStartsOn: 0 });
+      const diffWeeks = Math.round(differenceInCalendarDays(targetWeekStart, todayWeekStart) / 7);
+
+      if (diffWeeks === 0) {
+        return `이번주 ${dayOfWeek}`;
+      } else if (diffWeeks === 1) {
+        return `다음주 ${dayOfWeek}`;
+      } else if (diffWeeks === -1) {
+        return `지난주 ${dayOfWeek}`;
+      }
+    }
+
+    return format(d, 'M월 d일', { locale: ko });
+  };
+
   return (
     <div className="-mt-1">
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
         
         {/* Left Side: Notes Panel */}
-        <NotesPanel />
+        <div className="w-full lg:col-span-1">
+          <NotesPanel />
+        </div>
 
         {/* Right Area - Wider and clean */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="w-full lg:col-span-2 flex flex-col gap-4">
 
-          <div className="flex flex-col xl:flex-row gap-6">
+          <div className="flex flex-col gap-6">
             
             {/* 업무 (Main List Block) */}
-            <div className="w-full xl:w-[calc(58.333%-23px)] shrink-0 space-y-4">
+            <div className="w-full space-y-4">
               <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40 gap-2">
                   <h2 className="font-semibold text-base text-[#505358]">업무</h2>
@@ -645,11 +684,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('todo')}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
                   >
                     {expandedGroups.todo ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
-                      <span>할 일</span>
+                      <span>예정</span>
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-100 text-[10px] text-neutral-600 font-bold ml-2">
                         {todoGroup.length}
                       </span>
@@ -667,7 +706,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       >
                         {todoGroup.length === 0 ? (
                           <div className="py-6 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30">
-                            등록되었거나 해당되는 할 일이 없습니다.
+                            등록되었거나 해당되는 예정된 일이 없습니다.
                           </div>
                         ) : (
                           todoGroup.map(task => renderTaskRow(task))
@@ -676,8 +715,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         {inlineAddGroup === 'todo' ? renderInlineAddForm('todo') : (
                           <button 
                             onClick={() => handleOpenInlineAdd('todo')}
-                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-dashed border-border/50 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white"
-                            title="할 일 추가"
+                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-neutral-200/40 hover:border-neutral-300/80 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white"
+                            title="예정 업무 추가"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -691,11 +730,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('inProgress')}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
                   >
                     {expandedGroups.inProgress ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
-                      <span>진행 중</span>
+                      <span>진행</span>
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-100 text-[10px] text-neutral-600 font-bold ml-2">
                         {inProgressGroup.length}
                       </span>
@@ -727,7 +766,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('completed')}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
                   >
                     {expandedGroups.completed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
@@ -763,38 +802,38 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             </div>
           </div>
 
-          {/* 가정통신문 */}
-          <div className="w-full xl:w-[calc(41.667%-1px)] shrink-0 space-y-4">
-            <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
-              <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                <h2 className="font-semibold text-base text-[#505358]">가정통신문</h2>
-              </div>
+            {/* 가정통신문 */}
+            <div className="w-full space-y-4">
+              <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
+                <div className="flex items-center justify-between pb-3 border-b border-border/40">
+                  <h2 className="font-semibold text-base text-[#505358]">가정통신문</h2>
+                </div>
 
-              <div className="mt-4 space-y-2">
-                {familyTasks.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30 px-4">
-                    해당되는 가정통신문 업무가 없습니다.
-                  </div>
-                ) : (
-                  familyTasks.map(task => renderFamilyTaskRow(task))
-                )}
+                <div className="mt-4 space-y-2">
+                  {familyTasks.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30 px-4">
+                      해당되는 가정통신문 업무가 없습니다.
+                    </div>
+                  ) : (
+                    familyTasks.map(task => renderFamilyTaskRow(task))
+                  )}
 
-                {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
-                  <button 
-                    onClick={() => handleOpenInlineAdd('familyView')}
-                    className="w-full py-1.5 flex items-center justify-center rounded-lg border border-dashed border-border/50 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white mt-2"
-                    title="가정통신문 추가"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                )}
+                  {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
+                    <button 
+                      onClick={() => handleOpenInlineAdd('familyView')}
+                      className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-neutral-200/40 hover:border-neutral-300/80 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white mt-2"
+                      title="가정통신문 추가"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+
           </div>
 
         </div>
-
-      </div>
 
     </div>
 
@@ -851,7 +890,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       return (
         <div 
           key={task.sheetRowIndex} 
-          className="pl-1 pr-1.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors font-sans"
+          className="pl-2 pr-2.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors font-sans"
         >
           {/* Row 1: Looks identical to static viewer row */}
           <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -866,7 +905,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                 }));
               }}
-              className={`h-7 px-1.5 rounded text-[11px] font-semibold border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getCategoryBadgeClass(editForm.category)}`}
+              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getCategoryBadgeClass(editForm.category)}`}
             >
               <option value="기타">기타</option>
               <option value="긴급">긴급</option>
@@ -899,7 +938,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <select
               value={editForm.status}
               onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className={`h-7 px-1.5 rounded text-[12px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
+              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
             >
               <option value="예정">예정</option>
               <option value="진행">진행</option>
@@ -931,14 +970,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 placeholder="학생명 입력"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-14 px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
+                className="h-6 w-[84px] px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
               />
 
               {editForm.category === '가통' && (
                 <select
                   value={editForm.familyClass}
                   onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                  className={`h-6 px-1.5 border border-neutral-200 rounded text-[11px] font-semibold cursor-pointer font-sans ${getFamilyClassBadgeClass(editForm.familyClass)}`}
+                  className={`h-6 px-1.5 border border-neutral-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getFamilyClassBadgeClass(editForm.familyClass)}`}
                 >
                   <option value="정기">정기</option>
                   <option value="첫날">첫날</option>
@@ -1027,70 +1066,94 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     return (
       <div 
         key={task.sheetRowIndex} 
-        className="group relative pl-0 pr-0.5 py-1.5 bg-white hover:bg-neutral-50/70 border-b border-neutral-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
+        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-neutral-50/70 border-b border-neutral-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
       >
-        {/* Left Side: Category + Title (and Mobile Pencil button aligned on the right) */}
-        <div className="w-full sm:flex-1 flex items-start justify-between sm:justify-start gap-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {/* Category Badge */}
-            <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold tracking-tight ${getCategoryBadgeClass(task.category)} mr-1`}>
+        {/* Mobile View Container */}
+        <div className="w-full sm:hidden flex items-start gap-1.5">
+          {/* Badge on left */}
+          <div className="shrink-0 pt-0.5">
+            <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getCategoryBadgeClass(task.category)}`}>
               {task.category || '기타'}
             </span>
+          </div>
 
-            {/* Todo task title - unified without line-through styling */}
-            <span className="font-medium text-[#505358] text-[14.5px] break-all">
+          {/* Right Column: Title + Metadata + Edit Button */}
+          <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
+            <div className="flex items-start justify-between gap-1.5">
+              <span className="font-medium text-[#505358] text-[14.5px] break-all">
+                {task.todo}
+              </span>
+              <div className="shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={submitting}
+                  onClick={() => handleStartEdit(task)}
+                  className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
+                  title="수정하기"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Metadata perfectly aligned with task.todo first letter */}
+            <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
+              {task.memo && task.memo.trim() !== '' && (
+                <span className="font-normal text-[#505358]/80 max-w-[200px] truncate" title={task.memo}>
+                  {task.memo}
+                </span>
+              )}
+              {task.date && (
+                <span className={`font-normal ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}>
+                  {formatRelativeTaskDate(task.date)}
+                </span>
+              )}
+              <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
+                {task.status || '예정'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop View Container */}
+        <div className="hidden sm:flex w-full items-center justify-between gap-2">
+          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+            <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getCategoryBadgeClass(task.category)} mr-1 shrink-0`}>
+              {task.category || '기타'}
+            </span>
+            <span className="font-medium text-[#505358] text-[14.5px] break-all truncate">
               {task.todo}
             </span>
           </div>
 
-          {/* Pencil Button: only visible on mobile at the top right level of title/category */}
-          <div className="sm:hidden block shrink-0 mt-0.5 pr-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={submitting}
-              onClick={() => handleStartEdit(task)}
-              className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
-              title="수정하기"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Right Side: Memo, Date, Status (responsive alignment) */}
-        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto shrink-0 select-none pl-[38px] sm:pl-0">
-          {/* Memo block */}
-          {task.memo && task.memo.trim() !== '' && (
-            <span className="text-[13px] font-normal text-[#505358]/80 max-w-[200px] truncate" title={task.memo}>
-              {task.memo}
+          <div className="flex items-center gap-2.5 shrink-0 select-none">
+            {task.memo && task.memo.trim() !== '' && (
+              <span className="text-[13px] font-normal text-[#505358]/80 max-w-[200px] truncate" title={task.memo}>
+                {task.memo}
+              </span>
+            )}
+            {task.date && (
+              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}>
+                {formatRelativeTaskDate(task.date)}
+              </span>
+            )}
+            <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
+              {task.status || '예정'}
             </span>
-          )}
 
-          {/* Date string styled cleanly */}
-          {task.date && (
-            <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}>
-              {formatTaskDateDisplay(task.date)}
-            </span>
-          )}
-
-          {/* Elegant status badge */}
-          <span className={`rounded-lg font-normal text-[12px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-            {task.status || '예정'}
-          </span>
-
-          {/* Desktop Pencil button shown on static rows - resized down to 15px */}
-          <div className="hidden sm:flex items-center opacity-100 sm:opacity-30 group-hover:opacity-100 transition-opacity pl-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={submitting}
-              onClick={() => handleStartEdit(task)}
-              className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
-              title="수정하기"
-            >
-              <Pencil className="w-2.5 h-2.5" />
-            </Button>
+            <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity pl-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={submitting}
+                onClick={() => handleStartEdit(task)}
+                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
+                title="수정하기"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1106,7 +1169,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       return (
         <div 
           key={task.sheetRowIndex} 
-          className="px-1.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors"
+          className="px-2.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors"
         >
           {/* Row 1: Looks identical to static viewer row (No student name, contains familyClass badge, todo, memo, date, status) */}
           <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -1114,7 +1177,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <select
                value={editForm.familyClass}
                onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-               className={`h-7 px-1.5 rounded text-[11px] font-bold border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getFamilyClassBadgeClass(editForm.familyClass)}`}
+               className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getFamilyClassBadgeClass(editForm.familyClass)}`}
             >
               <option value="정기">정기</option>
               <option value="첫날">첫날</option>
@@ -1143,7 +1206,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <select
               value={editForm.status}
               onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className={`h-7 px-1.5 rounded text-[12px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
+              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
             >
               <option value="예정">예정</option>
               <option value="진행">진행</option>
@@ -1164,7 +1227,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 placeholder="학생명 입력"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-14 px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
+                className="h-6 w-[84px] px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
               />
 
               {/* Editable Category Class mapping hidden inside family View */}
@@ -1178,7 +1241,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                     familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                   }));
                 }}
-                className={`h-6 px-1.5 border border-neutral-200 rounded text-[11px] font-semibold cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
+                className={`h-6 px-1.5 border border-neutral-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
               >
                 <option value="가통">가통</option>
                 <option value="기타">기타</option>
@@ -1272,63 +1335,86 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         key={task.sheetRowIndex} 
         className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-neutral-50/75 border-b border-neutral-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
       >
-        {/* Left Side: Family Class Badge + Title (with mobile edit button aligned right) */}
-        <div className="w-full sm:flex-1 flex items-start justify-between sm:justify-start gap-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {/* Family Class classification badge with wider margin */}
+        {/* Mobile View Container */}
+        <div className="w-full sm:hidden flex items-start gap-1.5">
+          {/* Badge on left */}
+          {task.familyClass && (
+            <div className="shrink-0 pt-0.5">
+              <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)}`}>
+                {task.familyClass}
+              </span>
+            </div>
+          )}
+
+          {/* Right Column: Title + Metadata + Edit Button */}
+          <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
+            <div className="flex items-start justify-between gap-1.5">
+              <span className="font-medium text-[#2d2e30] text-[14.5px] break-all">
+                {task.todo}
+              </span>
+              <div className="shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={submitting}
+                  onClick={() => handleStartEdit(task)}
+                  className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
+                  title="수정하기"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Metadata perfectly aligned with task.todo first letter */}
+            <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
+              {task.date && (
+                <span className={`font-normal ${getFamilyTaskDateClass(task.date)}`}>
+                  {formatTaskDateDisplay(task.date)}
+                </span>
+              )}
+              <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
+                {task.status || '예정'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop View Container */}
+        <div className="hidden sm:flex w-full items-center justify-between gap-2">
+          <div className="flex-1 flex items-center gap-1.5 min-w-0">
             {task.familyClass && (
-              <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold tracking-tight ${getFamilyClassBadgeClass(task.familyClass)} mr-1.5`}>
+              <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)} mr-1.5 shrink-0`}>
                 {task.familyClass}
               </span>
             )}
-
-            {/* Todo description - styled with increased font-medium weight */}
-            <span className="font-medium text-[#2d2e30] text-[14.5px] break-all">
+            <span className="font-medium text-[#2d2e30] text-[14.5px] break-all truncate">
               {task.todo}
             </span>
           </div>
 
-          {/* Pencil Button: only visible on mobile at the top right level of title */}
-          <div className="sm:hidden block shrink-0 mt-0.5 pr-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={submitting}
-              onClick={() => handleStartEdit(task)}
-              className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
-              title="수정하기"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Right Side: Date, Status */}
-        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto shrink-0 select-none pl-[44px] sm:pl-0">
-          {/* Date formatted cleanly */}
-          {task.date && (
-            <span className={`text-[13px] font-normal ${getFamilyTaskDateClass(task.date)}`}>
-              {formatTaskDateDisplay(task.date)}
+          <div className="flex items-center gap-2.5 shrink-0 select-none">
+            {task.date && (
+              <span className={`text-[13px] font-normal ${getFamilyTaskDateClass(task.date)}`}>
+                {formatTaskDateDisplay(task.date)}
+              </span>
+            )}
+            <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
+              {task.status || '예정'}
             </span>
-          )}
 
-          {/* Clean state classification badge */}
-          <span className={`rounded-lg font-normal text-[12px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-            {task.status || '예정'}
-          </span>
-
-          {/* Desktop Pencil button shown on static rows - resized down to 15px */}
-          <div className="hidden sm:flex items-center opacity-100 sm:opacity-30 group-hover:opacity-100 transition-opacity pl-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={submitting}
-              onClick={() => handleStartEdit(task)}
-              className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
-              title="수정하기"
-            >
-              <Pencil className="w-2.5 h-2.5" />
-            </Button>
+            <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity pl-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={submitting}
+                onClick={() => handleStartEdit(task)}
+                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
+                title="수정하기"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1354,7 +1440,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                 }));
               }}
-              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] font-semibold text-neutral-700"
+              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] font-normal text-neutral-700"
             >
               <option value="기타">기타</option>
               <option value="긴급">긴급</option>
@@ -1371,7 +1457,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               <select
                 value={newForm.familyClass}
                 onChange={(e) => setNewForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] text-amber-700 font-bold"
+                className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] text-amber-700 font-normal"
               >
                 <option value="정기">정기</option>
                 <option value="첫날">첫날</option>
