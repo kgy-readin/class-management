@@ -82,11 +82,11 @@ export const parseInlineStyles = (text: string): ReactNode => {
 
     if (!matched) {
       const nextSpecial = [];
-      const bIdx = text.indexOf('**', currentIndex);
+      const bIdx = text.indexOf('**', currentIndex + 1);
       if (bIdx !== -1) nextSpecial.push(bIdx);
-      const iIdx = text.indexOf('_', currentIndex);
+      const iIdx = text.indexOf('_', currentIndex + 1);
       if (iIdx !== -1) nextSpecial.push(iIdx);
-      const uIdx = text.indexOf('~', currentIndex);
+      const uIdx = text.indexOf('~', currentIndex + 1);
       if (uIdx !== -1) nextSpecial.push(uIdx);
 
       const nextIndex = nextSpecial.length > 0 ? Math.min(...nextSpecial) : text.length;
