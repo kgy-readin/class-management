@@ -112,7 +112,7 @@ export default function WritingStatusView() {
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="w-full lg:w-80 shrink-0 flex flex-col sm:flex-row lg:flex-col gap-4">
         <Card className="rounded-[2.5rem] shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto">
-          <CardContent className="p-0">
+          <CardContent className="p-0 flex flex-col items-center justify-center min-h-[310px] w-full">
             <style>{`
               .rdp { --rdp-accent-color: var(--primary); --rdp-background-color: var(--primary-foreground); margin: 0; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; }
               .rdp-months { width: 100%; display: flex; justify-content: center; padding: 0.3rem 1rem 0.3rem 1rem; }
@@ -243,11 +243,11 @@ export default function WritingStatusView() {
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-secondary/5">
-                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">날짜</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">학생명</th>
-                  <th className="w-[48%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest">도서명</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest text-center">상태</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] font-semibold text-[#505358] uppercase tracking-widest text-center">관리</th>
+                  <th className="w-[13%] pl-[28px] pr-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">날짜</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">학생명</th>
+                  <th className="w-[48%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">도서명</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest text-center">상태</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -256,7 +256,7 @@ export default function WritingStatusView() {
                     <td colSpan={5} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <CalendarIcon className="w-10 h-10 opacity-20" />
-                        <p className="font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
+                        <p className="text-[16px] font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
                       </div>
                     </td>
                   </tr>
@@ -266,42 +266,42 @@ export default function WritingStatusView() {
                     const isEditing = editingKey === key;
                     return (
                       <tr key={`${status.name}-${idx}`} className="hover:bg-secondary/5 transition-colors group">
-                        <td className="px-6 py-3.5 whitespace-nowrap">
+                        <td className="pl-[28px] pr-6 py-3.5 whitespace-nowrap">
                           {isEditing ? (
                             <input 
                               type="date"
-                              className="w-full text-[13px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
+                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
                               value={editValues?.date}
                               onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
                             />
                           ) : (
-                            <span className="text-[13px] font-normal text-muted-foreground">{format(parseISO(status.date), 'M/d')}</span>
+                            <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'M/d')}</span>
                           )}
                         </td>
-                        <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-[13px] font-normal text-foreground">{status.name}</span></td>
+                        <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
                         <td className="px-6 py-3.5">
                           {isEditing ? (
                             <input 
-                              className="w-full text-[13px] bg-white border border-border/50 rounded px-2 py-0.5 outline-none focus:ring-1 ring-primary/20"
+                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-2 py-0.5 outline-none focus:ring-1 ring-primary/20"
                               value={editValues?.bookTitle}
                               onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)}
                             />
                           ) : (
-                            <span className="text-[13px] font-normal text-foreground line-clamp-1" title={status.bookTitle}>{status.bookTitle}</span>
+                            <span className="text-[13px] md:text-[15px] font-normal text-foreground line-clamp-1" title={status.bookTitle}>{status.bookTitle}</span>
                           )}
                         </td>
                         <td className="px-6 py-3.5 whitespace-nowrap">
                           <div className="flex justify-center">
                             {isEditing ? (
                               <select
-                                className="text-[13px] font-normal bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
+                                className="text-[13px] md:text-[15px] font-normal bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
                                 value={editValues?.progress}
                                 onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
                               >
                                 {['진행', '완성'].map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             ) : (
-                              <span className={`text-[13px] font-bold ${status.progress === '완성' ? 'text-primary' : 'text-amber-600'}`}>{status.progress}</span>
+                              <span className={`text-[13px] md:text-[15px] font-bold ${status.progress === '완성' ? 'text-primary' : 'text-amber-600'}`}>{status.progress}</span>
                             )}
                           </div>
                         </td>
@@ -314,7 +314,7 @@ export default function WritingStatusView() {
                               </>
                             ) : (
                               <Button 
-                                variant="ghost" size="sm" className="text-xs font-bold text-muted-foreground hover:text-primary h-8 px-2"
+                                variant="ghost" size="sm" className="text-xs md:text-[15px] font-bold text-muted-foreground hover:text-primary h-8 px-2"
                                 onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
                               >수정</Button>
                             )}
@@ -333,7 +333,7 @@ export default function WritingStatusView() {
               <div className="px-8 py-20 text-center">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                   <CalendarIcon className="w-10 h-10 opacity-20" />
-                  <p className="font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
+                  <p className="text-[18px] font-medium text-[#505358]">해당 기간의 기록이 없습니다.</p>
                 </div>
               </div>
             ) : (
