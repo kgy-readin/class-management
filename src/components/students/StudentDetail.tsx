@@ -7,7 +7,7 @@ import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { curriculumApi, writingStatusApi } from '@/src/services/api';
 
 interface StudentDetailProps {
@@ -24,6 +24,17 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
   const [writingConfirmItem, setWritingConfirmItem] = useState<any | null>(null);
   const [deletingItem, setDeletingItem] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    // Scroll window to bottom when entering the student details
+    const timer = setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [studentName]);
 
   if (!data) return null;
 
@@ -222,7 +233,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     ) : (
                       <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
                         item.status === '통과' ? 'bg-green-100 text-green-700' :
-                        item.status === '진행' ? 'bg-primary text-white' :
+                        item.status === '진행' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100' :
                         item.status === '불통' ? 'bg-destructive/10 text-destructive' :
                         'bg-secondary text-muted-foreground'
                       }`}>
