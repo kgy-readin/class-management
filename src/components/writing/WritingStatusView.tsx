@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WritingStatus } from '../../types';
 import { toast } from 'sonner';
-import { FileText, Calendar as CalendarIcon, Trash2, Save, X } from 'lucide-react';
+import { FileText, Calendar as CalendarIcon, Trash2, Save, X, Pencil } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -314,9 +314,14 @@ export default function WritingStatusView() {
                               </>
                             ) : (
                               <Button 
-                                variant="ghost" size="sm" className="text-xs md:text-[15px] font-bold text-muted-foreground hover:text-primary h-8 px-2"
+                                size="icon"
+                                variant="ghost" 
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
                                 onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
-                              >수정</Button>
+                                title="수정"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -359,7 +364,15 @@ export default function WritingStatusView() {
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={() => setEditingKey(null)}><X className="w-4 h-4" /></Button>
                           </div>
                         ) : (
-                          <Button variant="ghost" size="sm" className="text-xs font-bold text-muted-foreground hover:text-primary h-8 px-2" onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}>수정</Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" 
+                            onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
+                            title="수정"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                         )}
                       </div>
                     </div>
