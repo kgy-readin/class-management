@@ -16,7 +16,8 @@ function cleanSpreadsheetId(idOrUrl: string | undefined): string {
 
 const GAS_URL = import.meta.env.VITE_GAS_WEB_APP_URL;
 const SHEET_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_SHEETS_ID);
-const DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_DOCS_ID);
+export const DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_DOCS_ID);
+export const RPN_DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_RPN_DOCS_ID);
 
 // Helper to get sheet data directly from Google Sheets (Read-only)
 // This bypasses GAS and works if the sheet is shared as "Anyone with the link can view"
@@ -696,15 +697,16 @@ export const noteApi = {
     }
   },
 
-  getTabsData: async (): Promise<any[]> => {
+  getTabsData: async (customDocId?: string): Promise<any[]> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
       throw new Error('메모 데이터를 불러오려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
     }
+    const documentId = customDocId || DOCS_ID;
     try {
       const response = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getTabsData', spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+        body: JSON.stringify({ action: 'getTabsData', spreadsheetId: SHEET_ID, documentId })
       });
       if (!response.ok) throw new Error(`GAS GetTabs Error: ${response.statusText}`);
       
@@ -722,15 +724,16 @@ export const noteApi = {
     }
   },
 
-  saveTabSpecification: async (tabId: string, text: string): Promise<{ success: boolean }> => {
+  saveTabSpecification: async (tabId: string, text: string, customDocId?: string): Promise<{ success: boolean }> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
       throw new Error('메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.');
     }
+    const documentId = customDocId || DOCS_ID;
     try {
       const response = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId: DOCS_ID })
+        body: JSON.stringify({ action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId })
       });
       if (!response.ok) throw new Error(`GAS SaveTab Error: ${response.statusText}`);
       

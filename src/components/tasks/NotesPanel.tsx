@@ -134,9 +134,9 @@ export default function NotesPanel() {
         {/* Header section with Notes title and edit button */}
         <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3 select-none">
           <div className="flex items-center gap-1.5">
-            <h3 className="text-base font-semibold text-[#505358]">메모</h3>
+            <h3 className="text-base font-semibold text-zinc-650">메모</h3>
             {loading && (
-              <span className="text-[10px] text-neutral-400 animate-pulse font-sans">불러오는 중...</span>
+              <span className="text-[10px] text-zinc-400 animate-pulse font-sans">불러오는 중...</span>
             )}
           </div>
           
@@ -145,7 +145,7 @@ export default function NotesPanel() {
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-colors cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors cursor-pointer"
                 title="편집 취소"
               >
                 <X className="w-3.5 h-3.5" />
@@ -153,7 +153,7 @@ export default function NotesPanel() {
               <button
                 onClick={handleSaveAll}
                 disabled={loading}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800 text-white hover:bg-zinc-900 transition-colors cursor-pointer"
                 title="편집 완료"
               >
                 <Check className="w-3.5 h-3.5" />
@@ -162,7 +162,7 @@ export default function NotesPanel() {
           ) : (
             <button
                onClick={() => setIsEditing(true)}
-               className="w-7 h-7 flex items-center justify-center rounded-full bg-neutral-100 text-[#505358] hover:bg-neutral-200 transition-colors cursor-pointer"
+               className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
                title="메모 전체 편집"
              >
                <Pencil className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export default function NotesPanel() {
                value={rawText}
                onChange={(e) => setRawText(e.target.value)}
                placeholder="여기에 생각이나 업무 관련 메모를 자유롭게 적어 보세요."
-              className="flex-1 w-full min-h-[120px] lg:min-h-[200px] p-3 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[14.5px] rounded-xl resize-none font-sans leading-relaxed text-neutral-700 bg-[#fbfbfc]/50 focus:bg-white transition-all custom-scrollbar"
+              className="flex-1 w-full min-h-[120px] lg:min-h-[200px] p-3 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[14.5px] rounded-xl resize-none font-sans leading-relaxed text-zinc-700 bg-zinc-50/50 focus:bg-white transition-all custom-scrollbar"
               disabled={loading}
               autoFocus
             />
@@ -189,12 +189,12 @@ export default function NotesPanel() {
           <div className="flex-1 flex flex-col min-h-0 bg-white">
             <div className="flex-1 space-y-2.5 max-h-[210px] lg:max-h-none overflow-y-auto custom-scrollbar pr-1">
               {notes.length === 0 ? (
-                <div className="py-16 text-center text-xs text-neutral-400 bg-neutral-50/50 rounded-2xl border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 select-none">
-                  <FileText className="w-8 h-8 text-neutral-300" />
+                <div className="py-16 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-2xl border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 select-none">
+                  <FileText className="w-8 h-8 text-zinc-300" />
                   <span>등록된 메모가 없습니다.</span>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="mt-1 text-[11px] text-neutral-500 hover:text-black hover:underline"
+                    className="mt-1 text-[11px] text-zinc-500 hover:text-zinc-900 hover:underline"
                   >
                     메모 작성 시작하기
                   </button>
@@ -210,26 +210,26 @@ export default function NotesPanel() {
                     // Text styling depending on level
                     const isParent = line.level === 0;
                     const textClass = isParent 
-                      ? "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-neutral-700 font-semibold"
+                      ? "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-zinc-700 font-semibold"
                       : line.level === 1
-                        ? "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-neutral-600 font-normal"
-                        : "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-neutral-500 font-normal";
+                        ? "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-zinc-600 font-normal"
+                        : "text-[14.5px] leading-relaxed break-all whitespace-pre-line text-zinc-500 font-normal";
 
                     // Bullet icons / symbols
                     let bulletElement = (
-                      <span className="text-[16px] text-neutral-800 font-bold leading-none select-none">
+                      <span className="text-[16px] text-zinc-805 text-zinc-800 font-bold leading-none select-none">
                         •
                       </span>
                     );
                     if (line.level === 1) {
                       bulletElement = (
-                        <span className="text-[12px] text-neutral-500 font-bold leading-none select-none">
+                        <span className="text-[12px] text-zinc-500 font-bold leading-none select-none">
                           ◦
                         </span>
                       );
                     } else if (line.level >= 2) {
                       bulletElement = (
-                        <span className="text-[8px] text-neutral-400 font-normal leading-none select-none">
+                        <span className="text-[8px] text-zinc-400 font-normal leading-none select-none">
                           ▪
                         </span>
                       );

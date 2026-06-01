@@ -1,24 +1,60 @@
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import Dashboard from './components/dashboard/Dashboard';
 import StudentList from './components/students/StudentList';
-import WritingStatusView from './components/writing/WritingStatusView';
+import WritingTracker from './components/writing/WritingTracker';
 import StudentDetail from './components/students/StudentDetail';
 import { DashboardData } from './types/index';
-import { BookOpen, Users, FileText, Settings, Heart, Briefcase, Megaphone } from 'lucide-react';
+import { BookOpen, UsersRound, BookText, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
-import Announcements from './components/announcements/Announcements';
+import NoticeTemplates from './components/noticetemplates/NoticeTemplates';
+import ParentNewsletters from './components/noticetemplates/ParentNewsletters';
 import { Button } from '@/components/ui/button';
 import { dataApi } from '@/src/services/api';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // App work mode: 'class' (수업모드) or 'work' (업무모드)
+  const [appMode, setAppMode] = useState<'class' | 'work'>(() => {
+    const cached = localStorage.getItem('webapp_app_mode') as 'class' | 'work';
+    return cached || 'class';
+  });
+
+  // Active tab selection
+  const [activeTab, setActiveTab] = useState(() => {
+    const cachedTab = localStorage.getItem('webapp_active_tab');
+    if (cachedTab) return cachedTab;
+    const cachedMode = localStorage.getItem('webapp_app_mode') as 'class' | 'work';
+    return cachedMode === 'work' ? 'tasks' : 'dashboard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('webapp_active_tab', activeTab);
+  }, [activeTab]);
+
+  // Floating speech bubble menu open state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleModeChange = (mode: 'class' | 'work') => {
+    setAppMode(mode);
+    localStorage.setItem('webapp_app_mode', mode);
+    if (mode === 'class') {
+      setActiveTab('dashboard');
+      localStorage.setItem('webapp_active_tab', 'dashboard');
+      setSelectedStudent(null);
+    } else {
+      setActiveTab('tasks');
+      localStorage.setItem('webapp_active_tab', 'tasks');
+      setSelectedStudent(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -34,6 +70,17 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHomeClick = async () => {
+    await fetchData();
+    setSelectedStudent(null);
+    if (appMode === 'work') {
+      setActiveTab('tasks');
+    } else {
+      setActiveTab('dashboard');
+    }
+    toast.success('홈 화면으로 이동했습니다.');
   };
 
   useEffect(() => {
@@ -59,46 +106,138 @@ export default function App() {
           setSelectedStudent(null);
         }
       }} className="w-full">
-        {/* Semi-transparent blurred top bar with navigation */}
-        <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-xl border-b border-border/20">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl">
-            <div className="flex items-center gap-2 translate-x-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 p-0 hover:bg-transparent" 
-                onClick={fetchData}
+        
+        {/* Top Header */}
+        <header className="sticky top-0 z-50 w-full bg-white/75 backdrop-blur-xl border-b border-zinc-200/50">
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl relative">
+            
+            {/* Left side: Menu / Hammer button and floating menu */}
+            <div className="flex items-center gap-2 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="h-9 w-9 p-0 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100 rounded-full cursor-pointer transition-colors"
+                title="Menu"
               >
-                <Heart className="w-6 h-6 text-black fill-black" />
+                <Menu className="w-5.5 h-5.5" />
               </Button>
+
+              {/* Floating speech bubble menu (Dropdown/Popover style) */}
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <>
+                    {/* Invisible Backdrop to capture clicks and close menu */}
+                    <div 
+                      className="fixed inset-0 z-[99] bg-transparent cursor-default" 
+                      onClick={() => setIsMenuOpen(false)}
+                    />
+
+                    {/* Popover Card */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute left-0 top-11.5 z-[100] w-48 bg-white border border-zinc-200/75 rounded-2xl shadow-xl p-2 flex flex-col gap-0.5 mt-1"
+                    >
+                      {/* Triangle speech bubble indicator pointing to the Menu button */}
+                      <div className="absolute left-3.5 -top-1 w-2.5 h-2.5 bg-white border-t border-l border-zinc-200/75 rotate-45 z-0" />
+
+                      <div className="relative z-10 flex flex-col">
+                        {[
+                          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                          { id: 'students', label: 'Students', icon: UsersRound },
+                          { id: 'writing', label: 'Writing', icon: BookText },
+                          { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
+                          { id: 'announcements', label: 'Templates', icon: MessageCircleWarning },
+                          { id: 'familyLetter', label: 'Newsletters', icon: Archive },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          const isSelected = activeTab === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                setSelectedStudent(null);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-zinc-100 text-primary font-semibold text-left'
+                                  : 'text-zinc-650 hover:bg-zinc-50 hover:text-zinc-900 text-left'
+                              }`}
+                            >
+                              <Icon 
+                                className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-400'}`} 
+                                strokeWidth={item.id === 'familyLetter' ? 2.4 : undefined} 
+                              />
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
             
-            <div className="flex items-center gap-4">
-              {/* Pill-style tabs moved to header */}
-              <TabsList className="bg-[#f6f7f9] p-1 rounded-full border-none shadow-none h-10">
-                <TabsTrigger value="dashboard" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-                  <BookOpen className="w-4 h-4" />
-                </TabsTrigger>
-                <TabsTrigger value="students" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-                  <Users className="w-4 h-4" />
-                </TabsTrigger>
-                <TabsTrigger value="writing" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-                  <FileText className="w-4 h-4" />
-                </TabsTrigger>
-                <TabsTrigger value="tasks" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all" title="업무 할일 관리">
-                  <Briefcase className="w-4 h-4" />
-                </TabsTrigger>
-                <TabsTrigger value="announcements" className="rounded-full px-3 h-full data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all" title="알림장 문구">
-                  <Megaphone className="w-4 h-4" />
-                </TabsTrigger>
-              </TabsList>
+            {/* Center: English page name with reload functionality */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+              <button 
+                onClick={() => window.location.reload()}
+                className="text-[16px] font-medium text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight"
+                title="새로고침"
+              >
+                {activeTab === 'dashboard' ? 'Dashboard' :
+                 activeTab === 'students' ? 'Student' :
+                 activeTab === 'writing' ? 'Writing' :
+                 activeTab === 'tasks' ? 'Tasks' :
+                 activeTab === 'announcements' ? 'Templates' :
+                 activeTab === 'familyLetter' ? 'Newsletters' : 'Dashboard'}
+              </button>
+            </div>
+
+            {/* Right side: Mode toggles aligned to the right */}
+            <div className="flex items-center gap-3">
+              {/* Toggle controls - icon only */}
+              <div className="bg-zinc-100/85 p-0.5 rounded-full flex items-center border border-zinc-200/30 gap-1 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('class')}
+                  className={`rounded-full w-12 h-8 flex items-center justify-center transition-all cursor-pointer ${
+                    appMode === 'class' 
+                      ? 'bg-white text-primary shadow-sm' 
+                      : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/20'
+                  }`}
+                  title="수업모드"
+                >
+                  <BookOpen className="w-4.5 h-4.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('work')}
+                  className={`rounded-full w-12 h-8 flex items-center justify-center transition-all cursor-pointer ${
+                    appMode === 'work' 
+                      ? 'bg-white text-primary shadow-sm' 
+                      : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/20'
+                  }`}
+                  title="업무모드"
+                >
+                  <Briefcase className="w-4.5 h-4.5" />
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
+        {/* Views content */}
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           {!config?.isConfigured && (
-            <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-[2rem] text-amber-800">
+            <div className="mb-8 p-6 bg-yellow-50 border border-yellow-200 rounded-[2rem] text-yellow-800 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-center gap-3 mb-2">
                 <Settings className="w-5 h-5" />
                 <h2 className="font-semibold">구글 시트 설정이 필요합니다</h2>
@@ -109,36 +248,50 @@ export default function App() {
             </div>
           )}
 
-          <TabsContent value="dashboard" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
+          <TabsContent value="dashboard" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             {selectedStudent ? (
               <StudentDetail 
                 studentName={selectedStudent} 
                 data={data} 
-                onBack={() => setSelectedStudent(null)} 
+                onBack={() => {
+                  setSelectedStudent(null);
+                  if (appMode === 'work') {
+                    setActiveTab('tasks');
+                  }
+                }} 
                 onRefresh={fetchData} 
               />
             ) : (
-              <Dashboard data={data} onRefresh={fetchData} onSelectStudent={setSelectedStudent} />
+              <Dashboard 
+                data={data} 
+                onRefresh={fetchData} 
+                onSelectStudent={setSelectedStudent}
+                onNavigateToStudents={() => setActiveTab('students')}
+              />
             )}
           </TabsContent>
           
-          <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
+          <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             <StudentList data={data} onRefresh={fetchData} onSelectStudent={(name) => {
               setSelectedStudent(name);
               setActiveTab('dashboard');
             }} />
           </TabsContent>
           
-          <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
-            <WritingStatusView />
+          <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <WritingTracker />
           </TabsContent>
           
-          <TabsContent value="tasks" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
+          <TabsContent value="tasks" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />
           </TabsContent>
           
-          <TabsContent value="announcements" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500 mt-0">
-            <Announcements />
+          <TabsContent value="announcements" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <NoticeTemplates />
+          </TabsContent>
+
+          <TabsContent value="familyLetter" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <ParentNewsletters />
           </TabsContent>
         </div>
       </Tabs>

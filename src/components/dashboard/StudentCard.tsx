@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Student, Curriculum } from '../../types';
 import { toast } from 'sonner';
-import { LogOut, Save, Star, User, Library, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
+import { LogOut, Save, Star, User, BookA, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -111,7 +111,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-[#ecedef]"
+              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
               onClick={() => onSelectStudent(student.name)}
             >
               <User className="w-5 h-5" />
@@ -119,7 +119,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-[#ecedef]"
+              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
               onClick={handleCheckout}
             >
               <LogOut className="w-5 h-5" />
@@ -128,8 +128,8 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         </div>
       </div>
 
-      <CardContent className="pt-4 px-4 pb-3 space-y-2 flex-1 border-t border-border/30">
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-border/30 h-[44px]">
+      <CardContent className="pt-4 px-4 pb-3 flex flex-col gap-2.5 flex-1 border-t border-border/30">
+        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-blue-400/20 h-[44px]">
           <div className="w-8 h-8 flex items-center justify-center shrink-0">
             <Star className="w-4 h-4 text-primary" />
           </div>
@@ -172,9 +172,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-border/30 h-[44px]">
+        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-blue-400/20 h-[44px]">
           <div className="w-8 h-8 flex items-center justify-center shrink-0">
-            <Library className="w-4 h-4 text-primary" />
+            <BookA className="w-4 h-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             {isEditingSubProgram ? (
@@ -234,142 +234,138 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
           </div>
         </div>
 
-        {progressList.map((item) => {
-          const key = `${student.name}-${item.bookId}-${item.index}`;
-          const currentStatus = localStatuses[key] || { status: item.status };
-          const isWriting = item.bookTitle === '글쓰기';
-          const isProgressing = currentStatus.status === '진행';
+        {progressList.length > 0 ? (
+          <div className="flex flex-col gap-2.5 mt-0.5">
+            {progressList.map((item, idx) => {
+              const key = `${student.name}-${item.bookId}-${item.index}`;
+              const currentStatus = localStatuses[key] || { status: item.status };
+              const isWriting = item.bookTitle === '글쓰기';
+              const isProgressing = currentStatus.status === '진행';
 
-          return (
-            <div 
-              key={item.index} 
-              className={`flex items-center gap-3 p-2 rounded-2xl border h-[44px] ${
-                isProgressing
-                  ? 'bg-[#fffbeb] border-amber-200/60'
-                  : isWriting 
-                    ? 'bg-[#faf5ff] border-[#f3e8ff]' 
-                    : 'bg-secondary/20 border-border/30'
-              }`}
-            >
-              <Button
-                size="icon"
-                variant="ghost"
-                className={`h-8 w-8 rounded-xl shrink-0 ${
-                  updating === key 
-                    ? 'animate-pulse' 
-                    : isProgressing
-                      ? 'text-amber-600 hover:bg-amber-100'
-                      : isWriting 
-                        ? 'text-purple-600 hover:bg-purple-100' 
-                        : 'text-primary hover:bg-primary/10'
-                }`}
-                onClick={() => handleStatusUpdate(item.bookId, item.index)}
-                disabled={updating === key}
-              >
-                <Save className="w-4 h-4" />
-              </Button>
-              
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">
-                  <span className={`font-semibold ${
+              return (
+                <div 
+                  key={`${key}-${idx}`} 
+                  className={`flex items-center gap-3 p-2 rounded-2xl border h-[44px] ${
                     isProgressing
-                      ? 'text-amber-900'
+                      ? 'bg-amber-100/50 border-yellow-500/20'
                       : isWriting 
-                        ? 'text-purple-900' 
-                        : 'text-black'
-                  }`}>{item.bookTitle}</span>
-                  {!isWriting && (
-                    <span className={`${
-                      isProgressing
-                        ? 'text-amber-700'
-                        : 'text-primary'
-                    } font-medium ml-1.5`}>{item.bookId}</span>
-                  )}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
-                <select 
-                  className={`bg-white border-none rounded-full px-2 py-1 text-[11px] font-normal focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
-                    isProgressing
-                      ? 'ring-amber-400 text-amber-900'
-                      : isWriting 
-                        ? 'ring-purple-400 text-purple-900' 
-                        : 'ring-primary/20 text-foreground'
+                        ? 'bg-violet-100/50 border-violet-500/20' 
+                        : 'bg-secondary/20 border-blue-400/20'
                   }`}
-                  value={currentStatus.status}
-                  onChange={(e) => setLocalStatuses(prev => ({
-                    ...prev,
-                    [key]: { ...currentStatus, status: e.target.value }
-                  }))}
                 >
-                  {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                
-                {!isWriting && (
-                  <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
-                    <DialogTrigger render={
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className={`h-7 w-7 rounded-full ${
-                          isProgressing
-                            ? 'text-amber-500/60 hover:text-amber-600 hover:bg-amber-100'
-                            : 'text-primary/40 hover:text-primary hover:bg-primary/10'
-                        }`}
-                        onClick={() => setWritingConfirmItem(item)}
-                        disabled={updating === `writing-${student.name}-${item.bookId}`}
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                      </Button>
-                    } />
-                    <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                      <div className="p-8 text-center space-y-6">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                          <FilePlus className="w-8 h-8 text-primary" />
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
-                          <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                            <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
-                            글쓰기 현황을 추가하시겠습니까?
-                          </p>
-                        </div>
-                        <div className="flex gap-3">
-                          <DialogClose render={
-                            <Button 
-                              variant="secondary" 
-                              className="flex-1 h-12 rounded-2xl font-bold"
-                            >
-                              취소
-                            </Button>
-                          } />
-                          <Button 
-                            className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
-                            onClick={() => handleAddToWritingStatus(item)}
-                          >
-                            추가
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-                {isWriting && (
-                  <div className={`h-7 w-7 flex items-center justify-center ${
-                    isProgressing ? 'text-amber-400/60' : 'text-purple-400/60'
-                  }`}>
-                    <Heart className={`w-4 h-4 ${
-                      isProgressing ? 'fill-amber-400/40' : 'fill-purple-400/40'
-                    }`} />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`h-8 w-8 rounded-xl shrink-0 ${
+                      updating === key 
+                        ? 'animate-pulse' 
+                        : isProgressing
+                          ? 'text-yellow-600 hover:bg-amber-100/55'
+                          : isWriting 
+                            ? 'text-purple-600 hover:bg-purple-100'
+                            : 'text-primary hover:bg-primary/10'
+                    }`}
+                    onClick={() => handleStatusUpdate(item.bookId, item.index)}
+                    disabled={updating === key}
+                  >
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      <span className={`font-semibold ${
+                        isProgressing
+                          ? 'text-yellow-900/90'
+                          : isWriting 
+                            ? 'text-purple-900' 
+                            : 'text-black'
+                      }`}>{item.bookTitle}</span>
+                      {!isWriting && (
+                        <span className={`font-medium ml-1.5 ${
+                          isProgressing ? 'text-yellow-600' : 'text-primary'
+                        }`}>{item.bookId}</span>
+                      )}
+                    </p>
                   </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
 
-        {progressList.length === 0 && (
+                  <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
+                    <select 
+                      className={`bg-white border-none rounded-full px-2 py-1 text-[11px] font-normal focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
+                        isProgressing
+                          ? 'ring-yellow-400 text-yellow-900'
+                          : isWriting 
+                            ? 'ring-purple-400 text-purple-900' 
+                            : 'ring-primary/20 text-foreground'
+                      }`}
+                      value={currentStatus.status}
+                      onChange={(e) => setLocalStatuses(prev => ({
+                        ...prev,
+                        [key]: { ...currentStatus, status: e.target.value }
+                      }))}
+                    >
+                      {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    
+                    {!isWriting && (
+                      <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
+                        <DialogTrigger render={
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`h-7 w-7 rounded-full ${
+                              isProgressing
+                                ? 'text-yellow-600/60 hover:text-yellow-600 hover:bg-amber-100/50'
+                                : 'text-primary/40 hover:text-primary hover:bg-primary/10'
+                            }`}
+                            onClick={() => setWritingConfirmItem(item)}
+                            disabled={updating === `writing-${student.name}-${item.bookId}`}
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                          </Button>
+                        } />
+                        <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+                          <div className="p-8 text-center space-y-6">
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                              <FilePlus className="w-8 h-8 text-primary" />
+                            </div>
+                            <div className="space-y-2">
+                              <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
+                              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                                <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
+                                글쓰기 현황을 추가하시겠습니까?
+                              </p>
+                            </div>
+                            <div className="flex gap-3">
+                              <DialogClose render={
+                                <Button 
+                                  variant="secondary" 
+                                  className="flex-1 h-12 rounded-2xl font-bold"
+                                >
+                                  취소
+                                </Button>
+                              } />
+                              <Button 
+                                className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+                                onClick={() => handleAddToWritingStatus(item)}
+                              >
+                                추가
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    {isWriting && (
+                      <div className="h-7 w-7 flex items-center justify-center text-purple-400/60">
+                        <Heart className="w-4 h-4 fill-purple-400/40" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
           <div className="text-center py-4 border border-dashed border-border/50 rounded-2xl">
             <p className="text-xs font-bold text-muted-foreground">커리큘럼을 추가해 주세요.</p>
           </div>

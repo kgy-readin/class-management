@@ -1,8 +1,8 @@
 import React, { ReactNode } from 'react';
-import { Block } from './announcementTypes';
-import { parseLinesToBlocks } from './announcementUtils';
+import { Block } from './noticetemplateTypes';
+import { parseLinesToBlocks } from './noticetemplateUtils';
 
-interface AnnouncementRendererProps {
+interface NoticeTemplateRendererProps {
   text: string;
 }
 
@@ -16,7 +16,7 @@ export const renderWithHighlightedBullet = (text: string, baseKey: number | stri
   segments.forEach((seg, index) => {
     if (index > 0) {
       elements.push(
-        <span key={`bullet-${baseKey}-${index}`} className="text-[#3f7eeb] font-bold">
+        <span key={`bullet-${baseKey}-${index}`} className="text-blue-700/70 font-bold">
           ●
         </span>
       );
@@ -57,7 +57,7 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (closingIndex !== -1) {
         const content = text.slice(currentIndex + 1, closingIndex);
         parts.push(
-          <span key={currentIndex} className="italic text-[#3f7eeb]">
+          <span key={currentIndex} className="italic text-blue-700/70">
             {parseInlineStyles(content)}
           </span>
         );
@@ -108,26 +108,26 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
             return <hr key={idx} className="my-4 border-t border-neutral-200/80" />;
           case 'h1':
             return (
-              <h1 key={idx} className="text-[17px] md:text-[21px] font-bold text-[#3f7eeb] mt-4 mb-2 block">
+              <h1 key={idx} className="text-[17px] md:text-[21px] font-bold text-blue-700/70 mt-4 mb-2 block">
                 {parseInlineStyles(block.text || '')}
               </h1>
             );
           case 'h2':
             return (
-              <h2 key={idx} className="text-[15.5px] md:text-[19.5px] font-bold text-[#3f7eeb] mt-3 mb-1.5 block">
+              <h2 key={idx} className="text-[15.5px] md:text-[19.5px] font-bold text-blue-700/70 mt-3 mb-1.5 block">
                 {parseInlineStyles(block.text || '')}
               </h2>
             );
           case 'bullet':
             return (
-              <div key={idx} className="pl-[5px] flex items-start gap-[18px] leading-[1.8] text-[#505358]">
+              <div key={idx} className="pl-[5px] flex items-start gap-[18px] leading-[1.8] text-zinc-600">
                 <span className="text-neutral-500 mt-2.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-neutral-400" />
                 <span className="flex-1">{parseInlineStyles(block.text || '')}</span>
               </div>
             );
           case 'callout':
             return (
-              <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-[#505358] overflow-hidden">
+              <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-zinc-600 overflow-hidden">
                 {renderBlocks(block.children || [])}
               </div>
             );
@@ -136,7 +136,7 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
           case 'p':
           default:
             return (
-              <p key={idx} className="leading-[1.8] text-[#505358]">
+              <p key={idx} className="leading-[1.8] text-zinc-600">
                 {parseInlineStyles(block.text || '')}
               </p>
             );
@@ -146,7 +146,7 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
   );
 };
 
-export default function AnnouncementRenderer({ text }: AnnouncementRendererProps) {
+export default function NoticeTemplateRenderer({ text }: NoticeTemplateRendererProps) {
   const lines = text.split('\n');
   const blocks = parseLinesToBlocks(lines);
   return renderBlocks(blocks);

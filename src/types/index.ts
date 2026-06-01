@@ -38,7 +38,7 @@ export interface WritingStatus {
   date: string;
   name: string;
   bookTitle: string;
-  progress: '진행' | '완성';
+  progress: '진행' | '완료';
 }
 
 export interface Task {

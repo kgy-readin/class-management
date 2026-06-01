@@ -121,22 +121,22 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   // Family View date text color styling based on overdue days:
   // 1~30 days overdue -> blue text, 31+ days overdue -> red text, else normal text color
   const getFamilyTaskDateClass = (dateStr: string): string => {
-    if (!dateStr) return 'text-[#505358]';
+    if (!dateStr) return 'text-zinc-600';
     const d = parseTaskDate(dateStr);
-    if (!d) return 'text-[#505358]';
+    if (!d) return 'text-zinc-600';
     const today = startOfDay(new Date());
     const taskDate = startOfDay(d);
     
     if (taskDate < today) {
-      const diffTime = today.getTime() - taskDate.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays >= 1 && diffDays <= 30) {
-        return 'text-blue-500 font-medium';
-      } else if (diffDays >= 31) {
-        return 'text-red-500 font-medium';
-      }
+       const diffTime = today.getTime() - taskDate.getTime();
+       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+       if (diffDays >= 1 && diffDays <= 30) {
+         return 'text-blue-500 font-medium';
+       } else if (diffDays >= 31) {
+         return 'text-red-500 font-medium';
+       }
     }
-    return 'text-[#505358]';
+    return 'text-zinc-600';
   };
 
   // Check if dates match selected filter date
@@ -482,50 +482,50 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     switch (category) {
       case '긴급':
       case '중요':
-        return 'bg-red-100 text-red-700';
+        return 'bg-rose-600/15 text-rose-950/90 font-medium';
       case '가통':
-        return 'bg-yellow-100 bg-[#fef9c3] text-amber-800'; // Yellow
+        return 'bg-yellow-500/30 text-yellow-950/90 font-medium';
       case '알림장':
       case '결과물':
-        return 'bg-blue-105 bg-blue-100 text-blue-700'; // Blue
+        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue/Sky
       case '보고':
-        return 'bg-green-100 text-green-700'; // Green
+        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
       case '반복':
       case '기타':
       default:
-        return 'bg-gray-100 text-gray-700'; // Gray
+        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
     }
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case '진행':
-        return 'bg-[#dcfce7] text-green-700'; // Green
+        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
       case '보류':
-        return 'bg-[#fef08a] text-yellow-800'; // Yellow
+        return 'bg-yellow-500/30 text-yellow-950/90 font-medium'; 
       case '대기':
-        return 'bg-[#f3e8ff] text-purple-700'; // Purple
+        return 'bg-violet-700/15 text-violet-950/90 font-medium'; // Violet
       case '완료':
-        return 'bg-[#e0f2fe] text-blue-750 text-blue-700'; // Blue
+        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue
       case '취소':
-        return 'bg-[#fee2e2] text-red-700'; // Red
+        return 'bg-rose-600/15 text-rose-950/90 font-medium'; // Red
       case '예정':
       default:
-        return 'bg-[#f3f4f6] text-gray-700'; // Gray
+        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
     }
   };
 
   const getFamilyClassBadgeClass = (familyClass: string) => {
     switch (familyClass) {
       case '첫날':
-        return 'bg-[#dcfce7] text-green-700'; // Green
+        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
       case '한달':
-        return 'bg-[#e0f2fe] text-blue-700'; // Blue
+        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue
       case '중등':
-        return 'bg-[#ffedd5] text-orange-700'; // Orange
+        return 'bg-orange-500/20 text-amber-950/90 font-medium'; // Orange/Amber
       case '정기':
       default:
-        return 'bg-gray-100 text-gray-700'; // Gray
+        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
     }
   };
 
@@ -605,7 +605,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <div className="w-full space-y-4">
               <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40 gap-2">
-                  <h2 className="font-semibold text-base text-[#505358]">업무</h2>
+                  <h2 className="font-semibold text-base text-zinc-600">업무</h2>
                   <div className="flex items-center gap-2">
                     {showFilters && (
                       <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-1 duration-150">
@@ -632,7 +632,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               setSelectedDate(undefined);
                             }
                           }}
-                          className="h-7 px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer text-[#505358] font-medium shrink-0"
+                          className="h-7 px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer text-zinc-600 font-medium shrink-0"
                         />
 
                         {/* Reset Button */}
@@ -642,7 +642,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               setSelectedDate(undefined);
                               setSelectedStudent(null);
                             }}
-                            className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-[#427fe1] text-neutral-500 hover:text-[#3169c2] hover:bg-[#427fe1]/5 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
+                            className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
                             title="필터 초기화"
                           >
                             <X className="w-3 h-3 text-neutral-400" />
@@ -658,10 +658,10 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         onClick={() => setShowFilters(prev => !prev)}
                         className={`h-7 w-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
                           showFilters 
-                            ? 'bg-neutral-700 text-white shadow-sm hover:bg-neutral-800' 
+                            ? 'bg-zinc-700 text-white shadow-sm hover:bg-zinc-800' 
                             : (selectedDate || selectedStudent)
-                              ? 'bg-[#e0f2fe] text-[#427fe1] hover:bg-[#bae6fd]'
-                              : 'bg-neutral-100 hover:bg-neutral-200 text-[#505358]'
+                              ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600'
                         }`}
                         title={showFilters ? '필터 닫기' : '필터 열기'}
                       >
@@ -669,8 +669,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       </button>
                       {!showFilters && (selectedDate || selectedStudent) && (
                         <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                         </span>
                       )}
                     </div>
@@ -684,12 +684,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('todo')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
                   >
                     {expandedGroups.todo ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>예정</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-100 text-[10px] text-neutral-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
                         {todoGroup.length}
                       </span>
                     </span>
@@ -705,7 +705,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {todoGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
                             등록되었거나 해당되는 예정된 일이 없습니다.
                           </div>
                         ) : (
@@ -715,7 +715,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         {inlineAddGroup === 'todo' ? renderInlineAddForm('todo') : (
                           <button 
                             onClick={() => handleOpenInlineAdd('todo')}
-                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-neutral-200/40 hover:border-neutral-300/80 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white"
+                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
                             title="예정 업무 추가"
                           >
                             <Plus className="w-4 h-4" />
@@ -730,12 +730,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('inProgress')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
                   >
                     {expandedGroups.inProgress ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>진행</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-100 text-[10px] text-neutral-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
                         {inProgressGroup.length}
                       </span>
                     </span>
@@ -751,7 +751,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {inProgressGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
                             진행 중인 업무가 없습니다.
                           </div>
                         ) : (
@@ -766,12 +766,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('completed')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-[#505358] hover:text-[#427fe1] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
                   >
                     {expandedGroups.completed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>완료</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-neutral-100 text-[10px] text-neutral-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
                         {completedGroup.length}
                       </span>
                     </span>
@@ -787,7 +787,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {completedGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
                             완료되었거나 취소된 업무가 없습니다.
                           </div>
                         ) : (
@@ -806,12 +806,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <div className="w-full space-y-4">
               <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
                 <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                  <h2 className="font-semibold text-base text-[#505358]">가정통신문</h2>
+                  <h2 className="font-semibold text-base text-zinc-650">가정통신문</h2>
                 </div>
 
                 <div className="mt-4 space-y-2">
                   {familyTasks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-[#898f9b] bg-neutral-50/50 rounded-xl border border-dashed border-border/30 px-4">
+                    <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30 px-4">
                       해당되는 가정통신문 업무가 없습니다.
                     </div>
                   ) : (
@@ -821,7 +821,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
                     <button 
                       onClick={() => handleOpenInlineAdd('familyView')}
-                      className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-neutral-200/40 hover:border-neutral-300/80 hover:bg-neutral-50 text-neutral-400 hover:text-neutral-700 transition-all bg-white mt-2"
+                      className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
                       title="가정통신문 추가"
                     >
                       <Plus className="w-4 h-4" />
@@ -840,23 +840,23 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       <AnimatePresence>
         {reservingTask && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl border border-neutral-100 flex flex-col gap-4 mx-4 animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl border border-zinc-100 flex flex-col gap-4 mx-4 animate-in zoom-in-95 duration-200">
               <div className="space-y-1">
-                <h4 className="text-sm font-semibold text-neutral-800">가정통신문 예약</h4>
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <h4 className="text-sm font-semibold text-zinc-805 text-zinc-800">가정통신문 예약</h4>
+                <p className="text-xs text-zinc-550 leading-relaxed">
                   <strong>{reservingTask.name}</strong> 학생의 가정통신문을 예약하시겠습니까?
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <Button
                   onClick={() => handleExecuteReserve('한달')}
-                  className="h-10 text-xs font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors"
+                  className="h-10 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
                 >
                   한달 (1개월 뒤)
                 </Button>
                 <Button
                   onClick={() => handleExecuteReserve('정기')}
-                  className="h-10 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors"
+                  className="h-10 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-colors"
                 >
                   정기 (5개월 뒤)
                 </Button>
@@ -864,7 +864,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               <Button
                 variant="ghost"
                 onClick={() => setReservingTask(null)}
-                className="h-9 text-xs text-neutral-400 hover:text-neutral-500 hover:bg-neutral-50 rounded-xl"
+                className="h-9 text-xs text-zinc-405 text-zinc-400 hover:text-zinc-500 hover:bg-zinc-55 hover:bg-zinc-50 rounded-xl"
               >
                 취소
               </Button>
@@ -890,7 +890,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       return (
         <div 
           key={task.sheetRowIndex} 
-          className="pl-2 pr-2.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors font-sans"
+          className="pl-2 pr-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 border-b border-zinc-200/50 flex flex-col gap-2 rounded-lg transition-colors font-sans"
         >
           {/* Row 1: Looks identical to static viewer row */}
           <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -923,7 +923,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               placeholder="할 일 수정"
               value={editForm.todo}
               onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-neutral-800 font-normal rounded font-sans"
+              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-zinc-800 font-normal rounded font-sans"
             />
 
             {/* Date Picker Input - seamless input */}
@@ -931,7 +931,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}
+              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-650'}`}
             />
 
             {/* Status Choice - styled like the dynamic status badge */}
@@ -956,12 +956,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               placeholder="메모 입력"
               value={editForm.memo}
               onChange={(e) => setEditForm(prev => ({ ...prev, memo: e.target.value }))}
-              className="h-7 w-full px-2 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-500 rounded font-sans"
+              className="h-7 w-full px-2 border border-zinc-250 focus:border-primary focus:outline-none bg-white text-xs text-zinc-500 rounded font-sans"
             />
           </div>
 
           {/* Row 2: Secondary info (Left) and Buttons (Right) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-neutral-200 mt-0.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
             {/* Left aligned: Undisplayed details without prefix text labels */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
               <input
@@ -970,14 +970,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 placeholder="학생명 입력"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-[84px] px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
+                className="h-6 w-[84px] px-1.5 border border-zinc-200 focus:border-primary focus:outline-none bg-white text-xs text-zinc-800 rounded font-sans"
               />
 
               {editForm.category === '가통' && (
                 <select
                   value={editForm.familyClass}
                   onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                  className={`h-6 px-1.5 border border-neutral-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getFamilyClassBadgeClass(editForm.familyClass)}`}
+                  className={`h-6 px-1.5 border border-zinc-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getFamilyClassBadgeClass(editForm.familyClass)}`}
                 >
                   <option value="정기">정기</option>
                   <option value="첫날">첫날</option>
@@ -1002,7 +1002,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   }
                   setReservingTask({ ...task, name: studentName });
                 }}
-                className="h-7 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border-none font-semibold px-2 rounded-lg transition-colors"
+                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
                 title="가정통신문 예약하기"
               >
                 예약
@@ -1014,13 +1014,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 variant="outline"
                 disabled={submitting}
                 onClick={() => handleQuickComplete(task.sheetRowIndex!)}
-                className="h-7 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 border-none font-semibold px-2 rounded-lg transition-colors"
+                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
                 title="오늘 완료 처리 후 바로 저장"
               >
                 완료
               </Button>
 
-              <div className="flex items-center gap-0.5 pl-1.5 border-l border-neutral-200">
+              <div className="flex items-center gap-0.5 pl-1.5 border-l border-zinc-200">
                 {/* Save (Check) */}
                 <Button
                   size="icon"
@@ -1039,7 +1039,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => handleDeleteTask(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                  className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
                   title="이 업무 삭제"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -1051,7 +1051,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => setEditingRowIndex(null)}
-                  className="h-7 w-7 text-neutral-400 hover:text-neutral-500 hover:bg-neutral-50 rounded-lg"
+                  className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg"
                   title="취소"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1066,7 +1066,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     return (
       <div 
         key={task.sheetRowIndex} 
-        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-neutral-50/70 border-b border-neutral-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
+        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/70 border-b border-zinc-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
       >
         {/* Mobile View Container */}
         <div className="w-full sm:hidden flex items-start gap-1.5">
@@ -1080,7 +1080,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           {/* Right Column: Title + Metadata + Edit Button */}
           <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
             <div className="flex items-start justify-between gap-1.5">
-              <span className="font-medium text-[#505358] text-[14.5px] break-all">
+              <span className="font-medium text-zinc-750 text-[14.5px] break-all">
                 {task.todo}
               </span>
               <div className="shrink-0">
@@ -1089,7 +1089,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => handleStartEdit(task)}
-                  className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
+                  className="h-6 w-6 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
                   title="수정하기"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1100,12 +1100,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             {/* Metadata perfectly aligned with task.todo first letter */}
             <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
               {task.memo && task.memo.trim() !== '' && (
-                <span className="font-normal text-[#505358]/80 max-w-[200px] truncate" title={task.memo}>
+                <span className="font-normal text-zinc-500 max-w-[200px] truncate" title={task.memo}>
                   {task.memo}
                 </span>
               )}
               {task.date && (
-                <span className={`font-normal ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}>
+                <span className={`font-normal ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-600'}`}>
                   {formatRelativeTaskDate(task.date)}
                 </span>
               )}
@@ -1122,19 +1122,19 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getCategoryBadgeClass(task.category)} mr-1 shrink-0`}>
               {task.category || '기타'}
             </span>
-            <span className="font-medium text-[#505358] text-[14.5px] break-all truncate">
+            <span className="font-medium text-zinc-750 text-[14.5px] break-all truncate">
               {task.todo}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 select-none">
             {task.memo && task.memo.trim() !== '' && (
-              <span className="text-[13px] font-normal text-[#505358]/80 max-w-[200px] truncate" title={task.memo}>
+              <span className="text-[13px] font-normal text-zinc-500 max-w-[200px] truncate" title={task.memo}>
                 {task.memo}
               </span>
             )}
             {task.date && (
-              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-500 font-medium' : 'text-[#505358]'}`}>
+              <span className={`text-[13px] font-normal ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-600'}`}>
                 {formatRelativeTaskDate(task.date)}
               </span>
             )}
@@ -1148,7 +1148,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 variant="ghost"
                 disabled={submitting}
                 onClick={() => handleStartEdit(task)}
-                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
+                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded flex items-center justify-center cursor-pointer"
                 title="수정하기"
               >
                 <Pencil className="w-2.5 h-2.5" />
@@ -1169,7 +1169,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       return (
         <div 
           key={task.sheetRowIndex} 
-          className="px-2.5 py-2.5 bg-blue-50/20 hover:bg-blue-50/40 border-b border-blue-100 flex flex-col gap-2 rounded-lg transition-colors"
+          className="px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 border-b border-zinc-200/50 flex flex-col gap-2 rounded-lg transition-colors"
         >
           {/* Row 1: Looks identical to static viewer row (No student name, contains familyClass badge, todo, memo, date, status) */}
           <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -1191,7 +1191,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               placeholder="할 일 수정"
               value={editForm.todo}
               onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-neutral-800 font-normal rounded"
+              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-zinc-800 font-normal rounded"
             />
 
             {/* Date Picker Input - seamless input */}
@@ -1218,7 +1218,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           </div>
 
           {/* Row 2: Secondary info (Left) and Buttons (Right) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-neutral-200 mt-0.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
             {/* Left aligned: Student Name input (hidden in the static read-only view) with category select mapping */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
               <input
@@ -1227,7 +1227,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 placeholder="학생명 입력"
                 value={editForm.name}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-[84px] px-1.5 border border-neutral-200 focus:border-primary focus:outline-none bg-white text-xs text-neutral-800 rounded font-sans"
+                className="h-6 w-[84px] px-1.5 border border-zinc-200 focus:border-primary focus:outline-none bg-white text-xs text-zinc-800 rounded font-sans"
               />
 
               {/* Editable Category Class mapping hidden inside family View */}
@@ -1241,7 +1241,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                     familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                   }));
                 }}
-                className={`h-6 px-1.5 border border-neutral-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
+                className={`h-6 px-1.5 border border-zinc-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
               >
                 <option value="가통">가통</option>
                 <option value="기타">기타</option>
@@ -1269,7 +1269,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   }
                   setReservingTask({ ...task, name: studentName });
                 }}
-                className="h-7 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border-none font-semibold px-2 rounded-lg transition-colors"
+                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
                 title="가정통신문 예약하기"
               >
                 예약
@@ -1281,13 +1281,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 variant="outline"
                 disabled={submitting}
                 onClick={() => handleQuickComplete(task.sheetRowIndex!)}
-                className="h-7 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 border-none font-semibold px-2 rounded-lg transition-colors"
+                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
                 title="오늘 완료 처리 후 바로 저장"
               >
                 완료
               </Button>
 
-              <div className="flex items-center gap-0.5 pl-1.5 border-l border-neutral-200">
+              <div className="flex items-center gap-0.5 pl-1.5 border-l border-zinc-200">
                 {/* Save (Check) */}
                 <Button
                   size="icon"
@@ -1306,7 +1306,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => handleDeleteTask(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                  className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
                   title="이 업무 삭제"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -1318,7 +1318,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => setEditingRowIndex(null)}
-                  className="h-7 w-7 text-neutral-400 hover:text-neutral-500 hover:bg-neutral-50 rounded-lg"
+                  className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg"
                   title="취소"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1333,7 +1333,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     return (
       <div 
         key={task.sheetRowIndex} 
-        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-neutral-50/75 border-b border-neutral-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
+        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/75 border-b border-zinc-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
       >
         {/* Mobile View Container */}
         <div className="w-full sm:hidden flex items-start gap-1.5">
@@ -1349,7 +1349,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           {/* Right Column: Title + Metadata + Edit Button */}
           <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
             <div className="flex items-start justify-between gap-1.5">
-              <span className="font-medium text-[#2d2e30] text-[14.5px] break-all">
+              <span className="font-medium text-zinc-750 text-[14.5px] break-all">
                 {task.todo}
               </span>
               <div className="shrink-0">
@@ -1358,7 +1358,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   variant="ghost"
                   disabled={submitting}
                   onClick={() => handleStartEdit(task)}
-                  className="h-6 w-6 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg flex items-center justify-center cursor-pointer"
+                  className="h-6 w-6 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
                   title="수정하기"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1388,7 +1388,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 {task.familyClass}
               </span>
             )}
-            <span className="font-medium text-[#2d2e30] text-[14.5px] break-all truncate">
+            <span className="font-medium text-zinc-750 text-[14.5px] break-all truncate">
               {task.todo}
             </span>
           </div>
@@ -1409,7 +1409,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 variant="ghost"
                 disabled={submitting}
                 onClick={() => handleStartEdit(task)}
-                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded flex items-center justify-center cursor-pointer"
+                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded flex items-center justify-center cursor-pointer"
                 title="수정하기"
               >
                 <Pencil className="w-2.5 h-2.5" />
@@ -1426,7 +1426,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     const isFamilyView = group === 'familyView';
 
     return (
-      <div className="p-3 bg-neutral-50 rounded-xl border border-dashed border-border/75 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
+      <div className="p-3 bg-zinc-50 rounded-xl border border-dashed border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2">
           
           <div className="md:col-span-3 flex flex-col gap-1.5">
@@ -1440,7 +1440,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                 }));
               }}
-              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] font-normal text-neutral-700"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-750"
             >
               <option value="기타">기타</option>
               <option value="긴급">긴급</option>
@@ -1457,7 +1457,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               <select
                 value={newForm.familyClass}
                 onChange={(e) => setNewForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] text-amber-700 font-normal"
+                className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-yellow-800 font-normal"
               >
                 <option value="정기">정기</option>
                 <option value="첫날">첫날</option>
@@ -1473,7 +1473,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               placeholder="무엇을 해야 하나요?"
               value={newForm.todo}
               onChange={(e) => setNewForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] font-medium text-neutral-800"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-800"
             />
           </div>
 
@@ -1483,7 +1483,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               placeholder="메모 (옵션)"
               value={newForm.memo}
               onChange={(e) => setNewForm(prev => ({ ...prev, memo: e.target.value }))}
-              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] text-neutral-500"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-zinc-500"
             />
           </div>
 
@@ -1492,7 +1492,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               type="date"
               value={newForm.date}
               onChange={(e) => setNewForm(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-8 px-2 border border-border rounded-lg bg-white text-[13px] font-medium text-neutral-600"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-650"
             />
           </div>
 
@@ -1511,8 +1511,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             size="sm"
             variant="outline"
             disabled={submitting}
-            onClick={() => setInlineAddGroup(null)}
-            className="h-7 rounded-lg px-3 text-xs hover:bg-neutral-100 font-semibold text-neutral-500"
+            onClick={() => setNewForm(prev => ({ ...prev, todo: '', memo: '' })) || setInlineAddGroup(null)}
+            className="h-7 rounded-lg px-3 text-xs hover:bg-zinc-100 font-semibold text-zinc-500"
           >
             취소
           </Button>

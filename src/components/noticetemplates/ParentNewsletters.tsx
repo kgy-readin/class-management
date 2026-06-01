@@ -9,21 +9,69 @@ import {
   ChevronDown, 
   Search, 
   RefreshCw,
-  Megaphone,
+  Archive,
   Check,
   Pencil,
   Save,
   X,
-  Copy
+  Copy,
+  AtSign,
+  Leaf,
+  CalendarFold
 } from 'lucide-react';
-import { noteApi } from '@/src/services/api';
-import { DocTab } from './announcementTypes';
-import { stripMarkdown } from './announcementUtils';
-import AnnouncementRenderer from './AnnouncementRenderer';
+import { noteApi, RPN_DOCS_ID } from '@/src/services/api';
+import { DocTab } from './noticetemplateTypes';
+import { stripMarkdown } from './noticetemplateUtils';
+import NoticeTemplateRenderer from './NoticeTemplateRenderer';
 
-export default function Announcements() {
+// Leaf SVG Icon (Teal-500)
+const LeafIcon = ({ className }: { className?: string }) => (
+  <Leaf className={className} />
+);
+
+// Number 1 SVG Icon (Blue-500)
+const OneIcon = ({ className }: { className?: string }) => (
+  <CalendarFold className={className} />
+);
+
+// Letter/Envelope SVG Icon (Violet-400)
+const LetterIcon = ({ className }: { className?: string }) => (
+  <AtSign className={className} />
+);
+
+// Helper to determine the category based on the tab title
+const getCategoryType = (title: string): 'leaf' | 'one' | 'letter' | 'default' => {
+  const trimmed = title.trim();
+  if (trimmed.startsWith('[첫날]') || trimmed.startsWith('[첫주]')) {
+    return 'leaf';
+  }
+  if (trimmed.startsWith('[한달]')) {
+    return 'one';
+  }
+  if (/^\d/.test(trimmed)) {
+    return 'letter';
+  }
+  return 'default';
+};
+
+// Decides and returns the beautiful custom SVG icon based on custom prefixes and formats
+const getCustomTabIcon = (title: string, className = "w-4 h-4 shrink-0", isSelected = false, baseColorClass?: string) => {
+  const category = getCategoryType(title);
+  if (category === 'leaf') {
+    return <LeafIcon className={`${className} ${isSelected ? 'text-emerald-600' : 'text-emerald-600/70'}`} />;
+  }
+  if (category === 'one') {
+    return <OneIcon className={`${className} ${isSelected ? 'text-blue-600' : 'text-blue-600/70'}`} />;
+  }
+  if (category === 'letter') {
+    return <LetterIcon className={`${className} ${isSelected ? 'text-violet-600' : 'text-violet-600/70'}`} />;
+  }
+  return <FileText className={`${className} ${isSelected ? (baseColorClass || 'text-blue-600') : 'text-neutral-400'}`} />;
+};
+
+export default function ParentNewsletters() {
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
-    const cached = localStorage.getItem('webapp_tabs_data_backup');
+    const cached = localStorage.getItem('webapp_family_letter_tabs_backup');
     return cached ? JSON.parse(cached) : [];
   });
   const [loading, setLoading] = useState(false);
@@ -37,8 +85,8 @@ export default function Announcements() {
   const [editText, setEditText] = useState('');
   const [savingTab, setSavingTab] = useState(false);
 
-  // Extract folder tabs (excluding the first tab '메모')
-  const folders = allTabs.length > 1 ? allTabs.slice(1) : allTabs;
+  // Extract folder tabs (for family letter, all tabs are folders from the start)
+  const folders = allTabs;
 
   // Find the currently selected sub-tab
   const findSelectedTab = (tabs: DocTab[], id: string | null): DocTab | null => {
@@ -69,15 +117,15 @@ export default function Announcements() {
       if (!isBackground && !hasCache) {
         setLoading(true);
       }
-      const data = await noteApi.getTabsData();
+      const data = await noteApi.getTabsData(RPN_DOCS_ID);
       if (data && data.length > 0) {
         setAllTabs(data);
-        localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(data));
+        localStorage.setItem('webapp_family_letter_tabs_backup', JSON.stringify(data));
       }
     } catch (error: any) {
-      console.error('Failed to load tabs data:', error);
+      console.error('Failed to load family letter tabs data:', error);
       if (!hasCache) {
-        toast.error('알림장 문구 데이터를 불러오는데 실패했습니다: ' + error.message);
+        toast.error('가정통신문 데이터를 불러오는데 실패했습니다: ' + error.message);
       }
     } finally {
       setLoading(false);
@@ -149,12 +197,12 @@ export default function Announcements() {
     // Optimistically update local state first so user does not lose input
     const updatedTabs = updateTabInTree(allTabs, selectedTabId, editText);
     setAllTabs(updatedTabs);
-    localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(updatedTabs));
+    localStorage.setItem('webapp_family_letter_tabs_backup', JSON.stringify(updatedTabs));
     setIsEditing(false);
 
     try {
       setSavingTab(true);
-      await noteApi.saveTabSpecification(selectedTabId, editText);
+      await noteApi.saveTabSpecification(selectedTabId, editText, RPN_DOCS_ID);
       toast.success('수정사항이 저장되었습니다.');
     } catch (error: any) {
       console.error('GAS saveTabSpecification Failed:', error);
@@ -229,7 +277,7 @@ export default function Announcements() {
                         ) : (
                           <Folder className="w-4.5 h-4.5 text-neutral-400 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-[#505358]">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-600">
                           {folder.title}
                         </span>
                         {hasChildren && (
@@ -254,17 +302,28 @@ export default function Announcements() {
                       <div className="pl-4 border-l border-neutral-100 ml-4.5 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                         {folder.childTabs.map((child) => {
                           const isSelected = selectedTabId === child.id;
+                          const category = getCategoryType(child.title);
+                          
+                          let activeClass = 'bg-zinc-100/80 text-blue-700/80 font-semibold';
+                          if (category === 'leaf') {
+                            activeClass = 'bg-zinc-100/80 text-emerald-800/80 font-semibold';
+                          } else if (category === 'one') {
+                            activeClass = 'bg-zinc-100/80 text-blue-700/80 font-semibold';
+                          } else if (category === 'letter') {
+                            activeClass = 'bg-zinc-100/80 text-violet-700/80 font-semibold';
+                          }
+
                           return (
                             <div
                               key={child.id}
                               onClick={() => setSelectedTabId(child.id)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? 'bg-neutral-100/70 text-[#3f7eeb] font-medium' 
+                                  ? activeClass 
                                   : 'text-neutral-500 hover:bg-[#fcfcfe] hover:text-neutral-800'
                               }`}
                             >
-                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#3f7eeb]' : 'text-neutral-400'}`} />
+                              {getCustomTabIcon(child.title, "w-4 h-4 shrink-0", isSelected)}
                               <span className="truncate">{child.title}</span>
                             </div>
                           );
@@ -285,7 +344,7 @@ export default function Announcements() {
               {/* Note Header */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4.5 h-4.5 text-primary shrink-0" />
+                  {getCustomTabIcon(selectedTab.title, "w-4.5 h-4.5 shrink-0", true)}
                   <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate">{selectedTab.title}</h2>
                 </div>
                 
@@ -298,7 +357,7 @@ export default function Announcements() {
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-[#e6fcf5] text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer"
                         title="저장"
                       >
                         <Save className="w-4.5 h-4.5" />
@@ -327,7 +386,7 @@ export default function Announcements() {
                         disabled={!selectedTab.text}
                         className={`rounded-full w-8 h-8 cursor-pointer transition-all ${
                           copiedId === selectedTab.id 
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                          ? 'bg-teal-500 hover:bg-teal-600 text-white' 
                           : 'hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800'
                         }`}
                         title="복사하기"
@@ -357,7 +416,7 @@ export default function Announcements() {
                         onClick={() => fetchTabsData(false)}
                         disabled={loading}
                         className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 cursor-pointer"
-                        title="구글 독스 동기화"
+                        title="가정통신문 구글 독스 동기화"
                       >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                       </Button>
@@ -377,9 +436,9 @@ export default function Announcements() {
                     placeholder="내용을 수정해 주세요..."
                   />
                 ) : selectedTab.text ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-[#505358] text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-600 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <AnnouncementRenderer text={selectedTab.text} />
+                      <NoticeTemplateRenderer text={selectedTab.text} />
                     </div>
                   </div>
                 ) : (
@@ -392,8 +451,8 @@ export default function Announcements() {
             </div>
           ) : (
             <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
-              <Megaphone className="w-11 h-11 text-neutral-300 animate-pulse" />
-              <span className="text-[16px] font-medium text-[#64666e]">조회할 문서를 선택해 주세요.</span>
+              <Archive className="w-11 h-11 text-neutral-300 animate-pulse" strokeWidth={2.4} />
+              <span className="text-[16px] font-medium text-[#64666e]">조회할 가정통신문을 선택해 주세요.</span>
             </div>
           )}
         </div>

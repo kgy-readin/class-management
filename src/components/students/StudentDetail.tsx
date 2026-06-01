@@ -175,8 +175,8 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in-50 duration-300">
                       <BookOpen className="w-10 h-10 opacity-20" />
                       <div className="space-y-1">
-                        <p className="text-[18px] font-medium text-[#505358]">등록된 커리큘럼이 없습니다.</p>
-                        <p className="text-xs sm:text-sm font-medium text-[#898f9b]">상단 버튼을 클릭하여 추가해 주세요.</p>
+                        <p className="text-[18px] font-medium text-zinc-600">등록된 커리큘럼이 없습니다.</p>
+                        <p className="text-xs sm:text-sm font-medium text-zinc-400">상단 버튼을 클릭하여 추가해 주세요.</p>
                       </div>
                     </div>
                   </TableCell>
@@ -195,7 +195,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         onChange={(e) => setEditValues(prev => prev ? { ...prev, index: parseInt(e.target.value) || 0 } : null)}
                       />
                     ) : (
-                      <span className="font-normal text-[#505358] text-xs sm:text-sm">{item.index}</span>
+                      <span className="font-normal text-zinc-600 text-xs sm:text-sm">{item.index}</span>
                     )}
                   </TableCell>
                   <TableCell className={`px-3 ${isLast ? 'pb-1' : ''}`}>
@@ -212,12 +212,12 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                     )}
                   </TableCell>
                   <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
-                    <span className="font-normal text-[#505358] text-xs sm:text-sm block truncate" title={item.info}>
+                    <span className="font-normal text-zinc-600 text-xs sm:text-sm block truncate" title={item.info}>
                       {item.info}
                     </span>
                   </TableCell>
                   <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
-                    <span className="font-normal text-[#505358] text-xs sm:text-sm block truncate">
+                    <span className="font-normal text-zinc-600 text-xs sm:text-sm block truncate">
                       {item.bookId}
                     </span>
                   </TableCell>
@@ -232,10 +232,11 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </select>
                     ) : (
                       <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                        item.status === '통과' ? 'bg-green-100 text-green-700' :
-                        item.status === '진행' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100' :
-                        item.status === '불통' ? 'bg-destructive/10 text-destructive' :
-                        'bg-secondary text-muted-foreground'
+                        item.status === '통과' ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-blue-sky-600/20' :
+                        item.status === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
+                        item.status === '불통' ? 'bg-rose-600/15 text-rose-950/90 hover:bg-rose-600/15' :
+                        item.status === '예정' ? 'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70' :
+                        'bg-zinc-200/70 text-zinc-700'
                       }`}>
                         {item.status}
                       </Badge>

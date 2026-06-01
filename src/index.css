@@ -104,7 +104,7 @@
     --card-foreground: oklch(0.2 0.02 260);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.2 0.02 260);
-    --primary: oklch(0.55 0.2 260); /* Vibrant indigo for primary actions */
+    --primary: oklch(0.55 0.2 260); /* Vibrant indigo/blue for primary actions */
     --primary-foreground: oklch(0.99 0.01 260);
     --secondary: oklch(0.94 0.03 260); /* Soft blue/gray for pill backgrounds */
     --secondary-foreground: oklch(0.4 0.15 260);

@@ -1,4 +1,4 @@
-import { Block } from './announcementTypes';
+import { Block } from './noticetemplateTypes';
 
 /**
  * Strips markdown-like markup characters helper to copy clean text to clipboard safely

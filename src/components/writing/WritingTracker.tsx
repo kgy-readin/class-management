@@ -3,16 +3,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WritingStatus } from '../../types';
 import { toast } from 'sonner';
-import { FileText, Calendar as CalendarIcon, Trash2, Save, X, Pencil } from 'lucide-react';
+import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { writingStatusApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 import 'react-day-picker/dist/style.css';
 
-export default function WritingStatusView() {
+export default function WritingTracker() {
   const [statuses, setStatuses] = useState<WritingStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -74,7 +75,7 @@ export default function WritingStatusView() {
     }
   };
 
-  if (loading) return <div className="text-center py-20 text-neutral-400">로딩 중...</div>;
+  if (loading) return <div className="text-center py-20 text-zinc-400">로딩 중...</div>;
 
   const filteredStatuses = statuses
     .filter(status => {
@@ -142,7 +143,7 @@ export default function WritingStatusView() {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 border-[#ecedef] border-solid flex items-center justify-center transition-all"
+              className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 border-zinc-200 border-solid flex items-center justify-center transition-all"
               onClick={() => {
                 setSelectedDate(undefined);
                 setSelectedStudent(null);
@@ -156,7 +157,7 @@ export default function WritingStatusView() {
               <DialogTrigger render={
                 <Button
                   variant="outline"
-                  className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5 border-[#ecedef] border-solid flex items-center justify-center transition-all"
+                  className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-rose-600 hover:bg-rose-50 border-zinc-200 border-solid flex items-center justify-center transition-all"
                   disabled={clearing}
                   title="이번달 마무리"
                 >
@@ -165,14 +166,14 @@ export default function WritingStatusView() {
               } />
               <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
                 <div className="p-8 text-center space-y-6">
-                  <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                    <Trash2 className="w-8 h-8 text-destructive" />
+                  <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto">
+                    <Trash2 className="w-8 h-8 text-rose-500" />
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-foreground">정말로 글쓰기 데이터를 리셋할까요?</h3>
-                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                    <p className="text-sm text-zinc-500 font-medium leading-relaxed">
                       이 작업은 되돌릴 수 없으며<br />
-                      <span className="text-destructive">모든 기록이 삭제됩니다.</span>
+                      <span className="text-rose-500">모든 기록이 삭제됩니다.</span>
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -180,7 +181,7 @@ export default function WritingStatusView() {
                     <DialogClose render={
                       <Button 
                         variant="destructive" 
-                        className="flex-1 h-12 rounded-2xl font-semibold shadow-lg shadow-destructive/20"
+                        className="flex-1 h-12 rounded-2xl font-semibold shadow-lg bg-rose-600 hover:bg-rose-700 text-white border-none shadow-rose-500/20"
                         onClick={handleClearMonth}
                       >
                         확인
@@ -194,13 +195,13 @@ export default function WritingStatusView() {
 
           <div className="bg-[#FFFFFF] rounded-[2rem] ring-1 ring-foreground/5 shadow-sm overflow-hidden flex-1 flex flex-col">
             <div className="px-5 py-3 border-b border-border/50 bg-secondary/10">
-              <h3 className="text-[13px] font-normal text-[#64666e] uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
+              <h3 className="text-[13px] font-normal text-zinc-500 uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
             </div>
             <div className="p-2.5 flex-1 overflow-y-auto custom-scrollbar max-h-[200px] sm:max-h-none lg:max-h-[300px]">
               <div className="grid grid-cols-3 gap-1.5 pb-2">
                 <Button
                   variant="ghost"
-                  className={`h-9 rounded-xl text-sm font-normal justify-center px-3 ${!selectedStudent && selectedDate ? 'bg-primary/10 text-primary font-medium' : 'text-[#64666e]'}`}
+                  className={`h-9 rounded-xl text-sm font-normal justify-center px-3 ${!selectedStudent && selectedDate ? 'bg-primary/10 text-primary font-medium' : 'text-zinc-500'}`}
                   onClick={() => handleStudentSelect(null)}
                 >
                   전체
@@ -209,7 +210,7 @@ export default function WritingStatusView() {
                   <Button
                     key={name}
                     variant="ghost"
-                    className={`h-9 rounded-xl text-sm font-normal justify-center px-3 truncate ${selectedStudent === name ? 'bg-primary/10 text-primary font-medium' : 'text-[#64666e]'}`}
+                    className={`h-9 rounded-xl text-sm font-normal justify-center px-3 truncate ${selectedStudent === name ? 'bg-primary/10 text-primary font-medium' : 'text-zinc-500'}`}
                     onClick={() => handleStudentSelect(name)}
                   >
                     {name}
@@ -226,7 +227,7 @@ export default function WritingStatusView() {
           <div className="px-8 py-6 border-b border-border/50 bg-secondary/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#FFFFFF] rounded-xl shadow-sm">
-                <FileText className="w-5 h-5 text-primary" />
+                <BookText className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
@@ -234,7 +235,7 @@ export default function WritingStatusView() {
                    selectedDate ? format(selectedDate, 'yyyy년 MM월 dd일', { locale: ko }) : 
                    `${format(currentMonth, 'yyyy년 MM월')} 글쓰기 기록`}
                 </h2>
-                <p className="text-[13px] font-medium text-[#64666e]">총 {filteredStatuses.length}건의 기록</p>
+                <p className="text-[13px] font-medium text-zinc-500">총 {filteredStatuses.length}건의 기록</p>
               </div>
             </div>
           </div>
@@ -243,11 +244,11 @@ export default function WritingStatusView() {
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-secondary/5">
-                  <th className="w-[13%] pl-[28px] pr-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">날짜</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">학생명</th>
-                  <th className="w-[48%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest">도서명</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest text-center">상태</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-[#505358] uppercase tracking-widest text-center">관리</th>
+                  <th className="w-[13%] pl-[28px] pr-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">날짜</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
+                  <th className="w-[48%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">도서명</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
+                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -256,7 +257,7 @@ export default function WritingStatusView() {
                     <td colSpan={5} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted-foreground">
                         <CalendarIcon className="w-10 h-10 opacity-20" />
-                        <p className="text-[16px] font-medium text-[#64666e]">해당 기간의 기록이 없습니다.</p>
+                        <p className="text-[16px] font-medium text-zinc-500">해당 기간의 기록이 없습니다.</p>
                       </div>
                     </td>
                   </tr>
@@ -298,10 +299,16 @@ export default function WritingStatusView() {
                                 value={editValues?.progress}
                                 onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
                               >
-                                {['진행', '완성'].map(p => <option key={p} value={p}>{p}</option>)}
+                                {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             ) : (
-                              <span className={`text-[13px] md:text-[15px] font-bold ${status.progress === '완성' ? 'text-primary' : 'text-amber-600'}`}>{status.progress}</span>
+                              <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
+                                (status.progress === '완료' || status.progress === '완성') ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-sky-600/20' :
+                                status.progress === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
+                                'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70'
+                              }`}>
+                                {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                              </Badge>
                             )}
                           </div>
                         </td>
@@ -338,7 +345,7 @@ export default function WritingStatusView() {
               <div className="px-8 py-20 text-center">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                   <CalendarIcon className="w-10 h-10 opacity-20" />
-                  <p className="text-[18px] font-medium text-[#505358]">해당 기간의 기록이 없습니다.</p>
+                  <p className="text-[18px] font-medium text-zinc-500">해당 기간의 기록이 없습니다.</p>
                 </div>
               </div>
             ) : (
@@ -355,7 +362,15 @@ export default function WritingStatusView() {
                           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">{format(parseISO(status.date), 'M월 d일')}</span>
                         )}
                         <span className="text-sm font-normal text-foreground">{status.name}</span>
-                        {!isEditing && <span className={`text-sm font-normal ${status.progress === '완성' ? 'text-primary' : 'text-amber-600'}`}>({status.progress})</span>}
+                        {!isEditing && (
+                          <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
+                            (status.progress === '완료' || status.progress === '완성') ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-sky-600/20' :
+                            status.progress === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
+                            'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70'
+                          }`}>
+                            {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {isEditing ? (
@@ -383,7 +398,7 @@ export default function WritingStatusView() {
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">상태 변경</span>
                             <select className="text-xs font-normal bg-white border border-border/50 rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary/20" value={editValues?.progress} onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}>
-                              {['진행', '완성'].map(p => <option key={p} value={p}>{p}</option>)}
+                              {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                           </div>
                         </div>
