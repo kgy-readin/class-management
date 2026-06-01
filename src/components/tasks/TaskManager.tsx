@@ -493,7 +493,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       case '반복':
       case '기타':
       default:
-        return getTagColor('회색');
+        return getTagColor('기본');
     }
   };
 
@@ -511,7 +511,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         return getTagColor('빨간색');
       case '예정':
       default:
-        return getTagColor('회색');
+        return getTagColor('기본');
     }
   };
 
