@@ -63,7 +63,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {attendingStudents.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center py-24 text-muted-foreground bg-white rounded-[2.5rem] border border-soild border-zinc-50 shadow-sm">
+          <div className="col-span-full flex flex-col items-center justify-center py-24 text-muted-foreground bg-white rounded-[2.5rem] border border-solid border-zinc-50 shadow-sm">
             <div className="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6">
               <UsersRound className="w-10 h-10 text-blue-500" />
             </div>
