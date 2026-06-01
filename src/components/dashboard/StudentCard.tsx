@@ -129,7 +129,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       </div>
 
       <CardContent className="pt-4 px-4 pb-3 flex flex-col gap-2.5 flex-1 border-t border-border/30">
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-blue-400/20 h-[44px]">
+        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-transparent shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)] h-[44px]">
           <div className="w-8 h-8 flex items-center justify-center shrink-0">
             <Star className="w-4 h-4 text-primary" />
           </div>
@@ -172,7 +172,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-blue-400/20 h-[44px]">
+        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-transparent shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)] h-[44px]">
           <div className="w-8 h-8 flex items-center justify-center shrink-0">
             <BookA className="w-4 h-4 text-primary" />
           </div>
@@ -245,12 +245,12 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
               return (
                 <div 
                   key={`${key}-${idx}`} 
-                  className={`flex items-center gap-3 p-2 rounded-2xl border h-[44px] ${
+                  className={`flex items-center gap-3 p-2 rounded-2xl border border-transparent h-[44px] ${
                     isProgressing
-                      ? 'bg-amber-100/50 border-yellow-500/20'
-                      : isWriting 
-                        ? 'bg-violet-100/50 border-violet-500/20' 
-                        : 'bg-secondary/20 border-blue-400/20'
+                      ? 'bg-amber-100/50 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.15)]'
+                      : isWriting
+                        ? 'bg-violet-100/50 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.15)]'
+                        : 'bg-secondary/20 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)]'
                   }`}
                 >
                   <Button
