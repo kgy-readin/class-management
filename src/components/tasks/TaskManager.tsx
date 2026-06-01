@@ -705,7 +705,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {todoGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                             등록되었거나 해당되는 예정된 일이 없습니다.
                           </div>
                         ) : (
@@ -751,7 +751,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {inProgressGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                             진행 중인 업무가 없습니다.
                           </div>
                         ) : (
@@ -787,7 +787,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         className="overflow-hidden space-y-1.5 pl-0"
                       >
                         {completedGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30">
+                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                             완료되었거나 취소된 업무가 없습니다.
                           </div>
                         ) : (
@@ -811,7 +811,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
                 <div className="mt-4 space-y-2">
                   {familyTasks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-dashed border-border/30 px-4">
+                    <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
                       해당되는 가정통신문 업무가 없습니다.
                     </div>
                   ) : (
@@ -1426,7 +1426,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     const isFamilyView = group === 'familyView';
 
     return (
-      <div className="p-3 bg-zinc-50 rounded-xl border border-dashed border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
+      <div className="p-3 bg-zinc-50 rounded-xl border border-solid border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2">
           
           <div className="md:col-span-3 flex flex-col gap-1.5">
