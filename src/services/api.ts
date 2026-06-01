@@ -666,7 +666,7 @@ export const noteApi = {
       if (res.error) throw new Error(res.error);
       return res.text || '';
     } catch (e: any) {
-      console.error('GAS getRawText Failed:', e);
+      console.warn('GAS getRawText Failed (Using local/offline fallback):', e.message || e);
       throw e;
     }
   },
