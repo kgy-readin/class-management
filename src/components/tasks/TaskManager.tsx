@@ -131,9 +131,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
        const diffTime = today.getTime() - taskDate.getTime();
        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
        if (diffDays >= 1 && diffDays <= 30) {
-         return 'text-blue-500 font-medium';
+         return 'text-blue-600/90 font-medium';
        } else if (diffDays >= 31) {
-         return 'text-red-500 font-medium';
+         return 'text-red-600/90 font-medium';
        }
     }
     return 'text-zinc-600';
@@ -684,12 +684,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('todo')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-700/70 hover:text-zinc-700 transition-colors"
                   >
                     {expandedGroups.todo ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>예정</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
                         {todoGroup.length}
                       </span>
                     </span>
@@ -730,12 +730,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('inProgress')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-emerald-700/70 hover:text-emerald-700 transition-colors"
                   >
                     {expandedGroups.inProgress ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>진행</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
                         {inProgressGroup.length}
                       </span>
                     </span>
@@ -766,12 +766,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 <div className="space-y-1.5">
                   <button 
                     onClick={() => toggleGroup('completed')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-650 hover:text-blue-500 transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-blue-700/70 hover:text-blue-700 transition-colors"
                   >
                     {expandedGroups.completed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                     <span className="flex items-center">
                       <span>완료</span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-zinc-100 text-[10px] text-zinc-600 font-bold ml-2">
+                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
                         {completedGroup.length}
                       </span>
                     </span>
@@ -931,7 +931,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-650'}`}
+              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-650'}`}
             />
 
             {/* Status Choice - styled like the dynamic status badge */}
@@ -1105,7 +1105,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 </span>
               )}
               {task.date && (
-                <span className={`font-normal ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-600'}`}>
+                <span className={`font-normal ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-600'}`}>
                   {formatRelativeTaskDate(task.date)}
                 </span>
               )}
@@ -1134,7 +1134,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               </span>
             )}
             {task.date && (
-              <span className={`text-[13px] font-normal ${isOverdue ? 'text-rose-500 font-medium' : 'text-zinc-600'}`}>
+              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-600'}`}>
                 {formatRelativeTaskDate(task.date)}
               </span>
             )}
