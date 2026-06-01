@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { WritingStatus } from '../../types';
+import { WritingStatus, getTagColor } from '../../types';
 import { toast } from 'sonner';
 import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
@@ -303,9 +303,9 @@ export default function WritingTracker() {
                               </select>
                             ) : (
                               <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                                (status.progress === '완료' || status.progress === '완성') ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-sky-600/20' :
-                                status.progress === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
-                                'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70'
+                                (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                                status.progress === '진행' ? getTagColor('노란색') :
+                                getTagColor('회색')
                               }`}>
                                 {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                               </Badge>
@@ -364,9 +364,9 @@ export default function WritingTracker() {
                         <span className="text-sm font-normal text-foreground">{status.name}</span>
                         {!isEditing && (
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
-                            (status.progress === '완료' || status.progress === '완성') ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-sky-600/20' :
-                            status.progress === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
-                            'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70'
+                            (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                            status.progress === '진행' ? getTagColor('노란색') :
+                            getTagColor('회색')
                           }`}>
                             {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                           </Badge>
