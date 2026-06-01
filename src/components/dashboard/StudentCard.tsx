@@ -247,7 +247,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                   key={`${key}-${idx}`} 
                   className={`flex items-center gap-3 p-2 rounded-2xl border border-transparent h-[44px] ${
                     isProgressing
-                      ? 'bg-amber-100/50 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.15)]'
+                      ? 'bg-amber-100/40 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.15)]'
                       : isWriting
                         ? 'bg-violet-100/50 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.15)]'
                         : 'bg-secondary/20 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)]'
