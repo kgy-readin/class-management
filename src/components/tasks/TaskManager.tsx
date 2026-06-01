@@ -484,7 +484,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       case '중요':
         return getTagColor('빨간색');
       case '가통':
-        return getTagColor('노란색');
+        return getTagColor('갈색');
       case '알림장':
       case '결과물':
         return getTagColor('파란색');
