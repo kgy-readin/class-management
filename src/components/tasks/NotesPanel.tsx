@@ -86,7 +86,7 @@ export default function NotesPanel() {
         localStorage.setItem('webapp_note_data_backup', normalizedRemote);
       }
     } catch (error: any) {
-      console.error('Background memo sync failed:', error);
+      console.warn('Background memo sync failed (Using local fallback):', error.message || error);
       // Fallback is already initialized in state, so we don't spam errors unless cache is empty
       if (!hasCache) {
         toast.error('메모 데이터를 불러오는데 실패했습니다: ' + error.message);
