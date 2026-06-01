@@ -189,7 +189,7 @@ export default function NotesPanel() {
           <div className="flex-1 flex flex-col min-h-0 bg-white">
             <div className="flex-1 space-y-2.5 max-h-[210px] lg:max-h-none overflow-y-auto custom-scrollbar pr-1">
               {notes.length === 0 ? (
-                <div className="py-16 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-2xl border border-dashed border-border/30 flex flex-col items-center justify-center gap-2 select-none">
+                <div className="py-16 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 select-none">
                   <FileText className="w-8 h-8 text-zinc-300" />
                   <span>등록된 메모가 없습니다.</span>
                   <button
