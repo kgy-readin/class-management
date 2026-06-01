@@ -48,11 +48,11 @@ export default function App() {
     if (mode === 'class') {
       setActiveTab('dashboard');
       localStorage.setItem('webapp_active_tab', 'dashboard');
-      setSelected(null);
+      setSelectedStudent(null);
     } else {
       setActiveTab('tasks');
       localStorage.setItem('webapp_active_tab', 'tasks');
-      setSelected(null);
+      setSelectedStudent(null);
     }
   };
 
@@ -74,7 +74,7 @@ export default function App() {
 
   const handleHomeClick = async () => {
     await fetchData();
-    setSelected(null);
+    setSelectedStudent(null);
     if (appMode === 'work') {
       setActiveTab('tasks');
     } else {
@@ -103,7 +103,7 @@ export default function App() {
       <Tabs value={activeTab} onValueChange={(val) => {
         setActiveTab(val);
         if (val !== 'dashboard') {
-          setSelected(null);
+          setSelectedStudent(null);
         }
       }} className="w-full">
         
