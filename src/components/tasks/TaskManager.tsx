@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Task, Student } from '../../types';
+import { Task, Student, getTagColor } from '../../types';
 import { toast } from 'sonner';
 import { 
   Trash2, 
@@ -482,50 +482,50 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     switch (category) {
       case '긴급':
       case '중요':
-        return 'bg-rose-600/15 text-rose-950/90 font-medium';
+        return getTagColor('빨간색');
       case '가통':
-        return 'bg-yellow-500/30 text-yellow-950/90 font-medium';
+        return getTagColor('노란색');
       case '알림장':
       case '결과물':
-        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue/Sky
+        return getTagColor('파란색');
       case '보고':
-        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
+        return getTagColor('초록색');
       case '반복':
       case '기타':
       default:
-        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
+        return getTagColor('회색');
     }
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case '진행':
-        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
+        return getTagColor('초록색');
       case '보류':
-        return 'bg-yellow-500/30 text-yellow-950/90 font-medium'; 
+        return getTagColor('노란색');
       case '대기':
-        return 'bg-violet-700/15 text-violet-950/90 font-medium'; // Violet
+        return getTagColor('보라색');
       case '완료':
-        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue
+        return getTagColor('파란색');
       case '취소':
-        return 'bg-rose-600/15 text-rose-950/90 font-medium'; // Red
+        return getTagColor('빨간색');
       case '예정':
       default:
-        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
+        return getTagColor('회색');
     }
   };
 
   const getFamilyClassBadgeClass = (familyClass: string) => {
     switch (familyClass) {
       case '첫날':
-        return 'bg-green-600/20 text-emerald-950/90 font-medium'; // Green/Emerald
+        return getTagColor('초록색');
       case '한달':
-        return 'bg-sky-600/20 text-indigo-950/90 font-medium'; // Blue
+        return getTagColor('파란색');
       case '중등':
-        return 'bg-orange-500/20 text-amber-950/90 font-medium'; // Orange/Amber
+        return getTagColor('주황색');
       case '정기':
       default:
-        return 'bg-zinc-200/70 text-zinc-700 font-medium'; // Zinc
+        return getTagColor('회색');
     }
   };
 
