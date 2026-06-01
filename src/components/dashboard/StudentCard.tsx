@@ -366,7 +366,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             })}
           </div>
         ) : (
-          <div className="text-center py-4 border border-dashed border-border/50 rounded-2xl">
+          <div className="text-center py-4 border border-solid border-zinc-50 rounded-2xl">
             <p className="text-xs font-bold text-muted-foreground">커리큘럼을 추가해 주세요.</p>
           </div>
         )}
