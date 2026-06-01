@@ -305,7 +305,7 @@ export default function WritingTracker() {
                               <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
                                 (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
                                 status.progress === '진행' ? getTagColor('노란색') :
-                                getTagColor('회색')
+                                getTagColor('기본')
                               }`}>
                                 {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                               </Badge>
@@ -366,7 +366,7 @@ export default function WritingTracker() {
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
                             (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
                             status.progress === '진행' ? getTagColor('노란색') :
-                            getTagColor('회색')
+                            getTagColor('기본')
                           }`}>
                             {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                           </Badge>
