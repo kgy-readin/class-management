@@ -194,14 +194,14 @@ export default function WritingTracker() {
           </div>
 
           <div className="bg-[#FFFFFF] rounded-[2rem] ring-1 ring-foreground/5 shadow-sm overflow-hidden flex-1 flex flex-col">
-            <div className="px-5 py-3 border-b border-border/50 bg-secondary/10">
-              <h3 className="text-[13px] font-normal text-zinc-500 uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
+            <div className="px-5 py-3 border-b border-border/50 bg-white">
+              <h3 className="text-[13px] font-normal text-zinc-600 uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
             </div>
             <div className="p-2.5 flex-1 overflow-y-auto custom-scrollbar max-h-[200px] sm:max-h-none lg:max-h-[300px]">
               <div className="grid grid-cols-3 gap-1.5 pb-2">
                 <Button
                   variant="ghost"
-                  className={`h-9 rounded-xl text-sm font-normal justify-center px-3 ${!selectedStudent && selectedDate ? 'bg-primary/10 text-primary font-medium' : 'text-zinc-500'}`}
+                  className={`h-9 rounded-xl text-sm font-normal justify-center px-3 ${!selectedStudent && selectedDate ? 'bg-blue-200/20 text-primary font-medium' : 'text-zinc-500'}`}
                   onClick={() => handleStudentSelect(null)}
                 >
                   전체
@@ -210,7 +210,7 @@ export default function WritingTracker() {
                   <Button
                     key={name}
                     variant="ghost"
-                    className={`h-9 rounded-xl text-sm font-normal justify-center px-3 truncate ${selectedStudent === name ? 'bg-primary/10 text-primary font-medium' : 'text-zinc-500'}`}
+                    className={`h-9 rounded-xl text-sm font-normal justify-center px-3 truncate ${selectedStudent === name ? 'bg-blue-200/20 text-primary font-medium' : 'text-zinc-500'}`}
                     onClick={() => handleStudentSelect(name)}
                   >
                     {name}
@@ -224,7 +224,7 @@ export default function WritingTracker() {
 
       <div className="flex-1 min-w-0">
         <div className="bg-[#FFFFFF] rounded-[2.5rem] shadow-sm overflow-hidden mb-2">
-          <div className="px-8 py-6 border-b border-border/50 bg-secondary/10 flex items-center justify-between">
+          <div className="px-8 py-6 border-b border-border/50 bg-white flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#FFFFFF] rounded-xl shadow-sm">
                 <BookText className="w-5 h-5 text-primary" />
