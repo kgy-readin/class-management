@@ -235,7 +235,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                         item.status === '통과' ? getTagColor('파란색') :
                         item.status === '진행' ? getTagColor('노란색') :
                         item.status === '불통' ? getTagColor('빨간색') :
-                        getTagColor('회색')
+                        getTagColor('기본')
                       }`}>
                         {item.status}
                       </Badge>
