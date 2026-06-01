@@ -68,7 +68,7 @@ export const TAG_COLORS: Record<string, string> = {
   // English key mappings
   default: 'bg-zinc-100 text-zinc-700 font-medium',
   gray: 'bg-zinc-200/80 text-zinc-700 font-medium',
-  brown: 'bg-amber-900/12 text-yellow-950 font-medium',
+  brown: 'bg-amber-900/13 text-yellow-950 font-medium',
   orange: 'bg-orange-700/17 text-amber-950 font-medium',
   yellow: 'bg-yellow-500/20 text-yellow-950 font-medium',
   green: 'bg-green-700/13 text-emerald-950 font-medium',
@@ -80,7 +80,7 @@ export const TAG_COLORS: Record<string, string> = {
   // Korean key mappings
   기본: 'bg-zinc-200/60 text-zinc-700 font-medium',
   회색: 'bg-zinc-200/80 text-zinc-700 font-medium',
-  갈색: 'bg-amber-900/12 text-yellow-950 font-medium',
+  갈색: 'bg-amber-900/13 text-yellow-950 font-medium',
   주황색: 'bg-orange-700/17 text-amber-950 font-medium',
   노란색: 'bg-yellow-500/20 text-yellow-950 font-medium',
   초록색: 'bg-green-700/13 text-emerald-950 font-medium',
