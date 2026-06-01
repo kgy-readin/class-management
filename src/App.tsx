@@ -48,11 +48,11 @@ export default function App() {
     if (mode === 'class') {
       setActiveTab('dashboard');
       localStorage.setItem('webapp_active_tab', 'dashboard');
-      setSelectedStudent(null);
+      setSelected(null);
     } else {
       setActiveTab('tasks');
       localStorage.setItem('webapp_active_tab', 'tasks');
-      setSelectedStudent(null);
+      setSelected(null);
     }
   };
 
@@ -74,7 +74,7 @@ export default function App() {
 
   const handleHomeClick = async () => {
     await fetchData();
-    setSelectedStudent(null);
+    setSelected(null);
     if (appMode === 'work') {
       setActiveTab('tasks');
     } else {
@@ -103,7 +103,7 @@ export default function App() {
       <Tabs value={activeTab} onValueChange={(val) => {
         setActiveTab(val);
         if (val !== 'dashboard') {
-          setSelectedStudent(null);
+          setSelected(null);
         }
       }} className="w-full">
         
@@ -193,7 +193,7 @@ export default function App() {
                 title="새로고침"
               >
                 {activeTab === 'dashboard' ? 'Dashboard' :
-                 activeTab === 'students' ? 'Student' :
+                 activeTab === 'students' ? 'Students' :
                  activeTab === 'writing' ? 'Writing' :
                  activeTab === 'tasks' ? 'Tasks' :
                  activeTab === 'announcements' ? 'Templates' :
