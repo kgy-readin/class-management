@@ -1,4 +1,4 @@
-import { DashboardData } from '../../types';
+import { DashboardData, getTagColor } from '../../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -232,11 +232,10 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                       </select>
                     ) : (
                       <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                        item.status === '통과' ? 'bg-sky-600/20 text-indigo-950/90 hover:bg-blue-sky-600/20' :
-                        item.status === '진행' ? 'bg-yellow-500/30 text-yellow-950/90 hover:bg-yellow-500/30' :
-                        item.status === '불통' ? 'bg-rose-600/15 text-rose-950/90 hover:bg-rose-600/15' :
-                        item.status === '예정' ? 'bg-zinc-200/70 text-zinc-700 hover:bg-zinc-200/70' :
-                        'bg-zinc-200/70 text-zinc-700'
+                        item.status === '통과' ? getTagColor('파란색') :
+                        item.status === '진행' ? getTagColor('노란색') :
+                        item.status === '불통' ? getTagColor('빨간색') :
+                        getTagColor('회색')
                       }`}>
                         {item.status}
                       </Badge>
