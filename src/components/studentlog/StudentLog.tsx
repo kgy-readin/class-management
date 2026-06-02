@@ -655,7 +655,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
                             
                             {/* Date */}
                             <td className="px-4 py-2.5 whitespace-nowrap text-center">
-                              <span className="text-[14px] font-normal text-zinc-500">{dateFormatted}</span>
+                              <span className="text-[14px] font-normal text-zinc-800">{dateFormatted}</span>
                             </td>
 
                             {/* Category */}
@@ -747,7 +747,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
                                   onChange={e => setEditForm({ ...editForm, date: e.target.value })}
                                 />
                               ) : (
-                                <span className="text-[13px] font-semibold text-zinc-500">{dateFormatted}</span>
+                                <span className="text-[13px] font-medium text-zinc-800">{dateFormatted}</span>
                               )}
                               
                               {isEditing && editForm ? (
@@ -824,11 +824,11 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
                           </div>
 
                           {/* Content text strictly 13px and beautiful, breaking word wrapping nicely */}
-                          <div className="text-[13px] font-normal text-zinc-700 leading-relaxed pr-2">
+                          <div className="text-[13px] font-medium text-zinc-800 leading-relaxed pr-2">
                             {isEditing && editForm ? (
                               <input
                                 type="text"
-                                className="w-full h-8 px-2 border border-zinc-200 rounded text-[13px] font-normal text-zinc-800 bg-white focus:border-primary focus:outline-none"
+                                className="w-full h-8 px-2 border border-zinc-200 rounded text-[13px] font-medium text-zinc-800 bg-white focus:border-primary focus:outline-none"
                                 value={editForm.content}
                                 onChange={e => setEditForm({ ...editForm, content: e.target.value })}
                               />
