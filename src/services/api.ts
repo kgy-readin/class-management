@@ -1,4 +1,4 @@
-import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note } from '../types';
+import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note, StudentLogEntry } from '../types';
 
 function cleanSpreadsheetId(idOrUrl: string | undefined): string {
   if (!idOrUrl) return '';
@@ -588,6 +588,20 @@ export const writingStatusApi = {
     
     return { success: true };
   },
+  remove: async (data: { name: string; bookTitle: string; date: string }) => {
+    const writingRaw = await getSheetData('글쓰기현황', 'A2:D');
+    const targetDate = String(data.date).split('T')[0];
+    const rowIndex = writingRaw.findIndex((row: any[]) => {
+      const rowDate = String(row[0]).split('T')[0];
+      return String(row[1]).trim() === String(data.name).trim() && 
+             String(row[2]).trim() === String(data.bookTitle).trim() &&
+             rowDate === targetDate;
+    }) + 2;
+    
+    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+    await deleteRow('글쓰기현황', rowIndex);
+    return { success: true };
+  },
   clear: async () => {
     await updateSheetData('글쓰기현황', 'A2:D1000', Array(999).fill(['', '', '', '']));
     return { success: true };
@@ -771,6 +785,66 @@ export const beginnerFeedbackApi = {
     } else {
       await updateSheetData('기초첨삭', `A${rowIndex}:B${rowIndex}`, [[data.bookTitle, data.content]]);
     }
+    return { success: true };
+  }
+};
+
+export const studentLogApi = {
+  get: async (): Promise<StudentLogEntry[]> => {
+    const data = await getSheetData('교무수첩', 'A2:D');
+    return data
+      .filter((row: any[]) => row && row[1]) // Filter out empty name rows
+      .map((row: any[]) => ({
+        date: row[0] || '',
+        name: row[1] || '',
+        category: row[2] || '',
+        content: row[3] || '',
+      }));
+  },
+  add: async (data: StudentLogEntry) => {
+    const rawData = await getSheetData('교무수첩', 'A2:D');
+    const nextEmptyRow = rawData.length + 2;
+    const targetDate = data.date || new Date().toISOString().split('T')[0];
+    const newRow = [targetDate, data.name, data.category, data.content];
+    await updateSheetData('교무수첩', `A${nextEmptyRow}:D${nextEmptyRow}`, [newRow]);
+    return { success: true };
+  },
+  remove: async (data: { name: string; date: string; category: string; content: string }) => {
+    const rawData = await getSheetData('교무수첩', 'A2:D');
+    const targetDate = String(data.date).split('T')[0];
+    const targetCategory = String(data.category || '').trim();
+    const targetContent = String(data.content || '').trim();
+    
+    const rowIndex = rawData.findIndex((row: any[]) => {
+      const rowDate = String(row[0]).split('T')[0];
+      return String(row[1]).trim() === String(data.name).trim() &&
+             String(row[2]).trim() === targetCategory &&
+             String(row[3]).trim() === targetContent &&
+             rowDate === targetDate;
+    }) + 2;
+
+    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+    await deleteRow('교무수첩', rowIndex);
+    return { success: true };
+  },
+  update: async (original: StudentLogEntry, updated: StudentLogEntry) => {
+    const rawData = await getSheetData('교무수첩', 'A2:D');
+    const origDate = String(original.date || '').split('T')[0];
+    const origCategory = String(original.category || '').trim();
+    const origContent = String(original.content || '').trim();
+    const origName = String(original.name || '').trim();
+
+    const rowIndex = rawData.findIndex((row: any[]) => {
+      const rowDate = String(row[0]).split('T')[0];
+      return String(row[1]).trim() === origName &&
+             String(row[2]).trim() === origCategory &&
+             String(row[3]).trim() === origContent &&
+             rowDate === origDate;
+    }) + 2;
+
+    if (rowIndex < 2) throw new Error('수정할 항목을 찾을 수 없습니다.');
+    const newRow = [updated.date, updated.name, updated.category, updated.content];
+    await updateSheetData('교무수첩', `A${rowIndex}:D${rowIndex}`, [newRow]);
     return { success: true };
   }
 };

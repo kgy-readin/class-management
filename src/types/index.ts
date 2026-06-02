@@ -90,8 +90,29 @@ export const TAG_COLORS: Record<string, string> = {
   빨간색: 'bg-red-600/12 text-rose-950 font-medium',
 };
 
-export function getTagColor(colorNameOrKey: string): string {
-  // Fallback to searching lowercase or the exact value, defaulting to 'default' color
-  const key = colorNameOrKey?.trim();
+export function getTagColor(colorNameOrKey: string | undefined | null): string {
+  if (!colorNameOrKey) {
+    return TAG_COLORS['default'];
+  }
+  const key = colorNameOrKey.trim();
   return TAG_COLORS[key] || TAG_COLORS[key.toLowerCase()] || TAG_COLORS['default'];
 }
+
+export interface StudentLogEntry {
+  date: string;
+  name: string;
+  category: string;
+  content: string;
+}
+
+export const LOG_CATEGORY_COLORS: Record<string, string> = {
+  '지도방향': '회색',
+  '특이사항': '회색',
+  '성장긍정': '초록색',
+  '쓰기부진': '노란색',
+  '읽기부진': '노란색',
+  '학업부진': '주황색',
+  '문제행동': '빨간색',
+  '가정소통': '파란색',
+  '운영방침': '보라색'
+};

@@ -7,11 +7,12 @@ import StudentList from './components/students/StudentList';
 import WritingTracker from './components/writing/WritingTracker';
 import StudentDetail from './components/students/StudentDetail';
 import { DashboardData } from './types/index';
-import { BookOpen, UsersRound, BookText, PenTool, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig, Sparkles } from 'lucide-react';
+import { BookOpen, UsersRound, BookText, PenTool, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig, Sparkles, ScrollText } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
+import StudentLog from './components/studentlog/StudentLog';
 import CommentBank from './components/commentbank/CommentBank';
-import ParentNewsletters from './components/commentbank/ParentNewsletters';
-import BeginnerFeedback from './components/commentbank/BeginnerFeedback';
+import ParentNewsletters from './components/newsletters/ParentNewsletters';
+import BeginnerFeedback from './components/beginners/BeginnerFeedback';
 import { Button } from '@/components/ui/button';
 import { dataApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -42,7 +43,7 @@ export default function App() {
 
   // Helper to define mode categories
   const getModeByTab = (tab: string): 'class' | 'work' => {
-    if (['tasks', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
+    if (['tasks', 'logs', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
       return 'work';
     }
     return 'class';
@@ -68,6 +69,15 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleModeChange = (mode: 'class' | 'work') => {
+    if (appMode === mode) {
+      if (mode === 'class') {
+        selectTab('dashboard');
+      } else {
+        selectTab('tasks');
+      }
+      setSelectedStudent(null);
+      return;
+    }
     setAppMode(mode);
     localStorage.setItem('webapp_app_mode', mode);
     const targetTab = mode === 'class'
@@ -169,9 +179,10 @@ export default function App() {
                           { id: 'students', label: 'Students', icon: UsersRound },
                           { id: 'writing', label: 'Writing', icon: PenTool },
                           { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
+                          { id: 'logs', label: 'Logs', icon: Archive },
                           { id: 'comments', label: 'Comments', icon: MessageCircleWarning },
                           { id: 'beginners', label: 'Beginners', icon: Sparkles },
-                          { id: 'familyLetter', label: 'Newsletters', icon: Archive },
+                          { id: 'familyLetter', label: 'Newsletters', icon: ScrollText },
                         ].map((item) => {
                           const Icon = item.icon;
                           const isSelected = activeTab === item.id;
@@ -216,6 +227,7 @@ export default function App() {
                  activeTab === 'students' ? 'Students' :
                  activeTab === 'writing' ? 'Writing' :
                  activeTab === 'tasks' ? 'Tasks' :
+                 activeTab === 'logs' ? 'Logs' :
                  activeTab === 'comments' ? 'Comments' :
                  activeTab === 'beginners' ? 'Beginners' :
                  activeTab === 'familyLetter' ? 'Newsletters' : 'Dashboard'}
@@ -309,11 +321,15 @@ export default function App() {
           </TabsContent>
           
           <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <WritingTracker />
+            <WritingTracker students={data?.students || []} />
           </TabsContent>
           
           <TabsContent value="tasks" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />
+          </TabsContent>
+
+          <TabsContent value="logs" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <StudentLog students={data?.students || []} />
           </TabsContent>
           
           <TabsContent value="comments" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">

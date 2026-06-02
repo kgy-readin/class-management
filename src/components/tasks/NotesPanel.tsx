@@ -129,7 +129,7 @@ export default function NotesPanel() {
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-      <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40 flex-1 flex flex-col min-h-[245px] lg:min-h-0 max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
+      <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex-1 flex flex-col min-h-[245px] lg:min-h-0 max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
         
         {/* Header section with Notes title and edit button */}
         <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3 select-none">

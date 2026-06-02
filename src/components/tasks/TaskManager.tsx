@@ -603,7 +603,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             
             {/* 업무 (Main List Block) */}
             <div className="w-full space-y-4">
-              <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
+              <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none">
                 <div className="flex items-center justify-between pb-2 border-b border-border/40 gap-2">
                   <h2 className="font-semibold text-base text-zinc-600">업무</h2>
                   <div className="flex items-center gap-2">
@@ -804,7 +804,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
             {/* 가정통신문 */}
             <div className="w-full space-y-4">
-              <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40">
+              <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none">
                 <div className="flex items-center justify-between pb-3 border-b border-border/40">
                   <h2 className="font-semibold text-base text-zinc-650">가정통신문</h2>
                 </div>

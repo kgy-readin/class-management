@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { WritingStatus, getTagColor } from '../../types';
+import { WritingStatus, getTagColor, Student } from '../../types';
 import { toast } from 'sonner';
-import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil } from 'lucide-react';
+import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil, Plus } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 
 import 'react-day-picker/dist/style.css';
 
-export default function WritingTracker() {
+export default function WritingTracker({ students = [] }: { students?: Student[] }) {
   const [statuses, setStatuses] = useState<WritingStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -23,6 +23,74 @@ export default function WritingTracker() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ date: string; bookTitle: string; progress: string } | null>(null);
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    date: '',
+    name: '',
+    bookTitle: '',
+    progress: '완료(완성)'
+  });
+  const [submittingAdd, setSubmittingAdd] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<WritingStatus | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  const handleOpenAddDialog = () => {
+    setAddForm({
+      date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      name: selectedStudent || '',
+      bookTitle: '',
+      progress: '완료(완성)'
+    });
+    setAddOpen(true);
+  };
+
+  const handleAddStatus = async () => {
+    if (!addForm.name) {
+      toast.error('학생을 선택해 주세요.');
+      return;
+    }
+    if (!addForm.bookTitle.trim()) {
+      toast.error('도서명을 입력해 주세요.');
+      return;
+    }
+    setSubmittingAdd(true);
+    try {
+      await writingStatusApi.update({
+        name: addForm.name,
+        bookTitle: addForm.bookTitle.trim(),
+        progress: addForm.progress,
+        date: addForm.date
+      });
+      toast.success('글쓰기 현황이 추가되었습니다.');
+      setAddOpen(false);
+      fetchWritingStatus();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setSubmittingAdd(false);
+    }
+  };
+
+  const handleDeleteStatus = async (item: WritingStatus) => {
+    setIsDeleting(true);
+    try {
+      await writingStatusApi.remove({
+        name: item.name,
+        bookTitle: item.bookTitle,
+        date: item.date
+      });
+      toast.success('기록이 삭제되었습니다.');
+      setDeletingItem(null);
+      fetchWritingStatus();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const fetchWritingStatus = async () => {
     try {
@@ -112,7 +180,7 @@ export default function WritingTracker() {
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="w-full lg:w-80 shrink-0 flex flex-col sm:flex-row lg:flex-col gap-4">
-        <Card className="rounded-[2.5rem] shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto">
+        <Card className="rounded-[2.5rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto">
           <CardContent className="p-0 flex flex-col items-center justify-center min-h-[310px] w-full">
             <style>{`
               .rdp { --rdp-accent-color: #2563eb; --rdp-background-color: #eff6ff; margin: 0; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; }
@@ -193,7 +261,7 @@ export default function WritingTracker() {
             </Dialog>
           </div>
 
-          <div className="bg-[#FFFFFF] rounded-[2rem] ring-1 ring-foreground/5 shadow-sm overflow-hidden flex-1 flex flex-col">
+          <div className="bg-[#FFFFFF] rounded-[2rem] border-none ring-0 shadow-sm overflow-hidden flex-1 flex flex-col">
             <div className="px-5 py-3 border-b border-border/50 bg-white">
               <h3 className="text-[13px] font-normal text-zinc-600 uppercase tracking-widest mt-1 ml-1">학생별 보기</h3>
             </div>
@@ -223,8 +291,8 @@ export default function WritingTracker() {
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="bg-[#FFFFFF] rounded-[2.5rem] shadow-sm overflow-hidden mb-2">
-          <div className="px-8 py-6 border-b border-border/50 bg-white flex items-center justify-between">
+        <div className="bg-[#FFFFFF] rounded-[2.5rem] border-none ring-0 shadow-sm overflow-hidden mb-2">
+          <div className="px-8 pt-6 pb-2 border-b border-border/50 bg-white flex items-center justify-between" style={{ paddingBottom: '8px' }}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#FFFFFF] rounded-xl shadow-sm">
                 <BookText className="w-5 h-5 text-primary" />
@@ -238,17 +306,27 @@ export default function WritingTracker() {
                 <p className="text-[13px] font-medium text-zinc-500">총 {filteredStatuses.length}건의 기록</p>
               </div>
             </div>
+
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 rounded-full text-foreground border-zinc-200/80 bg-white/50 hover:bg-white/80 shadow-sm transition-all"
+              onClick={handleOpenAddDialog}
+              title="글쓰기 기록 추가"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
           </div>
 
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse table-fixed">
-              <thead>
-                <tr className="bg-secondary/5">
-                  <th className="w-[13%] pl-[28px] pr-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">날짜</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
-                  <th className="w-[48%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest">도서명</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
-                  <th className="w-[13%] px-6 py-4 text-[12px] md:text-[15px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
+              <thead className="bg-zinc-50/70">
+                <tr className="bg-zinc-50/70 border-b border-solid border-zinc-100">
+                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">날짜</th>
+                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
+                  <th className="w-[48%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">도서명</th>
+                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
+                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -267,20 +345,20 @@ export default function WritingTracker() {
                     const isEditing = editingKey === key;
                     return (
                       <tr key={`${status.name}-${idx}`} className="hover:bg-secondary/5 transition-colors group">
-                        <td className="pl-[28px] pr-6 py-3.5 whitespace-nowrap">
+                        <td className="px-6 py-2.5 whitespace-nowrap text-center">
                           {isEditing ? (
                             <input 
                               type="date"
-                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
+                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20 text-center"
                               value={editValues?.date}
                               onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
                             />
                           ) : (
-                            <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'M/d')}</span>
+                            <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'MM.dd')}</span>
                           )}
                         </td>
-                        <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
-                        <td className="px-6 py-3.5">
+                        <td className="px-6 py-2.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
+                        <td className="px-6 py-2.5">
                           {isEditing ? (
                             <input 
                               className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-2 py-0.5 outline-none focus:ring-1 ring-primary/20"
@@ -291,7 +369,7 @@ export default function WritingTracker() {
                             <span className="text-[13px] md:text-[15px] font-normal text-foreground line-clamp-1" title={status.bookTitle}>{status.bookTitle}</span>
                           )}
                         </td>
-                        <td className="px-6 py-3.5 whitespace-nowrap">
+                        <td className="px-6 py-2.5 whitespace-nowrap">
                           <div className="flex justify-center">
                             {isEditing ? (
                               <select
@@ -299,36 +377,47 @@ export default function WritingTracker() {
                                 value={editValues?.progress}
                                 onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
                               >
-                                {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
+                                {['진행', '완료', '완료(완성)'].map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             ) : (
                               <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                                (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                                (status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? getTagColor('파란색') :
                                 status.progress === '진행' ? getTagColor('노란색') :
                                 getTagColor('기본')
                               }`}>
-                                {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                                {(status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? '완료' : status.progress}
                               </Badge>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-3.5 whitespace-nowrap">
-                          <div className="flex justify-center gap-2">
+                        <td className="px-6 py-2.5 whitespace-nowrap">
+                          <div className="flex justify-center gap-1.5">
                             {isEditing ? (
                               <>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key}><Save className="w-4 h-4" /></Button>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={() => setEditingKey(null)}><X className="w-4 h-4" /></Button>
                               </>
                             ) : (
-                              <Button 
-                                size="icon"
-                                variant="ghost" 
-                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
-                                onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
-                                title="수정"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
+                              <>
+                                <Button 
+                                  size="icon"
+                                  variant="ghost" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
+                                  onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
+                                  title="수정"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                                  onClick={() => setDeletingItem(status)}
+                                  title="삭제"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -364,11 +453,11 @@ export default function WritingTracker() {
                         <span className="text-sm font-normal text-foreground">{status.name}</span>
                         {!isEditing && (
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
-                            (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                            (status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? getTagColor('파란색') :
                             status.progress === '진행' ? getTagColor('노란색') :
                             getTagColor('기본')
                           }`}>
-                            {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                            {(status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? '완료' : status.progress}
                           </Badge>
                         )}
                       </div>
@@ -379,15 +468,26 @@ export default function WritingTracker() {
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={() => setEditingKey(null)}><X className="w-4 h-4" /></Button>
                           </div>
                         ) : (
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" 
-                            onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
-                            title="수정"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" 
+                              onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
+                              title="수정"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                              onClick={() => setDeletingItem(status)}
+                              title="삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -398,7 +498,7 @@ export default function WritingTracker() {
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">상태 변경</span>
                             <select className="text-xs font-normal bg-white border border-border/50 rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary/20" value={editValues?.progress} onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}>
-                              {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
+                              {['진행', '완료', '완료(완성)'].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                           </div>
                         </div>
@@ -413,6 +513,116 @@ export default function WritingTracker() {
           </div>
         </div>
       </div>
+
+      {/* Adding Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-hidden">
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-[19px] font-extrabold text-foreground">글쓰기 기록 추가</h3>
+              <p className="text-[13px] text-muted-foreground mt-1 font-medium">학생의 새로운 글쓰기 기록 정보를 입력해 주세요.</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Date and Student side by side */}
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-500 block">날짜</label>
+                  <input
+                    type="date"
+                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
+                    value={addForm.date}
+                    onChange={e => setAddForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-500 block">학생명</label>
+                  <select
+                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
+                    value={addForm.name}
+                    onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                  >
+                    <option value="" disabled>학생 선택</option>
+                    {sortedStudents.map(std => (
+                      <option key={std.name} value={std.name}>{std.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Book Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-500 block">도서명</label>
+                <input
+                  type="text"
+                  placeholder="도서명을 입력하세요"
+                  className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-4 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
+                  value={addForm.bookTitle}
+                  onChange={e => setAddForm(prev => ({ ...prev, bookTitle: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={() => setAddOpen(false)} 
+                className="flex-1 h-11 rounded-xl font-semibold"
+              >
+                취소
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleAddStatus} 
+                disabled={submittingAdd}
+                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+              >
+                {submittingAdd ? '저장 중...' : '추가'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deleting Dialog */}
+      <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
+        <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-8 h-8 text-destructive" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-extrabold text-foreground">글쓰기 기록 삭제</h3>
+              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                <span className="text-destructive font-bold">'{deletingItem?.name}'</span> 학생의 <br />
+                <span className="font-semibold">'{deletingItem?.bookTitle}'</span> 글쓰기 기록을 삭제하시겠습니까?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <DialogClose render={
+                <Button 
+                  type="button"
+                  variant="secondary" 
+                  className="flex-1 h-12 rounded-2xl font-bold"
+                >
+                  취소
+                </Button>
+              } />
+              <Button 
+                type="button"
+                variant="destructive"
+                className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
+                onClick={() => deletingItem && handleDeleteStatus(deletingItem)}
+                disabled={isDeleting}
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
