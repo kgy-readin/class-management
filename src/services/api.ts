@@ -751,3 +751,26 @@ export const noteApi = {
     }
   }
 };
+
+export const beginnerFeedbackApi = {
+  get: async (): Promise<{ bookTitle: string; content: string }[]> => {
+    const data = await getSheetData('기초첨삭', 'A2:B');
+    return data
+      .filter((row: any[]) => row && row[0])
+      .map((row: any[]) => ({
+        bookTitle: String(row[0] || '').trim(),
+        content: String(row[1] || '').trim(),
+      }));
+  },
+  update: async (originalBookTitle: string, data: { bookTitle: string; content: string }) => {
+    const rawData = await getSheetData('기초첨삭', 'A2:B');
+    const rowIndex = rawData.findIndex((row: any[]) => String(row[0] || '').trim() === originalBookTitle.trim()) + 2;
+    if (rowIndex < 2) {
+      const nextEmptyRow = rawData.length + 2;
+      await updateSheetData('기초첨삭', `A${nextEmptyRow}:B${nextEmptyRow}`, [[data.bookTitle, data.content]]);
+    } else {
+      await updateSheetData('기초첨삭', `A${rowIndex}:B${rowIndex}`, [[data.bookTitle, data.content]]);
+    }
+    return { success: true };
+  }
+};

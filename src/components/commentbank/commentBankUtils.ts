@@ -1,4 +1,4 @@
-import { Block } from './noticetemplateTypes';
+import { Block } from './commentBankTypes';
 
 /**
  * Strips markdown-like markup characters helper to copy clean text to clipboard safely

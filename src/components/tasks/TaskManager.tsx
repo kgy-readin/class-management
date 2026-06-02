@@ -61,7 +61,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const [newForm, setNewForm] = useState<Omit<Task, 'sheetRowIndex'>>({
     date: format(new Date(), 'yyyy-MM-dd'),
     name: '',
-    category: '기타',
+    category: '알림장',
     familyClass: '',
     todo: '',
     status: '예정',
@@ -433,7 +433,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     setInlineAddGroup(group);
     
     let defaultStatus = '예정';
-    let defaultCategory = '기타';
+    let defaultCategory = '알림장';
     let defaultFamilyClass = '';
     
     if (group === 'inProgress') {
@@ -1421,15 +1421,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     );
   }
 
-  // INLINE ADDITION FORM - Selectively activates 'Name' and 'Family Class' only during editing
+  // INLINE ADDITION FORM - Allows full entry including student name and details on creation
   function renderInlineAddForm(group: 'todo' | 'inProgress' | 'completed' | 'familyView') {
-    const isFamilyView = group === 'familyView';
-
     return (
       <div className="p-3 bg-zinc-50 rounded-xl border border-solid border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
           
-          <div className="md:col-span-3 flex flex-col gap-1.5">
+          {/* Category Selection */}
+          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
             <select
               value={newForm.category}
               onChange={(e) => {
@@ -1440,7 +1439,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                 }));
               }}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-750"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-750 focus:outline-none"
             >
               <option value="기타">기타</option>
               <option value="긴급">긴급</option>
@@ -1451,48 +1450,64 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               <option value="보고">보고</option>
               <option value="반복">반복</option>
             </select>
+          </div>
 
-            {/* FamilyClass selection picker if familyView */}
-            {isFamilyView && (
+          {/* FamilyClass selection picker if category === '가통' */}
+          {newForm.category === '가통' && (
+            <div className="sm:col-span-3">
               <select
                 value={newForm.familyClass}
                 onChange={(e) => setNewForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-yellow-800 font-normal"
+                className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-yellow-800 font-normal focus:outline-none"
               >
                 <option value="정기">정기</option>
                 <option value="첫날">첫날</option>
                 <option value="한달">한달</option>
                 <option value="중등">중등</option>
               </select>
-            )}
+            </div>
+          )}
+
+          {/* Student Name */}
+          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
+            <input
+              type="text"
+              list="task-student-names"
+              placeholder="학생명 (선택)"
+              value={newForm.name}
+              onChange={(e) => setNewForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-800 focus:outline-none"
+            />
           </div>
 
-          <div className="md:col-span-5">
+          {/* Date Picker */}
+          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
+            <input
+              type="date"
+              value={newForm.date}
+              onChange={(e) => setNewForm(prev => ({ ...prev, date: e.target.value }))}
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-650 focus:outline-none"
+            />
+          </div>
+
+          {/* Next Row: Todo and Memo */}
+          <div className="sm:col-span-8">
             <input
               type="text"
               placeholder="무엇을 해야 하나요?"
               value={newForm.todo}
               onChange={(e) => setNewForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-800"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-800 focus:outline-none"
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div className="sm:col-span-4">
             <input
               type="text"
               placeholder="메모 (옵션)"
               value={newForm.memo}
               onChange={(e) => setNewForm(prev => ({ ...prev, memo: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-zinc-500"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <input
-              type="date"
-              value={newForm.date}
-              onChange={(e) => setNewForm(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-650"
+              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-zinc-500 focus:outline-none"
             />
           </div>
 
@@ -1503,7 +1518,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             size="sm"
             disabled={submitting}
             onClick={handleCreateTask}
-            className="h-7 rounded-lg px-3 text-xs bg-primary text-white hover:bg-primary/95 font-semibold"
+            className="h-7 rounded-lg px-3 text-xs bg-primary text-white hover:bg-primary/95 font-semibold animate-none"
           >
             {submitting ? '저장...' : '확인'}
           </Button>

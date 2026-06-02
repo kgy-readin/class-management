@@ -1,3 +1,4 @@
+import { Card } from '@/components/ui/card';
 import { UsersRound } from 'lucide-react';
 import { DashboardData } from '../../types';
 import StudentCard from './StudentCard';

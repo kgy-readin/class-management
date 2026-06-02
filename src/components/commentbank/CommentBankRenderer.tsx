@@ -1,8 +1,8 @@
 import React, { ReactNode } from 'react';
-import { Block } from './noticetemplateTypes';
-import { parseLinesToBlocks } from './noticetemplateUtils';
+import { Block } from './commentBankTypes';
+import { parseLinesToBlocks } from './commentBankUtils';
 
-interface NoticeTemplateRendererProps {
+interface CommentBankRendererProps {
   text: string;
 }
 
@@ -120,14 +120,14 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
             );
           case 'bullet':
             return (
-              <div key={idx} className="pl-[5px] flex items-start gap-[18px] leading-[1.8] text-zinc-600">
+              <div key={idx} className="pl-[5px] flex items-start gap-[18px] leading-[1.8] text-zinc-650">
                 <span className="text-neutral-500 mt-2.5 shrink-0 block w-1.5 h-1.5 rounded-full bg-neutral-400" />
                 <span className="flex-1">{parseInlineStyles(block.text || '')}</span>
               </div>
             );
           case 'callout':
             return (
-              <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-zinc-600 overflow-hidden">
+              <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-zinc-650 overflow-hidden">
                 {renderBlocks(block.children || [])}
               </div>
             );
@@ -136,7 +136,7 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
           case 'p':
           default:
             return (
-              <p key={idx} className="leading-[1.8] text-zinc-600">
+              <p key={idx} className="leading-[1.8] text-zinc-650">
                 {parseInlineStyles(block.text || '')}
               </p>
             );
@@ -146,7 +146,7 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
   );
 };
 
-export default function NoticeTemplateRenderer({ text }: NoticeTemplateRendererProps) {
+export default function CommentBankRenderer({ text }: CommentBankRendererProps) {
   const lines = text.split('\n');
   const blocks = parseLinesToBlocks(lines);
   return renderBlocks(blocks);

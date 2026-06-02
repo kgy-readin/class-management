@@ -115,12 +115,12 @@ export default function WritingTracker() {
         <Card className="rounded-[2.5rem] shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto">
           <CardContent className="p-0 flex flex-col items-center justify-center min-h-[310px] w-full">
             <style>{`
-              .rdp { --rdp-accent-color: var(--primary); --rdp-background-color: var(--primary-foreground); margin: 0; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; }
+              .rdp { --rdp-accent-color: #2563eb; --rdp-background-color: #eff6ff; margin: 0; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; }
               .rdp-months { width: 100%; display: flex; justify-content: center; padding: 0.3rem 1rem 0.3rem 1rem; }
               .rdp-caption_label { font-weight: 600; transform: translate(12px, -4px); }
               .rdp-nav { transform: translateX(-12px) scale(0.8); }
-              .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: var(--primary); color: white; border-radius: 10px; }
-              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: var(--secondary); border-radius: 10px; }
+              .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white; border-radius: 10px; }
+              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 10px; }
               .rdp-head_cell { font-size: 11px; font-weight: 600; color: var(--muted-foreground); padding-bottom: 8px; }
               .rdp-table { width: 100%; border-collapse: collapse; max-width: 280px; }
               .rdp-cell { padding: 1px; }

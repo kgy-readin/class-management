@@ -7,10 +7,11 @@ import StudentList from './components/students/StudentList';
 import WritingTracker from './components/writing/WritingTracker';
 import StudentDetail from './components/students/StudentDetail';
 import { DashboardData } from './types/index';
-import { BookOpen, UsersRound, BookText, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig } from 'lucide-react';
+import { BookOpen, UsersRound, BookText, PenTool, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig, Sparkles } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
-import NoticeTemplates from './components/noticetemplates/NoticeTemplates';
-import ParentNewsletters from './components/noticetemplates/ParentNewsletters';
+import CommentBank from './components/commentbank/CommentBank';
+import ParentNewsletters from './components/commentbank/ParentNewsletters';
+import BeginnerFeedback from './components/commentbank/BeginnerFeedback';
 import { Button } from '@/components/ui/button';
 import { dataApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +22,8 @@ export default function App() {
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   
+  const [studentEntrySource, setStudentEntrySource] = useState<'dashboard' | 'students'>('dashboard');
+
   // App work mode: 'class' (수업모드) or 'work' (업무모드)
   const [appMode, setAppMode] = useState<'class' | 'work'>(() => {
     const cached = localStorage.getItem('webapp_app_mode') as 'class' | 'work';
@@ -29,15 +32,37 @@ export default function App() {
 
   // Active tab selection
   const [activeTab, setActiveTab] = useState(() => {
-    const cachedTab = localStorage.getItem('webapp_active_tab');
-    if (cachedTab) return cachedTab;
-    const cachedMode = localStorage.getItem('webapp_app_mode') as 'class' | 'work';
-    return cachedMode === 'work' ? 'tasks' : 'dashboard';
+    const mode = (localStorage.getItem('webapp_app_mode') as 'class' | 'work') || 'class';
+    if (mode === 'work') {
+      return localStorage.getItem('webapp_work_tab') || 'tasks';
+    } else {
+      return localStorage.getItem('webapp_class_tab') || 'dashboard';
+    }
   });
 
-  useEffect(() => {
-    localStorage.setItem('webapp_active_tab', activeTab);
-  }, [activeTab]);
+  // Helper to define mode categories
+  const getModeByTab = (tab: string): 'class' | 'work' => {
+    if (['tasks', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
+      return 'work';
+    }
+    return 'class';
+  };
+
+  // Function to coordinate state variables when active tab shifts
+  const selectTab = (tab: string) => {
+    const mode = getModeByTab(tab);
+    setAppMode(mode);
+    localStorage.setItem('webapp_app_mode', mode);
+    
+    setActiveTab(tab);
+    localStorage.setItem('webapp_active_tab', tab);
+    
+    if (mode === 'class') {
+      localStorage.setItem('webapp_class_tab', tab);
+    } else {
+      localStorage.setItem('webapp_work_tab', tab);
+    }
+  };
 
   // Floating speech bubble menu open state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,15 +70,12 @@ export default function App() {
   const handleModeChange = (mode: 'class' | 'work') => {
     setAppMode(mode);
     localStorage.setItem('webapp_app_mode', mode);
-    if (mode === 'class') {
-      setActiveTab('dashboard');
-      localStorage.setItem('webapp_active_tab', 'dashboard');
-      setSelectedStudent(null);
-    } else {
-      setActiveTab('tasks');
-      localStorage.setItem('webapp_active_tab', 'tasks');
-      setSelectedStudent(null);
-    }
+    const targetTab = mode === 'class'
+      ? (localStorage.getItem('webapp_class_tab') || 'dashboard')
+      : (localStorage.getItem('webapp_work_tab') || 'tasks');
+    setActiveTab(targetTab);
+    localStorage.setItem('webapp_active_tab', targetTab);
+    setSelectedStudent(null);
   };
 
   const fetchData = async () => {
@@ -76,9 +98,9 @@ export default function App() {
     await fetchData();
     setSelectedStudent(null);
     if (appMode === 'work') {
-      setActiveTab('tasks');
+      selectTab('tasks');
     } else {
-      setActiveTab('dashboard');
+      selectTab('dashboard');
     }
     toast.success('홈 화면으로 이동했습니다.');
   };
@@ -101,7 +123,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10">
       <Tabs value={activeTab} onValueChange={(val) => {
-        setActiveTab(val);
+        selectTab(val);
         if (val !== 'dashboard') {
           setSelectedStudent(null);
         }
@@ -139,18 +161,16 @@ export default function App() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -8 }}
                       transition={{ duration: 0.15, ease: 'easeOut' }}
-                      className="absolute left-0 top-11.5 z-[100] w-48 bg-white border border-zinc-200/75 rounded-2xl shadow-xl p-2 flex flex-col gap-0.5 mt-1"
+                      className="absolute left-0 top-11.5 z-[100] w-48 bg-white border border-zinc-200/75 rounded-2xl shadow-xl p-2 flex flex-col gap-0.5 mt-2"
                     >
-                      {/* Triangle speech bubble indicator pointing to the Menu button */}
-                      <div className="absolute left-3.5 -top-1 w-2.5 h-2.5 bg-white border-t border-l border-zinc-200/75 rotate-45 z-0" />
-
                       <div className="relative z-10 flex flex-col">
                         {[
                           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                           { id: 'students', label: 'Students', icon: UsersRound },
-                          { id: 'writing', label: 'Writing', icon: BookText },
+                          { id: 'writing', label: 'Writing', icon: PenTool },
                           { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
-                          { id: 'announcements', label: 'Templates', icon: MessageCircleWarning },
+                          { id: 'comments', label: 'Comments', icon: MessageCircleWarning },
+                          { id: 'beginners', label: 'Beginners', icon: Sparkles },
                           { id: 'familyLetter', label: 'Newsletters', icon: Archive },
                         ].map((item) => {
                           const Icon = item.icon;
@@ -160,13 +180,13 @@ export default function App() {
                               key={item.id}
                               type="button"
                               onClick={() => {
-                                setActiveTab(item.id);
+                                selectTab(item.id);
                                 setSelectedStudent(null);
                                 setIsMenuOpen(false);
                               }}
                               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-zinc-100 text-primary font-semibold text-left'
+                                  ? 'bg-blue-50/80 text-primary font-semibold text-left'
                                   : 'text-zinc-650 hover:bg-zinc-50 hover:text-zinc-900 text-left'
                               }`}
                             >
@@ -196,7 +216,8 @@ export default function App() {
                  activeTab === 'students' ? 'Students' :
                  activeTab === 'writing' ? 'Writing' :
                  activeTab === 'tasks' ? 'Tasks' :
-                 activeTab === 'announcements' ? 'Templates' :
+                 activeTab === 'comments' ? 'Comments' :
+                 activeTab === 'beginners' ? 'Beginners' :
                  activeTab === 'familyLetter' ? 'Newsletters' : 'Dashboard'}
               </button>
             </div>
@@ -253,10 +274,15 @@ export default function App() {
               <StudentDetail 
                 studentName={selectedStudent} 
                 data={data} 
+                setData={setData}
                 onBack={() => {
                   setSelectedStudent(null);
-                  if (appMode === 'work') {
-                    setActiveTab('tasks');
+                  if (studentEntrySource === 'students') {
+                    selectTab('students');
+                  } else if (appMode === 'work') {
+                    selectTab('tasks');
+                  } else {
+                    selectTab('dashboard');
                   }
                 }} 
                 onRefresh={fetchData} 
@@ -265,8 +291,11 @@ export default function App() {
               <Dashboard 
                 data={data} 
                 onRefresh={fetchData} 
-                onSelectStudent={setSelectedStudent}
-                onNavigateToStudents={() => setActiveTab('students')}
+                onSelectStudent={(name) => {
+                  setSelectedStudent(name);
+                  setStudentEntrySource('dashboard');
+                }}
+                onNavigateToStudents={() => selectTab('students')}
               />
             )}
           </TabsContent>
@@ -274,7 +303,8 @@ export default function App() {
           <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             <StudentList data={data} onRefresh={fetchData} onSelectStudent={(name) => {
               setSelectedStudent(name);
-              setActiveTab('dashboard');
+              setStudentEntrySource('students');
+              selectTab('dashboard');
             }} />
           </TabsContent>
           
@@ -286,8 +316,12 @@ export default function App() {
             <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />
           </TabsContent>
           
-          <TabsContent value="announcements" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <NoticeTemplates />
+          <TabsContent value="comments" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <CommentBank />
+          </TabsContent>
+
+          <TabsContent value="beginners" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <BeginnerFeedback />
           </TabsContent>
 
           <TabsContent value="familyLetter" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">

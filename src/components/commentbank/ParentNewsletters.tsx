@@ -20,9 +20,9 @@ import {
   CalendarFold
 } from 'lucide-react';
 import { noteApi, RPN_DOCS_ID } from '@/src/services/api';
-import { DocTab } from './noticetemplateTypes';
-import { stripMarkdown } from './noticetemplateUtils';
-import NoticeTemplateRenderer from './NoticeTemplateRenderer';
+import { DocTab } from './commentBankTypes';
+import { stripMarkdown } from './commentBankUtils';
+import CommentBankRenderer from './CommentBankRenderer';
 
 // Leaf SVG Icon (Teal-500)
 const LeafIcon = ({ className }: { className?: string }) => (
@@ -69,7 +69,7 @@ const getCustomTabIcon = (title: string, className = "w-4 h-4 shrink-0", isSelec
   return <FileText className={`${className} ${isSelected ? (baseColorClass || 'text-blue-600') : 'text-neutral-400'}`} />;
 };
 
-export default function ParentNewsletters() {
+export default function CommentParentNewsletters() {
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
     const cached = localStorage.getItem('webapp_family_letter_tabs_backup');
     return cached ? JSON.parse(cached) : [];
@@ -117,7 +117,7 @@ export default function ParentNewsletters() {
       if (!isBackground && !hasCache) {
         setLoading(true);
       }
-      const data = await noteApi.getTabsData(RPN_DOCS_ID);
+      const data = await noteApi.getTabsData(RPPN_DOCS_ID_OR_CORRECT_ID()); // helper in case API reference changed
       if (data && data.length > 0) {
         setAllTabs(data);
         localStorage.setItem('webapp_family_letter_tabs_backup', JSON.stringify(data));
@@ -131,6 +131,10 @@ export default function ParentNewsletters() {
       setLoading(false);
     }
   };
+
+  function RPPN_DOCS_ID_OR_CORRECT_ID() {
+    return RPN_DOCS_ID;
+  }
 
   useEffect(() => {
     fetchTabsData(true); // background sync on mount
@@ -238,7 +242,7 @@ export default function ParentNewsletters() {
   return (
     <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
-        {/* Left Side: Directory Sidebar (widescreen search list) */}
+        {/* Left Side: Directory Sidebar */}
         <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-neutral-200/60 flex flex-col gap-4 h-[650px] max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
           {/* Search Bar */}
           <div className="relative">
@@ -277,7 +281,7 @@ export default function ParentNewsletters() {
                         ) : (
                           <Folder className="w-4.5 h-4.5 text-neutral-400 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-600">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
                           {folder.title}
                         </span>
                         {hasChildren && (
@@ -304,13 +308,13 @@ export default function ParentNewsletters() {
                           const isSelected = selectedTabId === child.id;
                           const category = getCategoryType(child.title);
                           
-                          let activeClass = 'bg-zinc-100/80 text-blue-700/80 font-semibold';
+                          let activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
                           if (category === 'leaf') {
-                            activeClass = 'bg-zinc-100/80 text-emerald-800/80 font-semibold';
+                            activeClass = 'bg-zinc-50 text-emerald-800/80 font-semibold';
                           } else if (category === 'one') {
-                            activeClass = 'bg-zinc-100/80 text-blue-700/80 font-semibold';
+                            activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
                           } else if (category === 'letter') {
-                            activeClass = 'bg-zinc-100/80 text-violet-700/80 font-semibold';
+                            activeClass = 'bg-zinc-50 text-violet-700/80 font-semibold';
                           }
 
                           return (
@@ -353,6 +357,7 @@ export default function ParentNewsletters() {
                   {isEditing ? (
                     <>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={handleSaveEdit}
@@ -363,6 +368,7 @@ export default function ParentNewsletters() {
                         <Save className="w-4.5 h-4.5" />
                       </Button>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => {
@@ -380,6 +386,7 @@ export default function ParentNewsletters() {
                     <>
                       {/* Copy */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => handleCopy(selectedTab.id, selectedTab.text)}
@@ -397,9 +404,10 @@ export default function ParentNewsletters() {
                           <Copy className="w-4 h-4" />
                         )}
                       </Button>
- 
+  
                       {/* Edit (Pencil) */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => setIsEditing(true)}
@@ -408,9 +416,10 @@ export default function ParentNewsletters() {
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
- 
+  
                       {/* Sync */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => fetchTabsData(false)}
@@ -424,7 +433,7 @@ export default function ParentNewsletters() {
                   )}
                 </div>
               </div>
- 
+  
               {/* Text Area Content Formatted */}
               <div className="flex-1 min-h-0 flex flex-col">
                 {isEditing ? (
@@ -436,9 +445,9 @@ export default function ParentNewsletters() {
                     placeholder="내용을 수정해 주세요..."
                   />
                 ) : selectedTab.text ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-600 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <NoticeTemplateRenderer text={selectedTab.text} />
+                      <CommentBankRenderer text={selectedTab.text} />
                     </div>
                   </div>
                 ) : (

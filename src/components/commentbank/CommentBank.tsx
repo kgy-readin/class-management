@@ -17,11 +17,11 @@ import {
   Copy
 } from 'lucide-react';
 import { noteApi } from '@/src/services/api';
-import { DocTab } from './noticetemplateTypes';
-import { stripMarkdown } from './noticetemplateUtils';
-import NoticeTemplateRenderer from './NoticeTemplateRenderer';
+import { DocTab } from './commentBankTypes';
+import { stripMarkdown } from './commentBankUtils';
+import CommentBankRenderer from './CommentBankRenderer';
 
-export default function NoticeTemplates() {
+export default function CommentBank() {
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
     const cached = localStorage.getItem('webapp_tabs_data_backup');
     return cached ? JSON.parse(cached) : [];
@@ -190,7 +190,7 @@ export default function NoticeTemplates() {
   return (
     <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
-        {/* Left Side: Directory Sidebar (widescreen search list) */}
+        {/* Left Side: Directory Sidebar */}
         <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-neutral-200/60 flex flex-col gap-4 h-[650px] max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
           {/* Search Bar */}
           <div className="relative">
@@ -229,7 +229,7 @@ export default function NoticeTemplates() {
                         ) : (
                           <Folder className="w-4.5 h-4.5 text-neutral-400 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-600">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
                           {folder.title}
                         </span>
                         {hasChildren && (
@@ -260,7 +260,7 @@ export default function NoticeTemplates() {
                               onClick={() => setSelectedTabId(child.id)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? 'bg-zinc-100/80 text-blue-700/80 font-medium' 
+                                  ? 'bg-zinc-50 text-blue-700/80 font-medium' 
                                   : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
                               }`}
                             >
@@ -294,16 +294,18 @@ export default function NoticeTemplates() {
                   {isEditing ? (
                     <>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer animate-in fade-in duration-200"
                         title="저장"
                       >
                         <Save className="w-4.5 h-4.5" />
                       </Button>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => {
@@ -311,7 +313,7 @@ export default function NoticeTemplates() {
                           setEditText(selectedTab.text || '');
                         }}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer"
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer animate-in fade-in duration-200"
                         title="취소"
                       >
                         <X className="w-4.5 h-4.5" />
@@ -321,13 +323,14 @@ export default function NoticeTemplates() {
                     <>
                       {/* Copy */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => handleCopy(selectedTab.id, selectedTab.text)}
                         disabled={!selectedTab.text}
                         className={`rounded-full w-8 h-8 cursor-pointer transition-all ${
                           copiedId === selectedTab.id 
-                          ? 'bg-teal-500 hover:bg-teal-600 text-white' 
+                          ? 'bg-teal-500 hover:bg-teal-600 text-white animate-in zoom-in-75 duration-150' 
                           : 'hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800'
                         }`}
                         title="복사하기"
@@ -338,9 +341,10 @@ export default function NoticeTemplates() {
                           <Copy className="w-4 h-4" />
                         )}
                       </Button>
- 
+  
                       {/* Edit (Pencil) */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => setIsEditing(true)}
@@ -349,9 +353,10 @@ export default function NoticeTemplates() {
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
- 
+  
                       {/* Sync */}
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         onClick={() => fetchTabsData(false)}
@@ -365,7 +370,7 @@ export default function NoticeTemplates() {
                   )}
                 </div>
               </div>
- 
+  
               {/* Text Area Content Formatted */}
               <div className="flex-1 min-h-0 flex flex-col">
                 {isEditing ? (
@@ -377,9 +382,9 @@ export default function NoticeTemplates() {
                     placeholder="내용을 수정해 주세요..."
                   />
                 ) : selectedTab.text ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-600 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <NoticeTemplateRenderer text={selectedTab.text} />
+                      <CommentBankRenderer text={selectedTab.text} />
                     </div>
                   </div>
                 ) : (

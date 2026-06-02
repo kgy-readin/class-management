@@ -7,23 +7,25 @@ import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useOptimistic, useTransition } from 'react';
 import { curriculumApi, writingStatusApi } from '@/src/services/api';
 
 interface StudentDetailProps {
   studentName: string;
   data: DashboardData | null;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
   onBack: () => void;
   onRefresh: () => void;
 }
 
-export default function StudentDetail({ studentName, data, onBack, onRefresh }: StudentDetailProps) {
+export default function StudentDetail({ studentName, data, setData, onBack, onRefresh }: StudentDetailProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<{ status: string; index: number; bookTitle: string } | null>(null);
   const [addingWriting, setAddingWriting] = useState<string | null>(null);
   const [writingConfirmItem, setWritingConfirmItem] = useState<any | null>(null);
   const [deletingItem, setDeletingItem] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     // Scroll window to bottom when entering the student details
@@ -42,23 +44,109 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
     .filter(c => c.studentName === studentName)
     .sort((a, b) => a.index - b.index);
 
+  const [optimisticCurriculum, setOptimisticCurriculum] = useOptimistic(
+    curriculum,
+    (state, action: 
+      | { type: 'add'; payload: any }
+      | { type: 'update'; payload: any }
+      | { type: 'delete'; payload: any }
+    ) => {
+      switch (action.type) {
+        case 'add':
+          return [...state, action.payload].sort((a, b) => a.index - b.index);
+        case 'update':
+          return state
+            .map(item => {
+              if (item.bookId === action.payload.bookId && item.index === action.payload.originalIndex) {
+                return {
+                  ...item,
+                  status: action.payload.status,
+                  index: action.payload.index,
+                  bookTitle: action.payload.bookTitle,
+                };
+              }
+              return item;
+            })
+            .sort((a, b) => a.index - b.index);
+        case 'delete':
+          return state.filter(item => !(item.bookId === action.payload.bookId && item.index === action.payload.index));
+        default:
+          return state;
+      }
+    }
+  );
+
   const handleUpdate = async (bookId: string) => {
     if (!editValues) return;
-    try {
-      await curriculumApi.update({ 
-        studentName, 
-        bookId, 
-        status: editValues.status,
-        index: editValues.index,
-        bookTitle: editValues.bookTitle,
-        originalIndex: editingIndex!
+    const originalIndex = editingIndex!;
+    const { status, index, bookTitle } = editValues;
+
+    startTransition(async () => {
+      setOptimisticCurriculum({ 
+        type: 'update', 
+        payload: { bookId, originalIndex, status, index, bookTitle } 
       });
-      toast.success('정보가 업데이트되었습니다.');
       setEditingIndex(null);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+      try {
+        await curriculumApi.update({ 
+          studentName, 
+          bookId, 
+          status,
+          index,
+          bookTitle,
+          originalIndex
+        });
+        toast.success('정보가 업데이트되었습니다.');
+        
+        if (setData) {
+          setData(prev => {
+            if (!prev) return prev;
+            
+            let updatedStudents = prev.students;
+            const previousItem = prev.curriculums.find(c => c.studentName === studentName && c.bookId === bookId && c.index === originalIndex);
+            
+            if (previousItem && previousItem.status !== status) {
+              const isBook = bookId && bookId.trim() !== '' && bookId.trim() !== '-';
+              if (isBook) {
+                updatedStudents = prev.students.map(s => {
+                  if (s.name === studentName) {
+                    let diff = 0;
+                    if (status === '통과' && previousItem.status !== '통과') diff = 1;
+                    else if (previousItem.status === '통과' && status !== '통과') diff = -1;
+                    
+                    return {
+                      ...s,
+                      booksCompleted: Math.max(0, s.booksCompleted + diff)
+                    };
+                  }
+                  return s;
+                });
+              }
+            }
+
+            const updatedCurriculums = prev.curriculums.map(c => {
+              if (c.studentName === studentName && c.bookId === bookId && c.index === originalIndex) {
+                return {
+                  ...c,
+                  status: status as any,
+                  index,
+                  bookTitle
+                };
+              }
+              return c;
+            }).sort((a, b) => a.index - b.index);
+
+            return {
+              ...prev,
+              students: updatedStudents,
+              curriculums: updatedCurriculums
+            };
+          });
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    });
   };
 
   const handleAddToWritingStatus = async (item: any) => {
@@ -70,7 +158,6 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
         progress: '진행' 
       });
       toast.success('글쓰기 현황에 추가되었습니다.');
-      onRefresh();
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -80,31 +167,83 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
   };
 
   const handleAddCurriculum = async (bookTitle?: string, isWriting: boolean = false) => {
-    try {
-      await curriculumApi.add({ studentName, bookTitle, isWriting });
-      toast.success(isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.');
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    const nextIndex = (optimisticCurriculum.length > 0 ? Math.max(...optimisticCurriculum.map(c => c.index)) : 0) + 1;
+    let bookId = '';
+    let bookLevel = '';
+    let info = '';
+
+    if (!isWriting && bookTitle && data?.books) {
+      const book = data.books.find(b => b.title === bookTitle);
+      if (book) {
+        bookId = book.id;
+        bookLevel = book.level;
+        info = `${book.therapy} / ${book.difficulty}`;
+      }
     }
+
+    const tempItem = {
+      studentName,
+      index: nextIndex,
+      bookTitle: isWriting ? '글쓰기' : (bookTitle || ''),
+      bookLevel,
+      info,
+      bookId,
+      status: '예정' as const,
+    };
+
+    startTransition(async () => {
+      setOptimisticCurriculum({ type: 'add', payload: tempItem });
+      try {
+        const response = await curriculumApi.add({ studentName, bookTitle, isWriting });
+        toast.success(isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.');
+        
+        if (setData) {
+          setData(prev => {
+            if (!prev) return prev;
+            const actualItem = {
+              ...tempItem,
+              index: response.index || nextIndex
+            };
+            return {
+              ...prev,
+              curriculums: [...prev.curriculums, actualItem].sort((a, b) => a.index - b.index)
+            };
+          });
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    });
   };
 
   const handleDeleteCurriculum = async (item: any) => {
     setIsDeleting(true);
-    try {
-      await curriculumApi.remove({ 
-        studentName, 
-        bookId: item.bookId, 
-        index: item.index 
-      });
-      toast.success('항목이 삭제되었습니다.');
+    startTransition(async () => {
+      setOptimisticCurriculum({ type: 'delete', payload: item });
       setDeletingItem(null);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsDeleting(false);
-    }
+      try {
+        await curriculumApi.remove({ 
+          studentName, 
+          bookId: item.bookId, 
+          index: item.index 
+        });
+        toast.success('항목이 삭제되었습니다.');
+        
+        if (setData) {
+          setData(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              curriculums: prev.curriculums.filter(c => !(c.studentName === studentName && c.bookId === item.bookId && c.index === item.index))
+            };
+          });
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      } finally {
+        setIsDeleting(false);
+      }
+    });
   };
 
   return (
@@ -135,27 +274,27 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                   <div className="pt-4">
                     <BookSearch 
                       books={data.books} 
-                      existingBookTitles={curriculum.map(c => c.bookTitle)}
+                      existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
                       onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
                     />
                   </div>
                 </DialogContent>
-              </Dialog>
+               </Dialog>
 
-              <Button 
-                variant="outline"
-                className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] shadow-sm transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
-                onClick={() => handleAddCurriculum(undefined, true)}
-              >
-                <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                글쓰기
-              </Button>
+               <Button 
+                 variant="outline"
+                 className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] shadow-sm transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
+                 onClick={() => handleAddCurriculum(undefined, true)}
+               >
+                 <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                 글쓰기
+               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white mt-2">
+       <Card className="rounded-[2.5rem] shadow-sm overflow-hidden bg-white mt-2">
         <CardContent className="p-0">
           <Table>
              <TableHeader className="bg-white border-b border-border/50 text-[11px] sm:text-[13px]">
@@ -169,7 +308,7 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {curriculum.length === 0 ? (
+              {optimisticCurriculum.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in-50 duration-300">
@@ -182,8 +321,8 @@ export default function StudentDetail({ studentName, data, onBack, onRefresh }: 
                   </TableCell>
                 </TableRow>
               ) : (
-                curriculum.map((item, idx) => {
-                  const isLast = idx === curriculum.length - 1;
+                optimisticCurriculum.map((item, idx) => {
+                  const isLast = idx === optimisticCurriculum.length - 1;
                   return (
                     <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
                     <TableCell className={`text-center pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
