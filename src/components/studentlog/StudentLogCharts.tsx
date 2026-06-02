@@ -17,9 +17,10 @@ interface StudentLogChartsProps {
   pieData: Array<{ name: string; value: number }>;
   trendData: Array<{ name: string; '기록 수': number }>;
   CAT_HEX_COLORS: Record<string, string>;
+  selectedStudent: string;
 }
 
-export default function StudentLogCharts({ pieData, trendData, CAT_HEX_COLORS }: StudentLogChartsProps) {
+export default function StudentLogCharts({ pieData, trendData, CAT_HEX_COLORS, selectedStudent }: StudentLogChartsProps) {
   return (
     <div className="hidden lg:block space-y-4">
       {/* Category Pie Chart Card */}
@@ -28,7 +29,9 @@ export default function StudentLogCharts({ pieData, trendData, CAT_HEX_COLORS }:
           <span className="text-[15px] font-semibold uppercase text-zinc-800 tracking-wider">유형별 기록</span>
         </div>
         <CardContent className="p-4 flex flex-col items-center justify-center h-[230px]" style={{ paddingTop: '8px' }}>
-          {pieData.length === 0 ? (
+          {!selectedStudent ? (
+            <div className="text-zinc-500 text-[14px] text-center py-10 font-medium">학생을 선택해 주세요.</div>
+          ) : pieData.length === 0 ? (
             <div className="text-zinc-500 text-[14px] text-center py-10 font-medium">기록 데이터가 없습니다.</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -79,7 +82,9 @@ export default function StudentLogCharts({ pieData, trendData, CAT_HEX_COLORS }:
           <span className="text-[15px] font-semibold uppercase text-zinc-800 tracking-wider">월별 기록</span>
         </div>
         <CardContent className="p-4 flex flex-col items-center justify-center h-[230px]" style={{ paddingTop: '8px' }}>
-          {trendData.length === 0 ? (
+          {!selectedStudent ? (
+            <div className="text-zinc-500 text-[14px] text-center py-10 font-medium">학생을 선택해 주세요.</div>
+          ) : trendData.length === 0 ? (
             <div className="text-zinc-500 text-[14px] text-center py-10 font-medium">기록 데이터가 없습니다.</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
