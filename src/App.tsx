@@ -7,12 +7,13 @@ import StudentList from './components/students/StudentList';
 import WritingTracker from './components/writing/WritingTracker';
 import StudentDetail from './components/students/StudentDetail';
 import { DashboardData } from './types/index';
-import { BookOpen, UsersRound, BookText, PenTool, Settings, Briefcase, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig, Sparkles, ScrollText } from 'lucide-react';
+import { BookOpen, UsersRound, BookText, PenTool, Settings, BriefcaseBusiness, MessageCircleWarning, Archive, Menu, LayoutDashboard, SquareCheckBig, Sparkles, ScrollText, MessagesSquare } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
 import StudentLog from './components/studentlog/StudentLog';
 import CommentBank from './components/commentbank/CommentBank';
 import ParentNewsletters from './components/newsletters/ParentNewsletters';
 import BeginnerFeedback from './components/beginners/BeginnerFeedback';
+import MeetingNote from './components/meeting/MeetingNote';
 import { Button } from '@/components/ui/button';
 import { dataApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -43,7 +44,7 @@ export default function App() {
 
   // Helper to define mode categories
   const getModeByTab = (tab: string): 'class' | 'work' => {
-    if (['tasks', 'logs', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
+    if (['tasks', 'logs', 'meeting', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
       return 'work';
     }
     return 'class';
@@ -180,6 +181,7 @@ export default function App() {
                           { id: 'writing', label: 'Writing', icon: PenTool },
                           { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
                           { id: 'logs', label: 'Logs', icon: Archive },
+                          { id: 'meeting', label: 'Meeting', icon: MessagesSquare },
                           { id: 'comments', label: 'Comments', icon: MessageCircleWarning },
                           { id: 'beginners', label: 'Beginners', icon: Sparkles },
                           { id: 'familyLetter', label: 'Newsletters', icon: ScrollText },
@@ -228,6 +230,7 @@ export default function App() {
                  activeTab === 'writing' ? 'Writing' :
                  activeTab === 'tasks' ? 'Tasks' :
                  activeTab === 'logs' ? 'Logs' :
+                 activeTab === 'meeting' ? 'Meeting' :
                  activeTab === 'comments' ? 'Comments' :
                  activeTab === 'beginners' ? 'Beginners' :
                  activeTab === 'familyLetter' ? 'Newsletters' : 'Dashboard'}
@@ -260,7 +263,7 @@ export default function App() {
                   }`}
                   title="업무모드"
                 >
-                  <Briefcase className="w-4.5 h-4.5" />
+                  <BriefcaseBusiness className="w-4.5 h-4.5" />
                 </button>
               </div>
             </div>
@@ -329,7 +332,11 @@ export default function App() {
           </TabsContent>
 
           <TabsContent value="logs" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <StudentLog students={data?.students || []} />
+             <StudentLog students={data?.students || []} />
+          </TabsContent>
+
+          <TabsContent value="meeting" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <MeetingNote />
           </TabsContent>
           
           <TabsContent value="comments" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">

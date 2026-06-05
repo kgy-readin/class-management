@@ -10,6 +10,7 @@ import { ko } from 'date-fns/locale';
 import { writingStatusApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import StudentCombobox from '../common/StudentCombobox';
 
 import 'react-day-picker/dist/style.css';
 
@@ -29,7 +30,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     date: '',
     name: '',
     bookTitle: '',
-    progress: '완료(완성)'
+    progress: '완료'
   });
   const [submittingAdd, setSubmittingAdd] = useState(false);
   const [deletingItem, setDeletingItem] = useState<WritingStatus | null>(null);
@@ -42,7 +43,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       name: selectedStudent || '',
       bookTitle: '',
-      progress: '완료(완성)'
+      progress: '완료'
     });
     setAddOpen(true);
   };
@@ -377,15 +378,15 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                 value={editValues?.progress}
                                 onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
                               >
-                                {['진행', '완료', '완료(완성)'].map(p => <option key={p} value={p}>{p}</option>)}
+                              {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             ) : (
                               <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                                (status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? getTagColor('파란색') :
+                                (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
                                 status.progress === '진행' ? getTagColor('노란색') :
                                 getTagColor('기본')
                               }`}>
-                                {(status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? '완료' : status.progress}
+                                {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                               </Badge>
                             )}
                           </div>
@@ -453,11 +454,11 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         <span className="text-sm font-normal text-foreground">{status.name}</span>
                         {!isEditing && (
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
-                            (status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? getTagColor('파란색') :
+                            (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
                             status.progress === '진행' ? getTagColor('노란색') :
                             getTagColor('기본')
                           }`}>
-                            {(status.progress === '완료' || status.progress === '완성' || status.progress === '완료(완성)') ? '완료' : status.progress}
+                            {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
                           </Badge>
                         )}
                       </div>
@@ -498,7 +499,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">상태 변경</span>
                             <select className="text-xs font-normal bg-white border border-border/50 rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary/20" value={editValues?.progress} onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}>
-                              {['진행', '완료', '완료(완성)'].map(p => <option key={p} value={p}>{p}</option>)}
+                              {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                           </div>
                         </div>
@@ -537,16 +538,13 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-500 block">학생명</label>
-                  <select
-                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
+                  <StudentCombobox
+                    students={sortedStudents}
                     value={addForm.name}
-                    onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                  >
-                    <option value="" disabled>학생 선택</option>
-                    {sortedStudents.map(std => (
-                      <option key={std.name} value={std.name}>{std.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setAddForm(prev => ({ ...prev, name: val }))}
+                    placeholder="학생 선택 또는 직접 입력"
+                    inputClassName="bg-zinc-50 border-neutral-200/80 text-[14px]"
+                  />
                 </div>
               </div>
 

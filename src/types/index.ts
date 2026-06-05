@@ -105,6 +105,13 @@ export interface StudentLogEntry {
   content: string;
 }
 
+export interface MeetingNote {
+  date: string;
+  title: string;
+  content: string;
+  sheetRowIndex?: number;
+}
+
 export const LOG_CATEGORY_COLORS: Record<string, string> = {
   '지도방향': '회색',
   '특이사항': '회색',

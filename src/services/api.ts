@@ -1,4 +1,4 @@
-import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note, StudentLogEntry } from '../types';
+import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note, StudentLogEntry, MeetingNote } from '../types';
 
 function cleanSpreadsheetId(idOrUrl: string | undefined): string {
   if (!idOrUrl) return '';
@@ -845,6 +845,36 @@ export const studentLogApi = {
     if (rowIndex < 2) throw new Error('수정할 항목을 찾을 수 없습니다.');
     const newRow = [updated.date, updated.name, updated.category, updated.content];
     await updateSheetData('교무수첩', `A${rowIndex}:D${rowIndex}`, [newRow]);
+    return { success: true };
+  }
+};
+
+export const meetingNoteApi = {
+  get: async (): Promise<MeetingNote[]> => {
+    const data = await getSheetData('회의록', 'A2:C');
+    return data
+      .map((row: any[], index: number) => ({
+        sheetRowIndex: index + 2,
+        date: row[0] || '',
+        title: row[1] || '',
+        content: row[2] || '',
+      }))
+      .filter((note: MeetingNote) => note.title || note.content);
+  },
+  add: async (note: Omit<MeetingNote, 'sheetRowIndex'>) => {
+    const existing = await getSheetData('회의록', 'A2:C');
+    const nextEmptyRow = existing.length + 2;
+    const newRow = [note.date, note.title, note.content];
+    await updateSheetData('회의록', `A${nextEmptyRow}:C${nextEmptyRow}`, [newRow]);
+    return { success: true, sheetRowIndex: nextEmptyRow };
+  },
+  update: async (sheetRowIndex: number, note: MeetingNote) => {
+    const updatedRow = [note.date, note.title, note.content];
+    await updateSheetData('회의록', `A${sheetRowIndex}:C${sheetRowIndex}`, [updatedRow]);
+    return { success: true };
+  },
+  remove: async (sheetRowIndex: number) => {
+    await deleteRow('회의록', sheetRowIndex);
     return { success: true };
   }
 };

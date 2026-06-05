@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import StudentLogCalendar from './StudentLogCalendar';
 import StudentLogStudents from './StudentLogStudents';
+import StudentCombobox from '../common/StudentCombobox';
 import { isKoreanHoliday } from './holidayUtils';
 import { 
   StudentLogEntry, 
@@ -82,7 +83,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
   const handleOpenAddDialog = (initialDate?: Date) => {
     setAddForm({
       date: initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-      name: selectedStudent || (sortedStudents[0]?.name || ''),
+      name: selectedStudent || '',
       category: '특이사항',
       content: ''
     });
@@ -179,16 +180,13 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
                   />
                 </div>
                 <div className="min-w-0">
-                  <select
-                    className="w-full min-w-0 bg-zinc-50 border border-solid border-zinc-100 rounded-xl px-3 py-2.5 text-[14px] font-medium focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all cursor-pointer"
+                  <StudentCombobox
+                    students={sortedStudents}
                     value={addForm.name}
-                    onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                  >
-                    <option value="" disabled>학생 선택</option>
-                    {sortedStudents.map(std => (
-                      <option key={std.name} value={std.name}>{std.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setAddForm(prev => ({ ...prev, name: val }))}
+                    placeholder="학생명"
+                    inputClassName="bg-zinc-50 border-solid border-zinc-100"
+                  />
                 </div>
               </div>
 
@@ -220,7 +218,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
               <div>
                 <textarea
                   rows={4}
-                  placeholder="대화 내용, 과제 상태, 피드백 등 내용을 적어주세요."
+                  placeholder="기록할 내용을 작성해 주세요."
                   className="w-full bg-zinc-50 border border-solid border-zinc-100 rounded-lg px-4 py-3 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all resize-none"
                   value={addForm.content}
                   onChange={e => setAddForm(prev => ({ ...prev, content: e.target.value }))}

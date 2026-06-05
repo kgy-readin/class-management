@@ -42,7 +42,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       await writingStatusApi.update({ 
         name: student.name, 
         bookTitle: item.bookTitle,
-        progress: '완료(완성)' 
+        progress: '완료' 
       });
       toast.success('글쓰기 현황에 추가되었습니다.');
       onRefresh();

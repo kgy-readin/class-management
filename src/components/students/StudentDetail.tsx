@@ -155,7 +155,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       await writingStatusApi.update({ 
         name: studentName, 
         bookTitle: item.bookTitle,
-        progress: '완료(완성)' 
+        progress: '완료' 
       });
       toast.success('글쓰기 현황에 추가되었습니다.');
     } catch (error: any) {

@@ -150,12 +150,11 @@ export default function BeginnerFeedback() {
     }
   };
 
-  // Filter items based on book title or body content
+  // Filter items based on book title only
   const filteredItems = items.filter(item => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
-    return item.bookTitle.toLowerCase().includes(query) || 
-           item.content.toLowerCase().includes(query);
+    return item.bookTitle.toLowerCase().includes(query);
   });
 
   // Apply replacement for rendering
@@ -210,7 +209,7 @@ export default function BeginnerFeedback() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-neutral-400" />
             <input
               type="text"
-              placeholder="도서명 또는 내용 검색..."
+              placeholder="도서명 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-[#fbfbfc] hover:border-neutral-300 focus:bg-white transition-all"

@@ -1,0 +1,552 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { 
+  MessagesSquare,
+  MessageSquareQuote,
+  Search, 
+  RefreshCw,
+  Check,
+  Pencil,
+  Save,
+  X,
+  Copy,
+  Plus,
+  Trash2,
+  Calendar
+} from 'lucide-react';
+import { meetingNoteApi } from '@/src/services/api';
+import { MeetingNote as MeetingNoteType } from '@/src/types';
+import CommentBankRenderer from '../commentbank/CommentBankRenderer';
+import { stripMarkdown } from '../commentbank/commentBankUtils';
+
+export default function MeetingNote() {
+  const [items, setItems] = useState<MeetingNoteType[]>(() => {
+    const cached = localStorage.getItem('webapp_meeting_notes_backup');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [copiedRowIndex, setCopiedRowIndex] = useState<number | null>(null);
+
+  // Editing State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [savingItem, setSavingItem] = useState(false);
+
+  // Adding State
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [addForm, setAddForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    title: '',
+    content: ''
+  });
+  const [addingNote, setAddingNote] = useState(false);
+
+  // Sorting: Date Descending, then Row Index Descending
+  const sortedItems = [...items].sort((a, b) => {
+    const dateA = new Date(a.date).getTime() || 0;
+    const dateB = new Date(b.date).getTime() || 0;
+    if (dateB !== dateA) {
+      return dateB - dateA;
+    }
+    return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
+  });
+
+  const selectedItem = sortedItems.find(item => item.sheetRowIndex === selectedRowIndex) || sortedItems[0];
+
+  useEffect(() => {
+    if (selectedItem) {
+      setSelectedRowIndex(selectedItem.sheetRowIndex || null);
+    }
+  }, [items]);
+
+  // Update edit form whenever selected item changes
+  useEffect(() => {
+    if (selectedItem) {
+      setEditTitle(selectedItem.title || '');
+      setEditDate(selectedItem.date || '');
+      setEditContent(selectedItem.content || '');
+    }
+    setIsEditing(false);
+  }, [selectedRowIndex, selectedItem]);
+
+  const fetchMeetingNotes = async (isBackground = false) => {
+    const hasCache = items.length > 0;
+    try {
+      if (!isBackground && !hasCache) {
+        setLoading(true);
+      }
+      const data = await meetingNoteApi.get();
+      if (data) {
+        setItems(data);
+        localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(data));
+        if (data.length > 0 && !selectedRowIndex) {
+          // Sort fetched data to find newest
+          const newest = [...data].sort((a, b) => {
+            const dateA = new Date(a.date).getTime() || 0;
+            const dateB = new Date(b.date).getTime() || 0;
+            if (dateB !== dateA) return dateB - dateA;
+            return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
+          })[0];
+          setSelectedRowIndex(newest.sheetRowIndex || null);
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to load meeting notes:', error);
+      if (!hasCache) {
+        toast.error('회의록 데이터를 불러오는데 실패했습니다: ' + error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeetingNotes(true); // background sync on mount
+  }, []);
+
+  const handleCopy = async (rowIndex: number, text: string) => {
+    try {
+      const cleanText = stripMarkdown(text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(cleanText);
+        setCopiedRowIndex(rowIndex);
+        toast.success('클립보드에 복사되었습니다!');
+        setTimeout(() => setCopiedRowIndex(null), 2000);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = cleanText;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setCopiedRowIndex(rowIndex);
+        toast.success('클립보드에 복사되었습니다!');
+        setTimeout(() => setCopiedRowIndex(null), 2000);
+      }
+    } catch (err) {
+      toast.error('복사에 실패했습니다.');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedRowIndex || !selectedItem) return;
+    if (!editTitle.trim()) {
+      toast.error('제목을 입력해 주세요.');
+      return;
+    }
+
+    // Optimistically update local state first
+    const updatedItems = items.map(item => {
+      if (item.sheetRowIndex === selectedRowIndex) {
+        return { ...item, title: editTitle, date: editDate, content: editContent };
+      }
+      return item;
+    });
+    setItems(updatedItems);
+    localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updatedItems));
+    setIsEditing(false);
+
+    try {
+      setSavingItem(true);
+      await meetingNoteApi.update(selectedRowIndex, {
+        sheetRowIndex: selectedRowIndex,
+        title: editTitle,
+        date: editDate,
+        content: editContent
+      });
+      toast.success('수정사항이 저장되었습니다.');
+    } catch (error: any) {
+      console.error('meetingNoteApi.update Failed:', error);
+      toast.error('로컬에 저장되었으나 서버전송에 실패했습니다: ' + error.message);
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
+  const handleCreateNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addForm.title.trim()) {
+      toast.error('제목을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      setAddingNote(true);
+      const res = await meetingNoteApi.add({
+        date: addForm.date,
+        title: addForm.title,
+        content: addForm.content
+      });
+
+      if (res.success) {
+        const newNoteWithIndex: MeetingNoteType = {
+          sheetRowIndex: res.sheetRowIndex,
+          date: addForm.date,
+          title: addForm.title,
+          content: addForm.content
+        };
+
+        const updated = [newNoteWithIndex, ...items];
+        setItems(updated);
+        localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
+        
+        setSelectedRowIndex(res.sheetRowIndex || null);
+        setShowAddDialog(false);
+        setAddForm({
+          date: new Date().toISOString().split('T')[0],
+          title: '',
+          content: ''
+        });
+        toast.success('회의록이 등록되었습니다.');
+      }
+    } catch (err: any) {
+      toast.error('회의록 등록 실패: ' + err.message);
+    } finally {
+      setAddingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    if (!selectedRowIndex) return;
+    if (!window.confirm('정말 이 회의록을 삭제하시겠습니까?')) return;
+
+    // Optimistically update
+    const updated = items.filter(item => item.sheetRowIndex !== selectedRowIndex);
+    setItems(updated);
+    localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
+
+    const nextIndex = updated[0]?.sheetRowIndex || null;
+    setSelectedRowIndex(nextIndex);
+
+    try {
+      await meetingNoteApi.remove(selectedRowIndex);
+      toast.success('회의록이 삭제되었습니다.');
+    } catch (err: any) {
+      toast.error('회의록 삭제 실패: ' + err.message);
+    }
+  };
+
+  // Filter items based on title or body content
+  const filteredItems = sortedItems.filter(item => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return item.title.toLowerCase().includes(query) || 
+           item.content.toLowerCase().includes(query) ||
+           item.date.includes(query);
+  });
+
+  return (
+    <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
+        {/* Left Side: Directory Sidebar */}
+        <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex flex-col gap-4 h-[650px] max-lg:h-auto max-lg:min-h-[350px]">
+          
+          {/* Search Bar & Add Button */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="회의 제목, 내용 또는 날짜 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-[#fbfbfc] hover:border-neutral-300 focus:bg-white transition-all"
+              />
+            </div>
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => setShowAddDialog(true)}
+              className="h-11 w-11 shrink-0 rounded-full text-zinc-700 border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all flex items-center justify-center cursor-pointer"
+              title="회의록 추가"
+            >
+              <Plus className="w-5 h-5 text-zinc-500" />
+            </Button>
+          </div>
+
+          {/* Meeting Lists */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 max-lg:max-h-[250px]">
+            {filteredItems.length === 0 ? (
+              <div className="py-20 text-center text-[13px] md:text-[15px] text-neutral-400 flex flex-col items-center justify-center gap-2">
+                <MessagesSquare className="w-9 h-9 text-neutral-300" />
+                <span>검색 결과가 없거나 회의록이 존재하지 않습니다.</span>
+              </div>
+            ) : (
+              filteredItems.map((item) => {
+                const isSelected = selectedRowIndex === item.sheetRowIndex;
+                return (
+                  <div
+                    key={item.sheetRowIndex}
+                    onClick={() => setSelectedRowIndex(item.sheetRowIndex || null)}
+                    className={`flex items-start gap-3 p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                      isSelected 
+                        ? 'bg-zinc-50 border-zinc-200 text-blue-700 font-semibold' 
+                        : 'border-transparent text-zinc-650 hover:bg-[#f6f7f9] hover:border-zinc-100 hover:text-zinc-900'
+                    }`}
+                  >
+                    <MessageSquareQuote className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span className="truncate text-[13px] md:text-[14px] leading-snug">{item.title}</span>
+                      <span className="text-[11px] font-medium text-neutral-400 font-mono">{item.date}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: Tab Document Content Display */}
+        <div className="flex flex-col bg-white rounded-[2rem] p-6 shadow-sm border-none lg:h-[650px] h-auto min-h-0 w-full">
+          {selectedItem ? (
+            <div className="flex-1 flex flex-col min-h-0 h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
+                <div className="flex-1 min-w-0 pr-4">
+                  {isEditing ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 px-2 py-1 border border-neutral-200 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        placeholder="회의 제목을 입력하세요..."
+                      />
+                      <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="px-2 py-0.5 border border-neutral-200 rounded text-zinc-650 outline-none"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MessageSquareQuote className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
+                        <h2 className="text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
+                          {selectedItem.title}
+                        </h2>
+                      </div>
+                      <span className="text-[11px] font-medium text-neutral-400 font-mono ml-7">{selectedItem.date}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Action Buttons: Copy, Edit, Delete, Sync */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {isEditing ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={handleSaveEdit}
+                        disabled={savingItem}
+                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer animate-in fade-in duration-200"
+                        title="시트에 저장"
+                      >
+                        <Save className="w-4.5 h-4.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditTitle(selectedItem.title || '');
+                          setEditDate(selectedItem.date || '');
+                          setEditContent(selectedItem.content || '');
+                        }}
+                        disabled={savingItem}
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer animate-in fade-in duration-200"
+                        title="취소"
+                      >
+                        <X className="w-4.5 h-4.5" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Copy to Clipboard */}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleCopy(selectedItem.sheetRowIndex || 0, selectedItem.content)}
+                        disabled={!selectedItem.content}
+                        className={`rounded-full w-8 h-8 cursor-pointer transition-all ${
+                          copiedRowIndex === selectedItem.sheetRowIndex 
+                          ? 'bg-teal-500 hover:bg-teal-600 text-white animate-in zoom-in-75 duration-150' 
+                          : 'hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800'
+                        }`}
+                        title="복사하기"
+                      >
+                        {copiedRowIndex === selectedItem.sheetRowIndex ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+  
+                      {/* Edit Content */}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setIsEditing(true)}
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 cursor-pointer"
+                        title="내용 수정"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+
+                      {/* Delete Note */}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={handleDeleteNote}
+                        className="rounded-full w-8 h-8 hover:bg-red-55 text-rose-500 hover:text-rose-700 cursor-pointer animate-in fade-in duration-205"
+                        title="회의록 삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+  
+                      {/* Sync */}
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => fetchMeetingNotes(false)}
+                        disabled={loading}
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 cursor-pointer"
+                        title="구글시트 동기화"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+  
+              {/* Text Area Content Display */}
+              <div className="flex-1 min-h-0 flex flex-col">
+                {isEditing ? (
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    disabled={savingItem}
+                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-2xl leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
+                    placeholder="회의록 내용을 작성해 보세요..."
+                  />
+                ) : selectedItem.content ? (
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                    <div className="select-text selection:bg-primary/20">
+                      <CommentBankRenderer text={selectedItem.content} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 border border-neutral-100 rounded-2xl p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[18px] text-neutral-400 select-none">
+                    <MessageSquareQuote className="w-9 h-9 text-neutral-300 mb-2" />
+                    <span>내용이 비어있습니다.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
+              <MessagesSquare className="w-11 h-11 text-neutral-300 animate-pulse" />
+              <span className="text-[16px] font-medium text-[#64666e]">조회할 회의록을 선택해 주세요.</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add New Meeting Note Dialog modal */}
+      {showAddDialog && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col border border-zinc-100 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+              <h3 className="text-xl font-medium text-zinc-900">
+                회의록 작성
+              </h3>
+              <button
+                onClick={() => setShowAddDialog(false)}
+                className="text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 p-1.5 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNote}>
+              <div className="p-6 space-y-4">
+                {/* Date Row */}
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <input
+                      type="date"
+                      required
+                      value={addForm.date}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, date: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl bg-zinc-50 text-[14px] font-medium focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    required
+                    placeholder="회의 제목을 입력해 주세요."
+                    value={addForm.title}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl bg-zinc-50 text-[14px] font-normal focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white outline-none transition-all"
+                  />
+                </div>
+
+                {/* Content */}
+                <div className="space-y-1.5">
+                  <textarea
+                    rows={6}
+                    placeholder="회의 내용을 작성해 주세요."
+                    value={addForm.content}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, content: e.target.value }))}
+                    className="w-full px-4 py-3 border border-zinc-200 rounded-xl bg-zinc-50 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white outline-none transition-all resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 bg-zinc-50/50 border-t border-zinc-100 flex items-center justify-end gap-3.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowAddDialog(false)}
+                  className="px-5 h-[42px] text-zinc-500 font-medium hover:bg-zinc-100 rounded-xl"
+                >
+                  취소
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={addingNote}
+                  className="bg-primary hover:bg-primary/95 text-white font-medium px-5 h-[42px] rounded-xl shadow-sm cursor-pointer transition-all"
+                >
+                  {addingNote ? '등록 중...' : '등록'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

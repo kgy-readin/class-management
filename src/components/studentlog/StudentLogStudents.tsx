@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import StudentLogCharts from './StudentLogCharts';
+import StudentCombobox from '../common/StudentCombobox';
 import { 
   StudentLogEntry, 
   LOG_CATEGORY_COLORS, 
@@ -195,26 +196,23 @@ export default function StudentLogStudents({
       <div className="w-full lg:w-[26%] xl:w-[28%] shrink-0 flex flex-col gap-4">
         
         {/* Student Selector Card */}
-        <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-hidden" style={{ height: '80px', paddingTop: '0px', paddingBottom: '0px' }}>
-          <CardContent className="p-5 flex items-center justify-between gap-4" style={{ paddingTop: '10px', paddingBottom: '10px', paddingRight: '20px', paddingLeft: '20px', height: '80px' }}>
+        <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-visible" style={{ height: '80px', paddingTop: '0px', paddingBottom: '0px', overflow: 'visible' }}>
+          <CardContent className="p-5 flex items-center justify-between gap-4 overflow-visible" style={{ paddingTop: '10px', paddingBottom: '10px', paddingRight: '20px', paddingLeft: '20px', height: '80px', overflow: 'visible' }}>
             <div className="flex items-center gap-2">
               <UsersRound className="w-5 h-5 text-zinc-500" />
               <label className="text-[15px] font-semibold text-zinc-800 tracking-wider shrink-0 select-none">학생 선택</label>
             </div>
-            <select
+            <StudentCombobox
+              students={sortedStudents}
               value={selectedStudent}
-              onChange={(e) => {
-                setSelectedStudent(e.target.value);
+              onChange={(val) => {
+                setSelectedStudent(val);
                 setCurrentPage(1);
               }}
-              className="bg-zinc-50 border border-solid border-zinc-100 rounded-xl px-3 py-2 text-[14px] font-semibold focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all cursor-pointer min-w-[124px]"
-              style={{ width: '180px', height: '44px', paddingTop: '8px', fontSize: isMobile ? '15px' : '16px', fontWeight: '600' }}
-            >
-              <option value="">선택</option>
-              {sortedStudents.map(std => (
-                <option key={std.name} value={std.name}>{std.name}</option>
-              ))}
-            </select>
+              placeholder="선택"
+              className="!w-[180px]"
+              inputClassName="bg-zinc-50 border-solid border-zinc-100 text-[14px] font-semibold !h-[44px]"
+            />
           </CardContent>
         </Card>
 

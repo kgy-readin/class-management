@@ -20,6 +20,7 @@ import { ko } from 'date-fns/locale';
 import { taskApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import NotesPanel from './NotesPanel';
+import StudentCombobox from '../common/StudentCombobox';
 
 import 'react-day-picker/dist/style.css';
 
@@ -610,16 +611,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                     {showFilters && (
                       <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-1 duration-150">
                         {/* Student Select dropdown */}
-                        <select 
-                          value={selectedStudent || ''} 
-                          onChange={(e) => setSelectedStudent(e.target.value ? e.target.value : null)}
-                          className="h-7 pl-2 pr-7 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer text-neutral-600 font-medium shrink-0"
-                        >
-                          <option value="">학생 필터</option>
-                          {students.map(s => (
-                            <option key={s.name} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
+                        <StudentCombobox
+                          students={students}
+                          value={selectedStudent || ''}
+                          onChange={(val) => setSelectedStudent(val || null)}
+                          placeholder="학생 필터"
+                          className="!w-24 font-sans"
+                          inputClassName="bg-neutral-50/50 text-neutral-600 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200"
+                        />
 
                         {/* Date Select input */}
                         <input 
@@ -873,11 +872,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         )}
       </AnimatePresence>
 
-      <datalist id="task-student-names">
-        {students.map(s => (
-          <option key={s.name} value={s.name} />
-        ))}
-      </datalist>
+
     </div>
   );
 
@@ -963,14 +958,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           {/* Row 2: Secondary info (Left) and Buttons (Right) */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
             {/* Left aligned: Undisplayed details without prefix text labels */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
-              <input
-                type="text"
-                list="task-student-names"
+            <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans animate-none">
+              <StudentCombobox
+                students={students}
+                value={editForm.name || ''}
+                onChange={(val) => setEditForm(prev => ({ ...prev, name: val }))}
                 placeholder="학생명 입력"
-                value={editForm.name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-[84px] px-1.5 border border-zinc-200 focus:border-primary focus:outline-none bg-white text-xs text-zinc-800 rounded font-sans"
+                className="!w-28 font-sans"
+                inputClassName="bg-white text-zinc-850 text-xs !h-6 !rounded"
               />
 
               {editForm.category === '가통' && (
@@ -1221,13 +1216,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
             {/* Left aligned: Student Name input (hidden in the static read-only view) with category select mapping */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
-              <input
-                type="text"
-                list="task-student-names"
+              <StudentCombobox
+                students={students}
+                value={editForm.name || ''}
+                onChange={(val) => setEditForm(prev => ({ ...prev, name: val }))}
                 placeholder="학생명 입력"
-                value={editForm.name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-6 w-[84px] px-1.5 border border-zinc-200 focus:border-primary focus:outline-none bg-white text-xs text-zinc-800 rounded font-sans"
+                className="!w-28 font-sans"
+                inputClassName="bg-white text-zinc-850 text-xs !h-6 !rounded"
               />
 
               {/* Editable Category Class mapping hidden inside family View */}
@@ -1470,13 +1465,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
           {/* Student Name */}
           <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
-            <input
-              type="text"
-              list="task-student-names"
+            <StudentCombobox
+              students={students}
+              value={newForm.name || ''}
+              onChange={(val) => setNewForm(prev => ({ ...prev, name: val }))}
               placeholder="학생명 (선택)"
-              value={newForm.name}
-              onChange={(e) => setNewForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-800 focus:outline-none"
+              inputClassName="bg-white text-zinc-850 text-[13px] font-normal border border-zinc-200 !h-8 !rounded-lg"
             />
           </div>
 
