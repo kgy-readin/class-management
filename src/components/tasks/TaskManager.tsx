@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Task, Student, getTagColor } from '../../types';
 import { toast } from 'sonner';
+import { MESSAGES } from '@/src/constants/messages';
 import { 
   Trash2, 
   Pencil, 
@@ -77,7 +78,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       const taskResult = await taskApi.get();
       setTasks(taskResult);
     } catch (error: any) {
-      toast.error('업무 데이터를 불러오는데 실패했습니다: ' + error.message);
+      toast.error(MESSAGES.tasks.loadError(error.message));
     } finally {
       setLoading(false);
     }
@@ -325,13 +326,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   // Inline submit edit
   const handleSaveEdit = async (sheetRowIndex: number) => {
     if (!editForm.todo.trim()) {
-      toast.error('할 일 내용을 입력해 주세요.');
+      toast.error(MESSAGES.tasks.enterTodo);
       return;
     }
     try {
       setSubmitting(true);
       await taskApi.update(sheetRowIndex, editForm);
-      toast.success('업무가 성공적으로 수정되었습니다.');
+      toast.success(MESSAGES.tasks.editSuccess);
       setEditingRowIndex(null);
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
@@ -348,7 +349,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     try {
       setSubmitting(true);
       await taskApi.remove(sheetRowIndex);
-      toast.success('업무가 삭제되었습니다.');
+      toast.success(MESSAGES.tasks.deleteSuccess);
       if (editingRowIndex === sheetRowIndex) setEditingRowIndex(null);
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
@@ -369,7 +370,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         status: '완료'
       };
       await taskApi.update(sheetRowIndex, updatedForm);
-      toast.success('완료 처리되었습니다.');
+      toast.success(MESSAGES.tasks.completeSuccess);
       setEditingRowIndex(null);
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
@@ -385,7 +386,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     if (!reservingTask) return;
     const studentName = reservingTask.name || '';
     if (!studentName.trim()) {
-      toast.error('학생명을 입력해 주세요.');
+      toast.error(MESSAGES.tasks.enterName);
       return;
     }
 
@@ -417,7 +418,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       };
 
       await taskApi.add(reservedForm);
-      toast.success(`${studentName} 학생 가정통신문 (${fClass}) 예약이 등록되었습니다.`);
+      toast.success(MESSAGES.tasks.reservationSuccess(studentName, fClass));
       setReservingTask(null);
       setEditingRowIndex(null);
       await fetchTasks();
@@ -460,14 +461,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   // Inline submit new task
   const handleCreateTask = async () => {
     if (!newForm.todo.trim()) {
-      toast.error('할 일 내용을 입력해 주세요.');
+      toast.error(MESSAGES.tasks.enterTodo);
       return;
     }
 
     try {
       setSubmitting(true);
       await taskApi.add(newForm);
-      toast.success('신규 업무가 등록되었습니다.');
+      toast.success(MESSAGES.tasks.addSuccess);
       setInlineAddGroup(null);
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
@@ -992,7 +993,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 onClick={() => {
                   const studentName = editForm.name || task.name || '';
                   if (!studentName.trim()) {
-                    toast.error('학생명을 입력해 주세요.');
+                    toast.error(MESSAGES.tasks.enterName);
                     return;
                   }
                   setReservingTask({ ...task, name: studentName });
@@ -1259,7 +1260,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 onClick={() => {
                   const studentName = editForm.name || task.name || '';
                   if (!studentName.trim()) {
-                    toast.error('학생명을 입력해 주세요.');
+                    toast.error(MESSAGES.tasks.enterName);
                     return;
                   }
                   setReservingTask({ ...task, name: studentName });

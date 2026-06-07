@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { MESSAGES } from '@/src/constants/messages';
 import { 
   FileText, 
   Search, 
@@ -14,8 +15,7 @@ import {
   Pilcrow
 } from 'lucide-react';
 import { beginnerFeedbackApi } from '@/src/services/api';
-import CommentBankRenderer from '../commentbank/CommentBankRenderer';
-import { stripMarkdown } from '../commentbank/commentBankUtils';
+import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
 
 interface BeginnerItem {
   bookTitle: string;
@@ -61,14 +61,11 @@ export default function BeginnerFeedback() {
       if (data && data.length > 0) {
         setItems(data);
         localStorage.setItem('webapp_beginner_feedback_backup', JSON.stringify(data));
-        if (!selectedBookTitle && data.length > 0) {
-          setSelectedBookTitle(data[0].bookTitle);
-        }
       }
     } catch (error: any) {
       console.error('Failed to load beginner feedback:', error);
       if (!hasCache) {
-        toast.error('기초첨삭 데이터를 불러오는데 실패했습니다: ' + error.message);
+        toast.error(MESSAGES.beginners.loadError(error.message));
       }
     } finally {
       setLoading(false);
@@ -83,9 +80,9 @@ export default function BeginnerFeedback() {
     if (e) e.preventDefault();
     setReplacementName(nameInput.trim());
     if (nameInput.trim()) {
-      toast.success(`'●●' 문구가 '${nameInput.trim()}'(으)로 대치되었습니다!`);
+      toast.success(MESSAGES.beginners.replacementSuccess(nameInput.trim()));
     } else {
-      toast.info(`텍스트 대치가 해제되었습니다.`);
+      toast.info(MESSAGES.beginners.replacementReset);
     }
   };
 
@@ -100,7 +97,7 @@ export default function BeginnerFeedback() {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(cleanText);
         setCopiedBookTitle(bookTitle);
-        toast.success('클립보드에 복사되었습니다!');
+        toast.success(MESSAGES.general.copySuccess);
         setTimeout(() => setCopiedBookTitle(null), 2000);
       } else {
         const textarea = document.createElement('textarea');
@@ -111,11 +108,11 @@ export default function BeginnerFeedback() {
         document.execCommand('copy');
         document.body.removeChild(textarea);
         setCopiedBookTitle(bookTitle);
-        toast.success('클립보드에 복사되었습니다!');
+        toast.success(MESSAGES.general.copySuccess);
         setTimeout(() => setCopiedBookTitle(null), 2000);
       }
     } catch (err) {
-      toast.error('복사에 실패했습니다.');
+      toast.error(MESSAGES.general.copyFailure);
     }
   };
 
@@ -139,10 +136,10 @@ export default function BeginnerFeedback() {
         bookTitle: selectedBookTitle,
         content: editText
       });
-      toast.success('수정사항이 구글시트에 저장되었습니다.');
+      toast.success(MESSAGES.beginners.saveSuccess);
     } catch (error: any) {
       console.error('beginnerFeedbackApi.update Failed:', error);
-      toast.error('로컬에 저장되었으나 구글시트 업데이트에 실패했습니다: ' + error.message, {
+      toast.error(MESSAGES.beginners.saveError(error.message), {
         duration: 6000
       });
     } finally {
@@ -176,10 +173,10 @@ export default function BeginnerFeedback() {
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="학생명"
+                  placeholder="텍스트 대치할 학생 이름을 입력..."
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="w-full pl-3 pr-8 py-2 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-[13px] md:text-[14px] rounded-xl bg-white hover:border-neutral-300 transition-all font-medium"
+                  className="w-full pl-3 pr-8 py-2 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-[13px] md:text-[14px] rounded-xl bg-white hover:border-zinc-300 transition-all font-medium"
                 />
                 {nameInput && (
                   <button
@@ -212,7 +209,7 @@ export default function BeginnerFeedback() {
               placeholder="도서명 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-[#fbfbfc] hover:border-neutral-300 focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-zinc-50 hover:border-zinc-300 focus:bg-white transition-all"
             />
           </div>
 
@@ -230,10 +227,10 @@ export default function BeginnerFeedback() {
                   <div
                     key={item.bookTitle}
                     onClick={() => setSelectedBookTitle(item.bookTitle)}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[14px] ${
+                    className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
                       isSelected 
-                        ? 'bg-zinc-50 text-blue-700 font-semibold' 
-                        : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900 border border-transparent'
+                        ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
+                        : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
                     }`}
                   >
                     <Pilcrow className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
@@ -250,7 +247,7 @@ export default function BeginnerFeedback() {
           {selectedItem ? (
             <div className="flex-1 flex flex-col min-h-0 h-full">
               {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <Pilcrow className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
                   <h2 className="text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.bookTitle}>
@@ -268,7 +265,7 @@ export default function BeginnerFeedback() {
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingItem}
-                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer animate-in fade-in duration-200"
+                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer animate-in fade-in duration-200"
                         title="시트에 저장"
                       >
                         <Save className="w-4.5 h-4.5" />
@@ -353,7 +350,7 @@ export default function BeginnerFeedback() {
                 ) : selectedItem.content ? (
                   <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <CommentBankRenderer text={getRenderText(selectedItem.content)} />
+                      <MarkdownRenderer text={getRenderText(selectedItem.content)} />
                     </div>
                   </div>
                 ) : (
@@ -366,7 +363,7 @@ export default function BeginnerFeedback() {
             </div>
           ) : (
             <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
-              <Pilcrow className="w-11 h-11 text-neutral-300 animate-pulse" />
+              <Pilcrow className="w-11 h-11 text-neutral-300" />
               <span className="text-[16px] font-medium text-[#64666e]">조회할 기초첨삭 도서를 선택해 주세요.</span>
             </div>
           )}

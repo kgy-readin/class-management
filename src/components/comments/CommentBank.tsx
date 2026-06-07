@@ -10,67 +10,19 @@ import {
   ChevronDown, 
   Search, 
   RefreshCw,
-  Archive,
+  MessageCircleWarning,
   Check,
   Pencil,
   Save,
   X,
-  Copy,
-  AtSign,
-  Leaf,
-  CalendarFold
+  Copy
 } from 'lucide-react';
-import { noteApi, RPN_DOCS_ID } from '@/src/services/api';
+import { noteApi } from '@/src/services/api';
 import MarkdownRenderer, { DocTab, stripMarkdown } from '../common/MarkdownRenderer';
 
-// Leaf SVG Icon (Teal-500)
-const LeafIcon = ({ className }: { className?: string }) => (
-  <Leaf className={className} />
-);
-
-// Number 1 SVG Icon (Blue-500)
-const OneIcon = ({ className }: { className?: string }) => (
-  <CalendarFold className={className} />
-);
-
-// Letter/Envelope SVG Icon (Violet-400)
-const LetterIcon = ({ className }: { className?: string }) => (
-  <AtSign className={className} />
-);
-
-// Helper to determine the category based on the tab title
-const getCategoryType = (title: string): 'leaf' | 'one' | 'letter' | 'default' => {
-  const trimmed = title.trim();
-  if (trimmed.startsWith('[첫날]') || trimmed.startsWith('[첫주]')) {
-    return 'leaf';
-  }
-  if (trimmed.startsWith('[한달]')) {
-    return 'one';
-  }
-  if (/^\d/.test(trimmed)) {
-    return 'letter';
-  }
-  return 'default';
-};
-
-// Decides and returns the beautiful custom SVG icon based on custom prefixes and formats
-const getCustomTabIcon = (title: string, className = "w-4 h-4 shrink-0", isSelected = false, baseColorClass?: string) => {
-  const category = getCategoryType(title);
-  if (category === 'leaf') {
-    return <LeafIcon className={`${className} ${isSelected ? 'text-emerald-600' : 'text-emerald-600/70'}`} />;
-  }
-  if (category === 'one') {
-    return <OneIcon className={`${className} ${isSelected ? 'text-blue-600' : 'text-blue-600/70'}`} />;
-  }
-  if (category === 'letter') {
-    return <LetterIcon className={`${className} ${isSelected ? 'text-violet-600' : 'text-violet-600/70'}`} />;
-  }
-  return <FileText className={`${className} ${isSelected ? (baseColorClass || 'text-blue-600') : 'text-neutral-400'}`} />;
-};
-
-export default function CommentParentNewsletters() {
+export default function CommentBank() {
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
-    const cached = localStorage.getItem('webapp_family_letter_tabs_backup');
+    const cached = localStorage.getItem('webapp_tabs_data_backup');
     return cached ? JSON.parse(cached) : [];
   });
   const [loading, setLoading] = useState(false);
@@ -84,8 +36,8 @@ export default function CommentParentNewsletters() {
   const [editText, setEditText] = useState('');
   const [savingTab, setSavingTab] = useState(false);
 
-  // Extract folder tabs (for family letter, all tabs are folders from the start)
-  const folders = allTabs;
+  // Extract folder tabs (excluding the first tab '메모')
+  const folders = allTabs.length > 1 ? allTabs.slice(1) : allTabs;
 
   // Find the currently selected sub-tab
   const findSelectedTab = (tabs: DocTab[], id: string | null): DocTab | null => {
@@ -116,24 +68,20 @@ export default function CommentParentNewsletters() {
       if (!isBackground && !hasCache) {
         setLoading(true);
       }
-      const data = await noteApi.getTabsData(RPPN_DOCS_ID_OR_CORRECT_ID()); // helper in case API reference changed
+      const data = await noteApi.getTabsData();
       if (data && data.length > 0) {
         setAllTabs(data);
-        localStorage.setItem('webapp_family_letter_tabs_backup', JSON.stringify(data));
+        localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(data));
       }
     } catch (error: any) {
-      console.error('Failed to load family letter tabs data:', error);
+      console.error('Failed to load tabs data:', error);
       if (!hasCache) {
-        toast.error(MESSAGES.newsletters.loadError(error.message));
+        toast.error(MESSAGES.comments.loadError(error.message));
       }
     } finally {
       setLoading(false);
     }
   };
-
-  function RPPN_DOCS_ID_OR_CORRECT_ID() {
-    return RPN_DOCS_ID;
-  }
 
   useEffect(() => {
     fetchTabsData(true); // background sync on mount
@@ -200,16 +148,16 @@ export default function CommentParentNewsletters() {
     // Optimistically update local state first so user does not lose input
     const updatedTabs = updateTabInTree(allTabs, selectedTabId, editText);
     setAllTabs(updatedTabs);
-    localStorage.setItem('webapp_family_letter_tabs_backup', JSON.stringify(updatedTabs));
+    localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(updatedTabs));
     setIsEditing(false);
 
     try {
       setSavingTab(true);
-      await noteApi.saveTabSpecification(selectedTabId, editText, RPN_DOCS_ID);
-      toast.success(MESSAGES.newsletters.saveSuccess);
+      await noteApi.saveTabSpecification(selectedTabId, editText);
+      toast.success(MESSAGES.comments.saveSuccess);
     } catch (error: any) {
       console.error('GAS saveTabSpecification Failed:', error);
-      toast.error(MESSAGES.newsletters.saveError(error.message), {
+      toast.error(MESSAGES.comments.saveError(error.message), {
         duration: 6000
       });
     } finally {
@@ -305,28 +253,17 @@ export default function CommentParentNewsletters() {
                       <div className="pl-4 border-l border-neutral-100 ml-4.5 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                         {folder.childTabs.map((child) => {
                           const isSelected = selectedTabId === child.id;
-                          const category = getCategoryType(child.title);
-                          
-                          let activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
-                          if (category === 'leaf') {
-                            activeClass = 'bg-zinc-50 text-emerald-800/80 font-semibold';
-                          } else if (category === 'one') {
-                            activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
-                          } else if (category === 'letter') {
-                            activeClass = 'bg-zinc-50 text-violet-700/80 font-semibold';
-                          }
-
                           return (
                             <div
                               key={child.id}
                               onClick={() => setSelectedTabId(child.id)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? activeClass 
-                                  : 'text-neutral-500 hover:bg-[#fcfcfe] hover:text-neutral-800'
+                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
+                                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
                               }`}
                             >
-                              {getCustomTabIcon(child.title, "w-4 h-4 shrink-0", isSelected)}
+                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
                               <span className="truncate">{child.title}</span>
                             </div>
                           );
@@ -347,7 +284,7 @@ export default function CommentParentNewsletters() {
               {/* Note Header */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  {getCustomTabIcon(selectedTab.title, "w-4.5 h-4.5 shrink-0", true)}
+                  <FileText className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
                   <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate">{selectedTab.title}</h2>
                 </div>
                 
@@ -361,7 +298,7 @@ export default function CommentParentNewsletters() {
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer"
+                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer animate-in fade-in duration-200"
                         title="저장"
                       >
                         <Save className="w-4.5 h-4.5" />
@@ -375,7 +312,7 @@ export default function CommentParentNewsletters() {
                           setEditText(selectedTab.text || '');
                         }}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer"
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer animate-in fade-in duration-200"
                         title="취소"
                       >
                         <X className="w-4.5 h-4.5" />
@@ -392,7 +329,7 @@ export default function CommentParentNewsletters() {
                         disabled={!selectedTab.text}
                         className={`rounded-full w-8 h-8 cursor-pointer transition-all ${
                           copiedId === selectedTab.id 
-                          ? 'bg-teal-500 hover:bg-teal-600 text-white' 
+                          ? 'bg-teal-500 hover:bg-teal-600 text-white animate-in zoom-in-75 duration-150' 
                           : 'hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800'
                         }`}
                         title="복사하기"
@@ -424,7 +361,7 @@ export default function CommentParentNewsletters() {
                         onClick={() => fetchTabsData(false)}
                         disabled={loading}
                         className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 cursor-pointer"
-                        title="가정통신문 구글 독스 동기화"
+                        title="구글 독스 동기화"
                       >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                       </Button>
@@ -459,8 +396,8 @@ export default function CommentParentNewsletters() {
             </div>
           ) : (
             <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
-              <Archive className="w-11 h-11 text-neutral-300" strokeWidth={2.4} />
-              <span className="text-[16px] font-medium text-[#64666e]">조회할 가정통신문을 선택해 주세요.</span>
+              <MessageCircleWarning className="w-11 h-11 text-neutral-300" />
+              <span className="text-[16px] font-medium text-[#64666e]">조회할 문서를 선택해 주세요.</span>
             </div>
           )}
         </div>

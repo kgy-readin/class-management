@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { MESSAGES } from '@/src/constants/messages';
 import { 
   MessagesSquare,
   MessageSquareQuote,
@@ -17,8 +18,7 @@ import {
 } from 'lucide-react';
 import { meetingNoteApi } from '@/src/services/api';
 import { MeetingNote as MeetingNoteType } from '@/src/types';
-import CommentBankRenderer from '../commentbank/CommentBankRenderer';
-import { stripMarkdown } from '../commentbank/commentBankUtils';
+import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
 
 export default function MeetingNote() {
   const [items, setItems] = useState<MeetingNoteType[]>(() => {
@@ -56,13 +56,7 @@ export default function MeetingNote() {
     return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
   });
 
-  const selectedItem = sortedItems.find(item => item.sheetRowIndex === selectedRowIndex) || sortedItems[0];
-
-  useEffect(() => {
-    if (selectedItem) {
-      setSelectedRowIndex(selectedItem.sheetRowIndex || null);
-    }
-  }, [items]);
+  const selectedItem = selectedRowIndex !== null ? sortedItems.find(item => item.sheetRowIndex === selectedRowIndex) : undefined;
 
   // Update edit form whenever selected item changes
   useEffect(() => {
@@ -84,21 +78,11 @@ export default function MeetingNote() {
       if (data) {
         setItems(data);
         localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(data));
-        if (data.length > 0 && !selectedRowIndex) {
-          // Sort fetched data to find newest
-          const newest = [...data].sort((a, b) => {
-            const dateA = new Date(a.date).getTime() || 0;
-            const dateB = new Date(b.date).getTime() || 0;
-            if (dateB !== dateA) return dateB - dateA;
-            return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
-          })[0];
-          setSelectedRowIndex(newest.sheetRowIndex || null);
-        }
       }
     } catch (error: any) {
       console.error('Failed to load meeting notes:', error);
       if (!hasCache) {
-        toast.error('회의록 데이터를 불러오는데 실패했습니다: ' + error.message);
+        toast.error(MESSAGES.meeting.loadError(error.message));
       }
     } finally {
       setLoading(false);
@@ -115,7 +99,7 @@ export default function MeetingNote() {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(cleanText);
         setCopiedRowIndex(rowIndex);
-        toast.success('클립보드에 복사되었습니다!');
+        toast.success(MESSAGES.general.copySuccess);
         setTimeout(() => setCopiedRowIndex(null), 2000);
       } else {
         const textarea = document.createElement('textarea');
@@ -126,18 +110,18 @@ export default function MeetingNote() {
         document.execCommand('copy');
         document.body.removeChild(textarea);
         setCopiedRowIndex(rowIndex);
-        toast.success('클립보드에 복사되었습니다!');
+        toast.success(MESSAGES.general.copySuccess);
         setTimeout(() => setCopiedRowIndex(null), 2000);
       }
     } catch (err) {
-      toast.error('복사에 실패했습니다.');
+      toast.error(MESSAGES.general.copyFailure);
     }
   };
 
   const handleSaveEdit = async () => {
     if (!selectedRowIndex || !selectedItem) return;
     if (!editTitle.trim()) {
-      toast.error('제목을 입력해 주세요.');
+      toast.error(MESSAGES.meeting.titleRequired);
       return;
     }
 
@@ -160,10 +144,10 @@ export default function MeetingNote() {
         date: editDate,
         content: editContent
       });
-      toast.success('수정사항이 저장되었습니다.');
+      toast.success(MESSAGES.meeting.saveSuccess);
     } catch (error: any) {
       console.error('meetingNoteApi.update Failed:', error);
-      toast.error('로컬에 저장되었으나 서버전송에 실패했습니다: ' + error.message);
+      toast.error(MESSAGES.meeting.saveError(error.message));
     } finally {
       setSavingItem(false);
     }
@@ -172,7 +156,7 @@ export default function MeetingNote() {
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addForm.title.trim()) {
-      toast.error('제목을 입력해 주세요.');
+      toast.error(MESSAGES.meeting.titleRequired);
       return;
     }
 
@@ -203,10 +187,10 @@ export default function MeetingNote() {
           title: '',
           content: ''
         });
-        toast.success('회의록이 등록되었습니다.');
+        toast.success(MESSAGES.meeting.registerSuccess);
       }
     } catch (err: any) {
-      toast.error('회의록 등록 실패: ' + err.message);
+      toast.error(MESSAGES.meeting.registerError(err.message));
     } finally {
       setAddingNote(false);
     }
@@ -226,9 +210,9 @@ export default function MeetingNote() {
 
     try {
       await meetingNoteApi.remove(selectedRowIndex);
-      toast.success('회의록이 삭제되었습니다.');
+      toast.success(MESSAGES.meeting.deleteSuccess);
     } catch (err: any) {
-      toast.error('회의록 삭제 실패: ' + err.message);
+      toast.error(MESSAGES.meeting.deleteError(err.message));
     }
   };
 
@@ -256,7 +240,7 @@ export default function MeetingNote() {
                 placeholder="회의 제목, 내용 또는 날짜 검색..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-[#fbfbfc] hover:border-neutral-300 focus:bg-white transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-[13px] md:text-[15px] rounded-xl bg-zinc-50 hover:border-zinc-300 focus:bg-white transition-all"
               />
             </div>
             <Button
@@ -285,17 +269,14 @@ export default function MeetingNote() {
                   <div
                     key={item.sheetRowIndex}
                     onClick={() => setSelectedRowIndex(item.sheetRowIndex || null)}
-                    className={`flex items-start gap-3 p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                    className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all ${
                       isSelected 
-                        ? 'bg-zinc-50 border-zinc-200 text-blue-700 font-semibold' 
-                        : 'border-transparent text-zinc-650 hover:bg-[#f6f7f9] hover:border-zinc-100 hover:text-zinc-900'
+                        ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
+                        : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
                     }`}
                   >
-                    <MessageSquareQuote className={`w-4 h-4 shrink-0 mt-0.5 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
-                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                      <span className="truncate text-[13px] md:text-[14px] leading-snug">{item.title}</span>
-                      <span className="text-[11px] font-medium text-neutral-400 font-mono">{item.date}</span>
-                    </div>
+                    <MessageSquareQuote className={`w-4.5 h-4.5 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
+                    <span className="truncate text-[13px] md:text-[15px] leading-snug">{item.title}</span>
                   </div>
                 );
               })
@@ -330,14 +311,11 @@ export default function MeetingNote() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MessageSquareQuote className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
-                        <h2 className="text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
-                          {selectedItem.title}
-                        </h2>
-                      </div>
-                      <span className="text-[11px] font-medium text-neutral-400 font-mono ml-7">{selectedItem.date}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MessageSquareQuote className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
+                      <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
+                        {selectedItem.title}
+                      </h2>
                     </div>
                   )}
                 </div>
@@ -352,7 +330,7 @@ export default function MeetingNote() {
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingItem}
-                        className="rounded-full w-8 h-8 hover:bg-[#e6fdfa] text-emerald-600 hover:text-emerald-700 cursor-pointer animate-in fade-in duration-200"
+                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer animate-in fade-in duration-200"
                         title="시트에 저장"
                       >
                         <Save className="w-4.5 h-4.5" />
@@ -445,17 +423,17 @@ export default function MeetingNote() {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     disabled={savingItem}
-                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-2xl leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
+                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-2xl leading-[1.8] text-neutral-700 text-[14px] md:text-[16px] font-sans resize-none"
                     placeholder="회의록 내용을 작성해 보세요..."
                   />
                 ) : selectedItem.content ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[16px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <CommentBankRenderer text={selectedItem.content} />
+                      <MarkdownRenderer text={selectedItem.content} />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 border border-neutral-100 rounded-2xl p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[18px] text-neutral-400 select-none">
+                  <div className="flex-1 border border-neutral-100 rounded-2xl p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[16px] text-neutral-400 select-none">
                     <MessageSquareQuote className="w-9 h-9 text-neutral-300 mb-2" />
                     <span>내용이 비어있습니다.</span>
                   </div>
@@ -464,7 +442,7 @@ export default function MeetingNote() {
             </div>
           ) : (
             <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
-              <MessagesSquare className="w-11 h-11 text-neutral-300 animate-pulse" />
+              <MessagesSquare className="w-11 h-11 text-neutral-300" />
               <span className="text-[16px] font-medium text-[#64666e]">조회할 회의록을 선택해 주세요.</span>
             </div>
           )}

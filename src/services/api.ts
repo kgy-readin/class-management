@@ -1,4 +1,5 @@
 import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note, StudentLogEntry, MeetingNote } from '../types';
+import { MESSAGES } from '../constants/messages';
 
 function cleanSpreadsheetId(idOrUrl: string | undefined): string {
   if (!idOrUrl) return '';
@@ -22,28 +23,28 @@ export const RPN_DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_RPN_DOCS_ID);
 // Helper to get sheet data directly from Google Sheets (Read-only)
 // This bypasses GAS and works if the sheet is shared as "Anyone with the link can view"
 async function getSheetData(sheet: string, range: string) {
-  if (!SHEET_ID) throw new Error('VITE_GOOGLE_SHEETS_ID is not set');
+  if (!SHEET_ID) throw new Error(MESSAGES.api.sheetIdNotSetInternal);
   
   // Use Google Visualization API for direct JSON fetching
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&range=${encodeURIComponent(range)}`;
   
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Direct Read Error: ${response.statusText}`);
+    if (!response.ok) throw new Error(MESSAGES.api.directReadError(response.statusText));
     
     const text = await response.text();
     // The response is wrapped in "google.visualization.Query.setResponse(...);"
     const jsonStr = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/)?.[1];
     if (!jsonStr) {
       if (text.includes('<!doctype html>')) {
-        throw new Error('구글 시트 접근 권한이 없습니다. 시트의 공유 설정을 "링크가 있는 모든 사용자에게 공개(뷰어)"로 변경해 주세요.');
+        throw new Error(MESSAGES.api.sheetPermissionError);
       }
-      throw new Error('Invalid response format from Google Sheets');
+      throw new Error(MESSAGES.api.invalidResponseFormat);
     }
     
     const data = JSON.parse(jsonStr);
     if (data.status === 'error') {
-      throw new Error(`Google Sheets Error: ${data.errors[0].detailed_message}`);
+      throw new Error(MESSAGES.api.googleSheetsError(data.errors[0].detailed_message));
     }
     
     // Determine expected column count from range (e.g., "A2:J" -> 10)
@@ -108,7 +109,7 @@ async function getSheetData(sheet: string, range: string) {
 // Helper to update sheet data via GAS (Writing still requires GAS or OAuth)
 async function updateSheetData(sheet: string, range: string, values: any[][]) {
   if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error('데이터를 수정하려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+    throw new Error(MESSAGES.api.gasUrlRequiredForUpdate);
   }
 
   try {
@@ -119,18 +120,18 @@ async function updateSheetData(sheet: string, range: string, values: any[][]) {
       body: JSON.stringify({ action: 'update', sheet, range, values }),
     });
     
-    if (!response.ok) throw new Error(`GAS Update Error: ${response.statusText}`);
+    if (!response.ok) throw new Error(MESSAGES.api.gasUpdateError(response.statusText));
     
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정에서 "액세스 권한이 있는 사용자"를 "모든 사용자(Anyone)"로 설정했는지 확인하세요.');
+      throw new Error(MESSAGES.api.gasHtmlResponseError);
     }
 
     return await response.json();
   } catch (error: any) {
     console.error('GAS Update Failed:', error);
     if (error.message === 'Failed to fetch') {
-      throw new Error('GAS 서버에 연결할 수 없습니다. GAS URL이 정확한지, 그리고 배포 설정이 "모든 사용자(Anyone)"로 되어 있는지 확인해 주세요.');
+      throw new Error(MESSAGES.api.gasConnectionError);
     }
     throw error;
   }
@@ -139,7 +140,7 @@ async function updateSheetData(sheet: string, range: string, values: any[][]) {
 // Helper to delete rows via GAS
 async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
   if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error('데이터를 삭제하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+    throw new Error(MESSAGES.api.gasUrlRequiredForDelete);
   }
 
   try {
@@ -149,11 +150,11 @@ async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
       body: JSON.stringify({ action: 'deleteRows', sheet, keyColumn, keyValue }),
     });
     
-    if (!response.ok) throw new Error(`GAS Delete Error: ${response.statusText}`);
+    if (!response.ok) throw new Error(MESSAGES.api.gasDeleteError(response.statusText));
     
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정에서 "액세스 권한이 있는 사용자"를 "모든 사용자(Anyone)"로 설정했는지 확인하세요.');
+      throw new Error(MESSAGES.api.gasHtmlResponseError);
     }
 
     return await response.json();
@@ -166,7 +167,7 @@ async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
 // Helper to delete a specific row by its index
 async function deleteRow(sheet: string, rowIndex: number) {
   if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error('데이터를 삭제하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+    throw new Error(MESSAGES.api.gasUrlRequiredForDelete);
   }
 
   try {
@@ -176,11 +177,11 @@ async function deleteRow(sheet: string, rowIndex: number) {
       body: JSON.stringify({ action: 'deleteRow', sheet, row: rowIndex }),
     });
     
-    if (!response.ok) throw new Error(`GAS Delete Row Error: ${response.statusText}`);
+    if (!response.ok) throw new Error(MESSAGES.api.gasDeleteRowError(response.statusText));
     
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다.');
+      throw new Error(MESSAGES.api.gasHtmlGenericError);
     }
 
     return await response.json();
@@ -200,7 +201,7 @@ export const dataApi = {
   fetchData: async (refreshBooks = false): Promise<DashboardData> => {
     // If we don't even have a SHEET_ID, we can't do anything
     if (!SHEET_ID) {
-      throw new Error('VITE_GOOGLE_SHEETS_ID가 설정되지 않았습니다. 환경 변수를 확인해 주세요.');
+      throw new Error(MESSAGES.api.sheetIdNotSet);
     }
     const fetchPromises = [
       getSheetData('학생정보', 'A2:K'),
@@ -281,7 +282,7 @@ export const attendanceApi = {
   update: async (data: { name: string; isAttending: boolean; dismissalTime?: string }) => {
     const studentsRaw = await getSheetData('학생정보', 'A2:A');
     const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
-    if (rowIndex < 2) throw new Error('Student not found');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
     await updateSheetData('학생정보', `F${rowIndex}:I${rowIndex}`, [
       [data.isAttending ? 'TRUE' : 'FALSE', data.isAttending ? (data.dismissalTime || '') : '', 'FALSE', 'FALSE']
@@ -312,7 +313,7 @@ export const homeworkApi = {
     // Fetch columns A to J to find the current missed count in column J
     const studentsRaw = await getSheetData('학생정보', 'A2:J');
     const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[0] || '').trim() === String(data.name).trim()) + 2;
-    if (rowIndex < 2) throw new Error('Student not found');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
     const currentCount = Number(studentsRaw[rowIndex - 2][9]) || 0;
     // If homework is done, count resets to 0. Otherwise, increments by 1.
@@ -350,7 +351,7 @@ export const curriculumApi = {
       return isMatch;
     }) + 2;
     
-    if (rowIndex < 2) throw new Error('Curriculum entry not found');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.curriculumNotFound);
 
     const updates = [];
     if (data.index !== undefined) updates.push(updateSheetData('커리큘럼', `B${rowIndex}`, [[data.index]]));
@@ -418,7 +419,7 @@ export const curriculumApi = {
       info = '';
     } else {
       const book = books.find(b => b.title === data.bookTitle);
-      if (!book) throw new Error('Book not found');
+      if (!book) throw new Error(MESSAGES.api.bookNotFound);
       bookLevel = book.level;
       bookId = book.id;
       info = `${book.therapy} / ${book.difficulty}`;
@@ -459,7 +460,7 @@ export const curriculumApi = {
       return isMatch;
     }) + 2;
     
-    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.itemNotFoundToDelete);
 
     await deleteRow('커리큘럼', rowIndex);
     return { success: true };
@@ -470,7 +471,7 @@ export const studentApi = {
   levelUp: async (name: string) => {
     const studentsRaw = await getSheetData('학생정보', 'A2:K');
     const studentRowIndex = studentsRaw.findIndex((row: any[]) => row[0] === name) + 2;
-    if (studentRowIndex < 2) throw new Error('Student not found');
+    if (studentRowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
     const studentRow = studentsRaw[studentRowIndex - 2];
     const currentLevel = parseInt(studentRow[2]) || 0;
@@ -486,7 +487,7 @@ export const studentApi = {
   update: async (name: string, data: Partial<Student>) => {
     const studentsRaw = await getSheetData('학생정보', 'A2:A');
     const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === name.trim()) + 2;
-    if (studentRowIndex < 2) throw new Error('Student not found');
+    if (studentRowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
     if (data.grade !== undefined) {
       await updateSheetData('학생정보', `B${studentRowIndex}`, [[data.grade]]);
@@ -512,7 +513,7 @@ export const studentApi = {
     const studentsRaw = await getSheetData('학생정보', 'A2:A');
     const exists = studentsRaw.some((row: any[]) => String(row[0] || '').trim() === data.name.trim());
     if (exists) {
-      throw new Error('이미 등록된 학생 이름입니다.');
+      throw new Error(MESSAGES.api.studentNameExists);
     }
 
     const nextEmptyRow = studentsRaw.length + 2;
@@ -598,12 +599,45 @@ export const writingStatusApi = {
              rowDate === targetDate;
     }) + 2;
     
-    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.itemNotFoundToDelete);
     await deleteRow('글쓰기현황', rowIndex);
     return { success: true };
   },
-  clear: async () => {
-    await updateSheetData('글쓰기현황', 'A2:D1000', Array(999).fill(['', '', '', '']));
+  clear: async (startDate?: string, endDate?: string) => {
+    if (!startDate || !endDate) {
+      await updateSheetData('글쓰기현황', 'A2:D1000', Array(999).fill(['', '', '', '']));
+      return { success: true };
+    }
+
+    // Load current data
+    const writingRaw = await getSheetData('글쓰기현황', 'A2:D');
+
+    // Filter rows to keep (those OUTSIDE the date range)
+    const rowsToKeep = writingRaw.filter((row: any[]) => {
+      if (!row || !row[1]) return false; // Ignore completely empty rows
+      if (!row[0]) return true; // Keep cells without a date
+      try {
+        const rowDateStr = String(row[0]).substring(0, 10);
+        // If rowDateStr is within [startDate, endDate], it should be deleted (so return false)
+        if (rowDateStr >= startDate && rowDateStr <= endDate) {
+          return false;
+        }
+      } catch (e) {
+        // preserve on error
+      }
+      return true;
+    });
+
+    // Write back the kept rows and blank helper values for the rest
+    const newValues = Array(999).fill(null).map((_, i) => {
+      if (i < rowsToKeep.length) {
+        const r = rowsToKeep[i];
+        return [r[0] || '', r[1] || '', r[2] || '', r[3] || '진행'];
+      }
+      return ['', '', '', ''];
+    });
+
+    await updateSheetData('글쓰기현황', 'A2:D1000', newValues);
     return { success: true };
   }
 };
@@ -661,7 +695,7 @@ export const taskApi = {
 export const noteApi = {
   getRawText: async (): Promise<string> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error('메모 데이터를 불러오려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+      throw new Error(MESSAGES.api.memoUrlRequiredForRead);
     }
     try {
       const response = await fetch(GAS_URL, {
@@ -669,11 +703,11 @@ export const noteApi = {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'getRawText', spreadsheetId: SHEET_ID, documentId: DOCS_ID })
       });
-      if (!response.ok) throw new Error(`GAS GetMemo Error: ${response.statusText}`);
+      if (!response.ok) throw new Error(MESSAGES.api.gasGetMemoError(response.statusText));
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
       }
       
       const res = await response.json();
@@ -687,7 +721,7 @@ export const noteApi = {
 
   saveRawText: async (text: string): Promise<{ success: boolean }> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error('메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+      throw new Error(MESSAGES.api.memoUrlRequiredForSave);
     }
     try {
       const response = await fetch(GAS_URL, {
@@ -695,11 +729,11 @@ export const noteApi = {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'saveRawText', text, spreadsheetId: SHEET_ID, documentId: DOCS_ID })
       });
-      if (!response.ok) throw new Error(`GAS SaveMemo Error: ${response.statusText}`);
+      if (!response.ok) throw new Error(MESSAGES.api.gasSaveMemoError(response.statusText));
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
       }
 
       const res = await response.json();
@@ -713,7 +747,7 @@ export const noteApi = {
 
   getTabsData: async (customDocId?: string): Promise<any[]> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error('메모 데이터를 불러오려면 GAS 웹 앱 URL 설정이 필요합니다. (VITE_GAS_WEB_APP_URL이 http로 시작하는 올바른 주소인지 확인하세요.)');
+      throw new Error(MESSAGES.api.memoUrlRequiredForRead);
     }
     const documentId = customDocId || DOCS_ID;
     try {
@@ -722,11 +756,11 @@ export const noteApi = {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'getTabsData', spreadsheetId: SHEET_ID, documentId })
       });
-      if (!response.ok) throw new Error(`GAS GetTabs Error: ${response.statusText}`);
+      if (!response.ok) throw new Error(MESSAGES.api.gasGetTabsError(response.statusText));
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
       }
       
       const res = await response.json();
@@ -740,7 +774,7 @@ export const noteApi = {
 
   saveTabSpecification: async (tabId: string, text: string, customDocId?: string): Promise<{ success: boolean }> => {
     if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error('메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.');
+      throw new Error(MESSAGES.api.memoUrlRequiredForSave);
     }
     const documentId = customDocId || DOCS_ID;
     try {
@@ -749,11 +783,11 @@ export const noteApi = {
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId })
       });
-      if (!response.ok) throw new Error(`GAS SaveTab Error: ${response.statusText}`);
+      if (!response.ok) throw new Error(MESSAGES.api.gasSaveTabError(response.statusText));
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 URL을 확인하세요.');
+        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
       }
 
       const res = await response.json();
@@ -823,7 +857,7 @@ export const studentLogApi = {
              rowDate === targetDate;
     }) + 2;
 
-    if (rowIndex < 2) throw new Error('삭제할 항목을 찾을 수 없습니다.');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.itemNotFoundToDelete);
     await deleteRow('교무수첩', rowIndex);
     return { success: true };
   },
@@ -842,7 +876,7 @@ export const studentLogApi = {
              rowDate === origDate;
     }) + 2;
 
-    if (rowIndex < 2) throw new Error('수정할 항목을 찾을 수 없습니다.');
+    if (rowIndex < 2) throw new Error(MESSAGES.api.itemNotFoundToEdit);
     const newRow = [updated.date, updated.name, updated.category, updated.content];
     await updateSheetData('교무수첩', `A${rowIndex}:D${rowIndex}`, [newRow]);
     return { success: true };

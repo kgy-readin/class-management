@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Student, Curriculum } from '../../types';
 import { toast } from 'sonner';
+import { MESSAGES } from '@/src/constants/messages';
 import { LogOut, Save, Star, User, BookA, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
@@ -26,7 +27,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
     setUpdating(`${student.name}-subprogram`);
     try {
       await studentApi.update(student.name, { subProgram: subProgramValue });
-      toast.success('서브프로그램이 업데이트되었습니다.');
+      toast.success(MESSAGES.dashboard.subprogramUpdated);
       setIsEditingSubProgram(false);
       onRefresh();
     } catch (error: any) {
@@ -44,7 +45,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         bookTitle: item.bookTitle,
         progress: '완료' 
       });
-      toast.success('글쓰기 현황에 추가되었습니다.');
+      toast.success(MESSAGES.dashboard.writingTrackerAdded);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -57,7 +58,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   const handleCheckout = async () => {
     try {
       await attendanceApi.update({ name: student.name, isAttending: false });
-      toast.success(`${student.name} 학생이 하원하였습니다.`);
+      toast.success(MESSAGES.dashboard.dismissalSuccess(student.name));
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -68,7 +69,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
     setUpdating(`${student.name}-homework`);
     try {
       await homeworkApi.update({ name: student.name, isDone });
-      toast.success(isDone ? '숙제 완료 처리되었습니다.' : '숙제 미제출 카운트가 증가했습니다.');
+      toast.success(isDone ? MESSAGES.dashboard.homeworkDone : MESSAGES.dashboard.homeworkNotSubmitted);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -88,7 +89,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         status: status.status,
         originalIndex: index
       });
-      toast.success('진도가 업데이트되었습니다.');
+      toast.success(MESSAGES.dashboard.progressUpdated);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
