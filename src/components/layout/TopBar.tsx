@@ -14,7 +14,8 @@ import {
   MessagesSquare, 
   BriefcaseBusiness,
   Star,
-  MessageCircleWarning
+  MessageCircleWarning,
+  Link
 } from 'lucide-react';
 
 
@@ -34,6 +35,17 @@ export default function TopBar({
   onSetSelectedStudent
 }: TopBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  let quickLinkUrl = '';
+  if (activeTab === 'tasks') {
+    quickLinkUrl = process.env.QUICK_TASKS_LINK || '';
+  } else if (activeTab === 'writing') {
+    quickLinkUrl = process.env.QUICK_WRITING_LINK || '';
+  } else if (activeTab === 'familyLetter') {
+    quickLinkUrl = process.env.QUICK_NEWSLETTERS_LINK || '';
+  } else if (activeTab === 'meeting') {
+    quickLinkUrl = process.env.QUICK_MEETING_LINK || '';
+  }
 
   const getPageTitle = (tab: string) => {
     switch (tab) {
@@ -152,6 +164,18 @@ export default function TopBar({
 
         {/* Right side: Mode toggles aligned to the right */}
         <div className="flex items-center gap-3">
+          {quickLinkUrl && (
+            <a
+              href={quickLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-700 hover:text-blue-600 cursor-pointer transition-all shadow-sm shrink-0"
+              title="바로가기 링크 열기"
+            >
+              <Link className="w-4 h-4" />
+            </a>
+          )}
+
           {/* Toggle controls - icon only with sliding spring animation indicator (Integer pixel-aligned to prevent blurring) */}
           <div className="relative bg-zinc-100/85 p-0.5 rounded-full flex items-center border border-zinc-200/30 w-[138px] h-8 shadow-inner select-none">
             {/* Sliding backdrop indicator pill (uses standard CSS transitions to avoid GPU text subpixel blurring) */}

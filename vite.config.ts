@@ -9,6 +9,10 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.QUICK_TASKS_LINK': JSON.stringify(env.QUICK_TASKS_LINK || env.VITE_QUICK_TASKS_LINK || ''),
+      'process.env.QUICK_WRITING_LINK': JSON.stringify(env.QUICK_WRITING_LINK || env.VITE_QUICK_WRITING_LINK || ''),
+      'process.env.QUICK_NEWSLETTERS_LINK': JSON.stringify(env.QUICK_NEWSLETTERS_LINK || env.VITE_QUICK_NEWSLETTERS_LINK || ''),
+      'process.env.QUICK_MEETING_LINK': JSON.stringify(env.QUICK_MEETING_LINK || env.VITE_QUICK_MEETING_LINK || ''),
     },
     resolve: {
       alias: {
