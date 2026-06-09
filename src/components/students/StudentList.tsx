@@ -5,7 +5,7 @@ import { DashboardData, Student } from '../../types';
 import { toast } from 'sonner';
 import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil, Settings } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { formatLevel } from '@/lib/utils';
+import { formatLevel, getWeeksSince, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, studentApi } from '@/src/services/api';
 
 interface StudentListProps {
@@ -86,6 +86,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
   const [editAttendanceDays, setEditAttendanceDays] = useState<string[]>([]);
   const [editHomeworkMissed, setEditHomeworkMissed] = useState<number>(0);
   const [editBooksCompleted, setEditBooksCompleted] = useState<number>(0);
+  const [editLastResultDate, setEditLastResultDate] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const handleOpenEdit = (student: Student) => {
@@ -100,6 +101,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     );
     setEditHomeworkMissed(student.homeworkMissed || 0);
     setEditBooksCompleted(student.booksCompleted || 0);
+    setEditLastResultDate(student.lastResultDate || '');
     setIsEditOpen(true);
   };
 
@@ -113,7 +115,8 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
         subProgram: editSubProgram.trim() || '-',
         attendanceDays: editAttendanceDays.join(', '),
         homeworkMissed: Number(editHomeworkMissed) || 0,
-        booksCompleted: Number(editBooksCompleted) || 0
+        booksCompleted: Number(editBooksCompleted) || 0,
+        lastResultDate: editLastResultDate
       });
       toast.success(`${editingStudent.name} 학생의 정보가 수정되었습니다.`);
       setIsEditOpen(false);
@@ -531,6 +534,12 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     {student.homeworkMissed}
                   </span>
                 </div>
+                <div className="text-center hidden xl:block">
+                  <span className="block text-[10px] font-normal text-muted-foreground uppercase tracking-wider mb-1">결과물</span>
+                  <span className={`text-base font-extrabold ${isResultDelayed(student.level, student.lastResultDate) ? 'text-red-600' : 'text-foreground'}`}>
+                    {getWeeksSince(student.lastResultDate)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -879,6 +888,29 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     onChange={(e) => setEditBooksCompleted(Number(e.target.value) || 0)}
                     className="rounded-xl h-10 border-neutral-200 text-sm"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600">결과물 마지막 날짜</label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="date"
+                    value={editLastResultDate}
+                    onChange={(e) => setEditLastResultDate(e.target.value)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm flex-1 cursor-pointer"
+                  />
+                  <div className="w-24 shrink-0 text-center text-sm font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 h-10 flex items-center justify-center rounded-xl px-2">
+                    {editLastResultDate ? (
+                      typeof getWeeksSince(editLastResultDate) === 'number' ? (
+                        `${getWeeksSince(editLastResultDate)}주 전`
+                      ) : (
+                        '-'
+                      )
+                    ) : (
+                      '-'
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

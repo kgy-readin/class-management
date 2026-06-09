@@ -12,6 +12,32 @@ export const formatLevel = (level: any) => {
   return `Lv.${l}`;
 };
 
+export function getWeeksSince(dateStr: string | null | undefined): number | '-' {
+  if (!dateStr || !dateStr.trim()) return '-';
+  const lastDate = new Date(dateStr.trim());
+  if (isNaN(lastDate.getTime())) return '-';
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  lastDate.setHours(0, 0, 0, 0);
+  
+  const diffTime = today.getTime() - lastDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, Math.floor(diffDays / 7));
+}
+
+export function isResultDelayed(levelStr: string, lastResultDate: string | null | undefined): boolean {
+  const weeks = getWeeksSince(lastResultDate);
+  if (weeks === '-') return false;
+  
+  const levelNum = parseFloat(levelStr) || 0;
+  if (levelNum <= 3) {
+    return weeks >= 13;
+  } else {
+    return weeks >= 21;
+  }
+}
+
 export const formatTime = (timeStr: string) => {
   if (!timeStr || timeStr === '미설정') return '미설정';
   

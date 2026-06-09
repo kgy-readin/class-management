@@ -204,7 +204,7 @@ export const dataApi = {
       throw new Error(MESSAGES.api.sheetIdNotSet);
     }
     const fetchPromises = [
-      getSheetData('학생정보', 'A2:K'),
+      getSheetData('학생정보', 'A2:L'),
       getSheetData('커리큘럼', 'A2:G'),
     ];
 
@@ -260,6 +260,7 @@ export const dataApi = {
         homeworkMissedToday: row[8] === true || row[8] === 'TRUE',
         homeworkMissed: Number(row[9]) || 0,
         booksCompleted: Number(row[10]) || 0,
+        lastResultDate: row[11] || '',
       }));
 
     const curriculums: Curriculum[] = curriculumsRaw
@@ -469,7 +470,7 @@ export const curriculumApi = {
 
 export const studentApi = {
   levelUp: async (name: string) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:K');
+    const studentsRaw = await getSheetData('학생정보', 'A2:L');
     const studentRowIndex = studentsRaw.findIndex((row: any[]) => row[0] === name) + 2;
     if (studentRowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
@@ -479,7 +480,7 @@ export const studentApi = {
     studentRow[2] = currentLevel + 1;
     studentRow[10] = 0;
     
-    await updateSheetData('학생정보', `A${studentRowIndex}:K${studentRowIndex}`, [studentRow]);
+    await updateSheetData('학생정보', `A${studentRowIndex}:L${studentRowIndex}`, [studentRow]);
     await deleteRows('커리큘럼', 1, name);
 
     return { success: true };
@@ -507,9 +508,12 @@ export const studentApi = {
     if (data.booksCompleted !== undefined) {
       await updateSheetData('학생정보', `K${studentRowIndex}`, [[data.booksCompleted]]);
     }
+    if (data.lastResultDate !== undefined) {
+      await updateSheetData('학생정보', `L${studentRowIndex}`, [[data.lastResultDate]]);
+    }
     return { success: true };
   },
-  add: async (data: { name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number }) => {
+  add: async (data: { name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number; lastResultDate?: string }) => {
     const studentsRaw = await getSheetData('학생정보', 'A2:A');
     const exists = studentsRaw.some((row: any[]) => String(row[0] || '').trim() === data.name.trim());
     if (exists) {
@@ -528,9 +532,10 @@ export const studentApi = {
       'FALSE',
       'FALSE',
       0,
-      data.booksCompleted
+      data.booksCompleted,
+      data.lastResultDate || ''
     ];
-    await updateSheetData('학생정보', `A${nextEmptyRow}:K${nextEmptyRow}`, [newRow]);
+    await updateSheetData('학생정보', `A${nextEmptyRow}:L${nextEmptyRow}`, [newRow]);
     return { success: true };
   },
   delete: async (name: string) => {

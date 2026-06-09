@@ -5,7 +5,7 @@ import { Student, Curriculum } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { LogOut, Save, Star, User, BookA, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
-import { formatTime } from '@/lib/utils';
+import { formatTime, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
@@ -106,6 +106,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             <h3 className="text-[19px] font-extrabold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
               <span className="text-sm font-bold text-foreground/60">{formatTime(student.dismissalTime)}</span>
+              {isResultDelayed(student.level, student.lastResultDate) && (
+                <span className="text-sm font-medium text-red-600/90 text-left">결과물 확인</span>
+              )}
             </div>
           </div>
           <div className="flex gap-2 -translate-x-[2px]">
