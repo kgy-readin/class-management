@@ -120,12 +120,20 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     return startOfDay(d) < today;
   };
 
+  // Helper check if task date is today
+  const isTodayTask = (dateStr: string): boolean => {
+    if (!dateStr) return false;
+    const d = parseTaskDate(dateStr);
+    if (!d) return false;
+    return isSameDay(d, new Date());
+  };
+
   // Family View date text color styling based on overdue days:
   // 1~30 days overdue -> blue text, 31+ days overdue -> red text, else normal text color
   const getFamilyTaskDateClass = (dateStr: string): string => {
-    if (!dateStr) return 'text-zinc-600';
+    if (!dateStr) return 'text-zinc-750';
     const d = parseTaskDate(dateStr);
-    if (!d) return 'text-zinc-600';
+    if (!d) return 'text-zinc-750';
     const today = startOfDay(new Date());
     const taskDate = startOfDay(d);
     
@@ -133,12 +141,12 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
        const diffTime = today.getTime() - taskDate.getTime();
        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
        if (diffDays >= 1 && diffDays <= 30) {
-         return 'text-blue-600/90 font-medium';
+         return 'text-blue-600 font-medium';
        } else if (diffDays >= 31) {
-         return 'text-red-600/90 font-medium';
+         return 'text-red-600 font-medium';
        }
     }
-    return 'text-zinc-600';
+    return 'text-zinc-750';
   };
 
   // Check if dates match selected filter date
@@ -231,8 +239,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       const rule5 = !isCompleted && (category === '중요' || category === '긴급');
       const rule6 = isOverdue && !isCompleted && category !== '가통';
       const rule7 = !task.date || task.date.trim() === '';
+      const rule8 = isOverdue && !isCompleted && category === '가통' && (familyClass === '첫날' || familyClass === '한달');
 
-      return rule1 || rule2 || rule3 || rule4 || rule5 || rule6 || rule7;
+      return rule1 || rule2 || rule3 || rule4 || rule5 || rule6 || rule7 || rule8;
     }).sort((a, b) => {
       const statusA = a.status || '예정';
       const statusB = b.status || '예정';
@@ -927,7 +936,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-650'}`}
+              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-zinc-650'}`}
             />
 
             {/* Status Choice - styled like the dynamic status badge */}
@@ -1101,7 +1110,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                 </span>
               )}
               {task.date && (
-                <span className={`font-normal ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-600'}`}>
+                <span className={`font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
                   {formatRelativeTaskDate(task.date)}
                 </span>
               )}
@@ -1130,7 +1139,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
               </span>
             )}
             {task.date && (
-              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-600/90 font-medium' : 'text-zinc-600'}`}>
+              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
                 {formatRelativeTaskDate(task.date)}
               </span>
             )}
