@@ -177,22 +177,21 @@ export const parseLinesToBlocks = (lines: string[]): Block[] => {
   return blocks;
 };
 
-// Highlights the bullet character '●' by rendering it in blue
+// Highlights the bullet characters '●' and '■' by rendering them in blue
 export const renderWithHighlightedBullet = (text: string, baseKey: number | string): ReactNode => {
-  if (!text.includes('●')) return text;
+  if (!text.includes('●') && !text.includes('■')) return text;
   
-  const segments = text.split('●');
+  const segments = text.split(/([●■])/);
   const elements: ReactNode[] = [];
   
   segments.forEach((seg, index) => {
-    if (index > 0) {
+    if (seg === '●' || seg === '■') {
       elements.push(
         <span key={`bullet-${baseKey}-${index}`} className="text-blue-700/80 font-bold">
-          ●
+          {seg}
         </span>
       );
-    }
-    if (seg) {
+    } else if (seg) {
       elements.push(seg);
     }
   });

@@ -15,7 +15,8 @@ import {
   Pencil,
   Save,
   X,
-  Copy
+  Copy,
+  User
 } from 'lucide-react';
 import { noteApi } from '@/src/services/api';
 import MarkdownRenderer, { DocTab, stripMarkdown } from '../common/MarkdownRenderer';
@@ -30,6 +31,10 @@ export default function CommentBank() {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Replacement State
+  const [nameInput, setNameInput] = useState('');
+  const [replacementName, setReplacementName] = useState('');
 
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -105,9 +110,22 @@ export default function CommentBank() {
     }));
   };
 
+  const handleApplyReplacement = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setReplacementName(nameInput.trim());
+    if (nameInput.trim()) {
+      toast.success(MESSAGES.beginners.replacementSuccess(nameInput.trim()));
+    } else {
+      toast.info(MESSAGES.beginners.replacementReset);
+    }
+  };
+
   const handleCopy = async (id: string, text: string) => {
     try {
-      const cleanText = stripMarkdown(text);
+      const substituted = replacementName 
+        ? text.replaceAll('●●', replacementName) 
+        : text;
+      const cleanText = stripMarkdown(substituted);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(cleanText);
         setCopiedId(id);
@@ -190,7 +208,43 @@ export default function CommentBank() {
     <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
         {/* Left Side: Directory Sidebar */}
-        <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex flex-col gap-4 h-[650px] max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
+        <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex flex-col gap-4 h-[650px] max-lg:h-auto max-lg:min-h-[350px]">
+          
+          {/* Name Input Box (텍스트 대치) */}
+          <div className="bg-zinc-50 border border-solid border-zinc-200 p-3 rounded-2xl flex items-center gap-2.5">
+            <User className="w-5 h-5 text-zinc-500 shrink-0 ml-1" />
+            <form onSubmit={handleApplyReplacement} className="flex-1 flex gap-3">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="텍스트 대치할 학생 이름을 입력..."
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-[13px] md:text-[14px] rounded-xl bg-white hover:border-zinc-300 transition-all font-medium"
+                />
+                {nameInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNameInput('');
+                      setReplacementName('');
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-zinc-50 hover:bg-zinc-100 border border-solid border-zinc-200/60 hover:border-zinc-300 text-zinc-500 hover:text-zinc-700 font-medium px-4 h-[38px] rounded-xl shadow-sm text-[13px] cursor-pointer shrink-0 transition-all"
+              >
+                대치
+              </Button>
+            </form>
+          </div>
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-neutral-400" />
@@ -204,7 +258,7 @@ export default function CommentBank() {
           </div>
 
           {/* Directory Tree */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1 max-lg:max-h-[250px]">
             {filteredFolders.length === 0 ? (
               <div className="py-20 text-center text-[13px] md:text-[15px] text-neutral-400 flex flex-col items-center justify-center gap-2">
                 <FileText className="w-9 h-9 text-neutral-300" />
@@ -383,7 +437,7 @@ export default function CommentBank() {
                 ) : selectedTab.text ? (
                   <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <MarkdownRenderer text={selectedTab.text} />
+                      <MarkdownRenderer text={replacementName ? selectedTab.text.replaceAll('●●', replacementName) : selectedTab.text} />
                     </div>
                   </div>
                 ) : (

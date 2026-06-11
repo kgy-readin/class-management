@@ -190,6 +190,50 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* Normalize and prevent input[type="date"] from overflowing, stretching, or losing alignment on mobile safari/Webkit */
+input[type="date"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  height: 100% !important;
+  line-height: inherit !important;
+  text-align: inherit;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* iOS Safari/Webkit specific layout override to completely prevent date inputs from stretching or overflowing on touch viewports */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: inherit !important;
+    justify-content: inherit !important;
+  }
+}
+
 /* Hide inner scrollbars for containers and textareas while maintaining scroll functionality */
 .custom-scrollbar::-webkit-scrollbar,
 .custom-scrollbar *::-webkit-scrollbar,

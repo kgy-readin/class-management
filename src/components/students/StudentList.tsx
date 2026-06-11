@@ -627,35 +627,35 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                           등원
                         </Button>
                       } />
-                      <DialogContent className="sm:max-w-[400px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
-                        <div className="w-full p-8 sm:p-10 flex flex-col items-center text-center space-y-6 sm:space-y-7">
+                      <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-[400px] rounded-[2.5rem] sm:rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
+                        <div className="w-full p-5 min-h-0 min-[370px]:p-6 sm:p-10 flex flex-col items-center text-center space-y-5 sm:space-y-7">
                           <div className="space-y-2">
-                            <h3 className="text-[22px] font-extrabold text-foreground tracking-tight">{student.name} 학생 등원</h3>
+                            <h3 className="text-xl min-[370px]:text-[22px] font-extrabold text-foreground tracking-tight">{student.name} 학생 등원</h3>
                           </div>
                           
-                          <div className="w-full space-y-5 px-1 text-left">
+                          <div className="w-full space-y-4 min-[370px]:space-y-5 px-1 text-left">
                             {/* Horizontal parallel section */}
-                            <div className="flex items-center justify-center gap-4 w-full">
+                            <div className="flex items-center justify-center gap-3 min-[370px]:gap-4 w-full">
                               {/* Left Column: Arrival Time Input directly */}
                               <div className="flex flex-col items-center">
                                 <Input 
                                   type="time" 
                                   value={arrivalTime}
                                   onChange={(e) => handleArrivalTimeChange(e.target.value)}
-                                  className="w-[125px] rounded-2xl h-[68px] border-border/40 bg-secondary/10 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-lg tracking-wide transition-all"
+                                  className="w-[110px] min-[370px]:w-[125px] rounded-2xl h-[60px] min-[370px]:h-[68px] border-border/40 bg-secondary/10 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-base min-[370px]:text-lg tracking-wide transition-all"
                                 />
                               </div>
 
                               {/* Right Column: Minute Addition Buttons & Counter, 3 columns x 2 rows */}
-                              <div className="flex flex-col items-center gap-1">
-                                <div className="grid grid-cols-3 gap-1 w-[180px]">
+                              <div className="flex flex-col items-center gap-1 flex-1 max-w-[180px]">
+                                <div className="grid grid-cols-3 gap-1 w-full">
                                   {[15, 30, 60, 90, 120, 180].map((min) => (
                                     <Button
                                       key={min}
                                       type="button"
                                       variant="outline"
                                       onClick={() => handleAddMinutes(min)}
-                                      className="h-8 text-[13px] font-bold p-0 rounded-lg border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors"
+                                      className="h-7 min-[370px]:h-8 text-[11px] min-[370px]:text-[13px] font-bold p-0 rounded-lg border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors"
                                     >
                                       {min}
                                     </Button>
@@ -668,7 +668,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                                       setAddedMinutes(0);
                                       setDismissalTime(arrivalTime);
                                     }}
-                                    className="text-[10px] text-destructive hover:underline font-extrabold cursor-pointer mt-0.5"
+                                    className="text-[9px] min-[370px]:text-[10px] text-destructive hover:underline font-extrabold cursor-pointer mt-0.5"
                                   >
                                     +{addedMinutes}분 초기화
                                   </button>
@@ -677,15 +677,15 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                             </div>
 
                             {/* Final Calculated Dismissal Time Input */}
-                            <div className="flex items-center justify-center gap-3 border-t border-solid border-neutral-200 pt-4">
-                              <label className="text-[14px] font-medium text-[#427fe1] leading-tight text-center w-[84px] shrink-0">
+                            <div className="flex items-center justify-center gap-2 min-[370px]:gap-3 border-t border-solid border-neutral-200 pt-4">
+                              <label className="text-[13px] min-[370px]:text-[14px] font-medium text-[#427fe1] leading-tight text-center w-[70px] min-[370px]:w-[84px] shrink-0">
                                 하원 예정
                               </label>
                               <Input 
                                 type="time" 
                                 value={dismissalTime}
                                 onChange={(e) => setDismissalTime(e.target.value)}
-                                className="w-[216px] rounded-2xl h-11 border-primary/20 bg-primary/5 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-black text-lg tracking-wider text-primary transition-all"
+                                className="w-full max-w-[190px] min-[370px]:max-w-[216px] rounded-2xl h-10 min-[370px]:h-11 border-primary/20 bg-primary/5 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-black text-base min-[370px]:text-lg tracking-wider text-primary transition-all"
                               />
                             </div>
                           </div>
