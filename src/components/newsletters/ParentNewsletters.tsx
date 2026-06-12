@@ -135,17 +135,8 @@ export default function CommentParentNewsletters() {
         }
         return;
       }
-    }
-
-    // Default select first available child tab under folders
-    if (pathname === '/newsletters' && folders.length > 0) {
-      const firstFolder = folders[0];
-      if (firstFolder.childTabs && firstFolder.childTabs.length > 0) {
-        const firstChild = firstFolder.childTabs[0];
-        navigate(`/newsletters/${getShortHash(firstChild.id)}`, { replace: true });
-      } else {
-        navigate(`/newsletters/${getShortHash(firstFolder.id)}`, { replace: true });
-      }
+    } else {
+      setSelectedTabId(null);
     }
   }, [location.pathname, allTabs]);
 

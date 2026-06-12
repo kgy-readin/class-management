@@ -143,11 +143,8 @@ export default function MeetingNote() {
         }
         return;
       }
-    }
-
-    // Default selection to first note if on /meeting and we have items
-    if (pathname === '/meeting' && sortedItems.length > 0) {
-      navigate(`/meeting/${getMeetingId(sortedItems[0], sortedItems)}`, { replace: true });
+    } else {
+      setSelectedRowIndex(null);
     }
   }, [location.pathname, items]);
 

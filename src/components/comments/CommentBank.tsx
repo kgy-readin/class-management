@@ -92,17 +92,8 @@ export default function CommentBank() {
         }
         return;
       }
-    }
-
-    // Default select first available child tab or folder
-    if (pathname === '/comments' && folders.length > 0) {
-      const firstFolder = folders[0];
-      if (firstFolder.childTabs && firstFolder.childTabs.length > 0) {
-        const firstChild = firstFolder.childTabs[0];
-        navigate(`/comments/${getShortHash(firstChild.id)}`, { replace: true });
-      } else {
-        navigate(`/comments/${getShortHash(firstFolder.id)}`, { replace: true });
-      }
+    } else {
+      setSelectedTabId(null);
     }
   }, [location.pathname, allTabs]);
 

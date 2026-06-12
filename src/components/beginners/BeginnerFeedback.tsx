@@ -62,11 +62,8 @@ export default function BeginnerFeedback() {
         }
         return;
       }
-    }
-
-    // Default select first item if we have loaded items
-    if (pathname === '/beginners' && items.length > 0) {
-      navigate(`/beginners/${getShortHash(items[0].bookTitle)}`, { replace: true });
+    } else {
+      setSelectedBookTitle(null);
     }
   }, [location.pathname, items]);
 

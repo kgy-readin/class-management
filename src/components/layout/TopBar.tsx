@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -19,6 +20,18 @@ import {
 } from 'lucide-react';
 
 
+const tabToPath: Record<string, string> = {
+  dashboard: '/',
+  students: '/students',
+  writing: '/writing',
+  tasks: '/tasks',
+  logs: '/logs',
+  meeting: '/meeting',
+  comments: '/comments',
+  beginners: '/beginners',
+  familyLetter: '/newsletters',
+};
+
 interface TopBarProps {
   activeTab: string;
   appMode: 'sub' | 'class' | 'work';
@@ -35,6 +48,18 @@ export default function TopBar({
   onSetSelectedStudent
 }: TopBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleTitleClick = () => {
+    onSetSelectedStudent(null);
+    const basePath = tabToPath[activeTab] || '/';
+    if (location.pathname === basePath) {
+      window.location.reload();
+    } else {
+      navigate(basePath);
+    }
+  };
 
   let quickLinkUrl = '';
   if (activeTab === 'tasks') {
@@ -92,7 +117,7 @@ export default function TopBar({
 
           {/* Left-aligned page title for mobile portrait screens (8px gap is automatically provided by parent's gap-2) */}
           <button 
-            onClick={() => window.location.reload()}
+            onClick={handleTitleClick}
             className="hidden portrait:max-sm:block text-[16px] font-semibold text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight"
             title="새로고침"
           >
@@ -154,7 +179,7 @@ export default function TopBar({
         {/* Center: English page name with reload functionality */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center portrait:max-sm:hidden">
           <button 
-            onClick={() => window.location.reload()}
+            onClick={handleTitleClick}
             className="text-[16px] font-medium text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight"
             title="새로고침"
           >
