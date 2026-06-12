@@ -59,7 +59,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   // Adding state directly inline
   const [reservingTask, setReservingTask] = useState<Task | null>(null);
-  const [inlineAddGroup, setInlineAddGroup] = useState<'todo' | 'inProgress' | 'completed' | 'familyView' | null>(null);
+  const [activeTab, setActiveTab] = useState<'업무' | '다음주' | '가정통신문' | '필터'>('업무');
+  const [inlineAddGroup, setInlineAddGroup] = useState<'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | null>(null);
   const [newForm, setNewForm] = useState<Omit<Task, 'sheetRowIndex'>>({
     date: format(new Date(), 'yyyy-MM-dd'),
     name: '',
@@ -71,6 +72,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  const [dateFocusedDesktop, setDateFocusedDesktop] = useState(false);
+  const [dateFocusedMobile, setDateFocusedMobile] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -200,30 +203,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const getFilteredBasicTasks = () => {
     const today = new Date();
 
-    if (selectedDate || selectedStudent) {
-      return tasks.filter(task => {
-        let matches = true;
-        if (selectedDate) {
-          matches = matches && isDateMatchingFilter(task.date);
-        }
-        if (selectedStudent) {
-          matches = matches && task.name === selectedStudent;
-        }
-        return matches;
-      }).sort((a, b) => {
-        if (a.date && b.date) {
-          const dateCompare = a.date.localeCompare(b.date);
-          if (dateCompare !== 0) return dateCompare;
-        }
-        const rankCatA = categoryRank[a.category] || 9;
-        const rankCatB = categoryRank[b.category] || 9;
-        if (rankCatA !== rankCatB) return rankCatA - rankCatB;
-        return (statusRank[a.status] || 7) - (statusRank[b.status] || 7);
-      });
-    }
+    // "업무 -> 날짜 비어있는 할일 미표시로 변경"
+    const validDateTasks = tasks.filter(task => task.date && task.date.trim() !== '');
 
-    // Default View: Apply 7 rules
-    return tasks.filter(task => {
+    // Default View: Apply 7 rules (rule 7 removed because empty-date is handled above)
+    return validDateTasks.filter(task => {
       const d = parseTaskDate(task.date);
       const isThisW = d ? isThisWeek(d, { weekStartsOn: 1 }) : false;
       const category = task.category || '';
@@ -238,11 +222,60 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       const rule4 = isThisW && (familyClass === '첫날' || familyClass === '한달');
       const rule5 = !isCompleted && (category === '중요' || category === '긴급');
       const rule6 = isOverdue && !isCompleted && category !== '가통';
-      const rule7 = !task.date || task.date.trim() === '';
+      // rule7 is removed
       const rule8 = isOverdue && !isCompleted && category === '가통' && (familyClass === '첫날' || familyClass === '한달');
 
-      return rule1 || rule2 || rule3 || rule4 || rule5 || rule6 || rule7 || rule8;
+      return rule1 || rule2 || rule3 || rule4 || rule5 || rule6 || rule8;
     }).sort((a, b) => {
+      const statusA = a.status || '예정';
+      const statusB = b.status || '예정';
+      const compA = statusA === '완료' || statusA === '취소';
+      const compB = statusB === '완료' || statusB === '취소';
+
+      if (compA && !compB) return 1;
+      if (!compA && compB) return -1;
+
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      if (a.date && b.date) {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+      }
+
+      const rankCatA = categoryRank[a.category] || 9;
+      const rankCatB = categoryRank[b.category] || 9;
+      if (rankCatA !== rankCatB) return rankCatA - rankCatB;
+
+      const rankStatusA = statusRank[a.status] || 7;
+      const rankStatusB = statusRank[b.status] || 7;
+      return rankStatusA - rankStatusB;
+    });
+  };
+
+  // 새로 만드는 '다음주' 뷰어용 필터링 및 정렬
+  // 날짜 비어있는 할일 포함, '이번주/업무'에서 보여주지 않는 할일 중 '다음주'의 할일 포함.
+  const getFilteredNextWeekTasks = () => {
+    const today = new Date();
+    // Monday of next week to Sunday of next week
+    const nextWeekStart = addDays(startOfWeek(today, { weekStartsOn: 1 }), 7);
+    const nextWeekEnd = addDays(nextWeekStart, 6);
+
+    const candidates = tasks.filter(task => {
+      const isEmpty = !task.date || task.date.trim() === '';
+      if (isEmpty) return true;
+
+      const d = parseTaskDate(task.date);
+      const isNextW = d ? (startOfDay(d) >= startOfDay(nextWeekStart) && startOfDay(d) <= startOfDay(nextWeekEnd)) : false;
+      return isNextW;
+    });
+
+    // "업무에서 보여주고 있는 일정은 보여주지 않기"
+    const basicTasksList = getFilteredBasicTasks();
+    const basicTaskIds = new Set(basicTasksList.map(t => t.sheetRowIndex));
+    const filtered = candidates.filter(task => !basicTaskIds.has(task.sheetRowIndex));
+
+    // Sort: Same rank policies
+    return filtered.sort((a, b) => {
       const statusA = a.status || '예정';
       const statusB = b.status || '예정';
       const compA = statusA === '완료' || statusA === '취소';
@@ -272,28 +305,6 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const getFilteredFamilyTasks = () => {
     const today = new Date();
 
-    if (selectedDate || selectedStudent) {
-      return tasks.filter(task => {
-        if (task.category !== '가통') return false;
-        let matches = true;
-        if (selectedDate) {
-          matches = matches && isDateMatchingFilter(task.date);
-        }
-        if (selectedStudent) {
-          matches = matches && task.name === selectedStudent;
-        }
-        return matches;
-      }).sort((a, b) => {
-        const rankFamA = familyClassRank[a.familyClass] || 5;
-        const rankFamB = familyClassRank[b.familyClass] || 5;
-        if (rankFamA !== rankFamB) return rankFamA - rankFamB;
-
-        if (a.date && !b.date) return -1;
-        if (!a.date && b.date) return 1;
-        return (a.date || '').localeCompare(b.date || '');
-      });
-    }
-
     // Default View: Apply 2 rules but showing up to 7 days after today and independent of filters
     return tasks.filter(task => {
       const d = parseTaskDate(task.date);
@@ -315,6 +326,50 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       if (a.date && !b.date) return -1;
       if (!a.date && b.date) return 1;
       return (a.date || '').localeCompare(b.date || '');
+    });
+  };
+
+  // New Dedicated '필터' View Selector - Only displays matching items or starts empty if no filters are selected
+  const getFilteredFilterTasks = () => {
+    if (!selectedDate && !selectedStudent) {
+      return [];
+    }
+
+    const filtered = tasks.filter(task => {
+      let matches = true;
+      if (selectedDate) {
+        matches = matches && isDateMatchingFilter(task.date);
+      }
+      if (selectedStudent) {
+        matches = matches && task.name === selectedStudent;
+      }
+      return matches;
+    });
+
+    // Sort matching basic view sorted hierarchy
+    return filtered.sort((a, b) => {
+      const statusA = a.status || '예정';
+      const statusB = b.status || '예정';
+      const compA = statusA === '완료' || statusA === '취소';
+      const compB = statusB === '완료' || statusB === '취소';
+
+      if (compA && !compB) return 1;
+      if (!compA && compB) return -1;
+
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      if (a.date && b.date) {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+      }
+
+      const rankCatA = categoryRank[a.category] || 9;
+      const rankCatB = categoryRank[b.category] || 9;
+      if (rankCatA !== rankCatB) return rankCatA - rankCatB;
+
+      const rankStatusA = statusRank[a.status] || 7;
+      const rankStatusB = statusRank[b.status] || 7;
+      return rankStatusA - rankStatusB;
     });
   };
 
@@ -440,12 +495,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   };
 
   // Toggles inline adding row inside groups
-  const handleOpenInlineAdd = (group: 'todo' | 'inProgress' | 'completed' | 'familyView') => {
+  const handleOpenInlineAdd = (group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek') => {
     setInlineAddGroup(group);
     
     let defaultStatus = '예정';
     let defaultCategory = '알림장';
     let defaultFamilyClass = '';
+    let defaultDate = format(new Date(), 'yyyy-MM-dd');
     
     if (group === 'inProgress') {
       defaultStatus = '진행';
@@ -454,10 +510,15 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     } else if (group === 'familyView') {
       defaultCategory = '가통';
       defaultFamilyClass = '정기';
+    } else if (group === 'nextWeek') {
+      // Find next week's Monday
+      const today = new Date();
+      const nextWeekStart = addDays(startOfWeek(today, { weekStartsOn: 1 }), 7);
+      defaultDate = format(nextWeekStart, 'yyyy-MM-dd');
     }
 
     setNewForm({
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: defaultDate,
       name: (group === 'familyView') ? '' : (selectedStudent || ''),
       category: defaultCategory,
       familyClass: defaultFamilyClass,
@@ -542,6 +603,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   const basicTasks = getFilteredBasicTasks();
   const familyTasks = getFilteredFamilyTasks();
+  const nextWeekTasks = getFilteredNextWeekTasks();
+  const filterTasks = getFilteredFilterTasks();
 
   const todoGroup = basicTasks.filter(t => t.status === '예정');
   const inProgressGroup = basicTasks.filter(t => t.status === '진행' || t.status === '대기' || t.status === '보류');
@@ -612,230 +675,373 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
           <div className="flex flex-col gap-6">
             
-            {/* 업무 (Main List Block) */}
-            <div className="w-full space-y-4">
+            {/* Consolidated Task block */}
+            <div className="w-full">
               <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none">
-                <div className="flex items-center justify-between pb-2 border-b border-border/40 gap-2">
-                  <h2 className="font-semibold text-base text-zinc-600">업무</h2>
-                  <div className="flex items-center gap-2">
-                    {showFilters && (
-                      <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-1 duration-150">
-                        {/* Student Select dropdown */}
-                        <StudentCombobox
-                          students={students}
-                          value={selectedStudent || ''}
-                          onChange={(val) => setSelectedStudent(val || null)}
-                          placeholder="학생 필터"
-                          className="!w-24 font-sans"
-                          inputClassName="bg-neutral-50/50 text-neutral-600 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200"
-                        />
+                
+                {/* Header Section with Tab Toggle Switch and Filter Tools */}
+                <div className="flex flex-col gap-2 pb-3 border-b border-border/40">
+                  {/* First Row: Tab Toggles & Filter toggle button on the exact same line */}
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    
+                    {/* Tab Switcher (Horizontal Text Toggle Design) - Displays only the 3 core views */}
+                    <div className="flex bg-neutral-100 p-0.5 rounded-xl shrink-0 w-fit overflow-x-auto no-scrollbar">
+                      {(['업무', '다음주', '가정통신문'] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => {
+                            setActiveTab(tab);
+                            setInlineAddGroup(null); // Close any active inline add form when switching tabs
+                            setShowFilters(false); // Close filters panel when shifting to regular views
+                          }}
+                          className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[13px] font-medium rounded-lg text-center transition-all cursor-pointer whitespace-nowrap ${
+                            activeTab === tab
+                              ? 'bg-white text-zinc-800 shadow-sm'
+                              : 'text-zinc-550 hover:text-zinc-800'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
 
-                        {/* Date Select input */}
-                        <input 
-                          type="date"
-                          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              setSelectedDate(new Date(e.target.value));
+                    {/* Filter controls and button wrapper (Desktop layout places dropdowns left of the filter button) */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      
+                      {/* DESKTOP/LANDSCAPE SELECTORS (Shown only at breakpoint 'sm' and above on the same level line) */}
+                      {showFilters && (
+                        <div className="hidden sm:flex items-center gap-1.5 animate-in fade-in slide-in-from-right-1 duration-150">
+                          {/* Student Filter Combobox */}
+                          <StudentCombobox
+                            students={students}
+                            value={selectedStudent || ''}
+                            onChange={(val) => setSelectedStudent(val || null)}
+                            placeholder="학생명"
+                            className="!w-[108px] font-sans"
+                            inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
+                              selectedStudent ? 'text-neutral-600' : '!text-zinc-500 placeholder:!text-zinc-500'
+                            }`}
+                          />
+
+                          {/* Date filter picker */}
+                          <input 
+                            type={selectedDate || dateFocusedDesktop ? "date" : "text"}
+                            value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+                            onFocus={() => setDateFocusedDesktop(true)}
+                            onBlur={() => setDateFocusedDesktop(false)}
+                            placeholder="마감일"
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setSelectedDate(new Date(e.target.value));
+                              } else {
+                                setSelectedDate(undefined);
+                              }
+                            }}
+                            className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
+                              selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
+                            }`}
+                          />
+
+                          {/* Filter Reset Button */}
+                          {(selectedDate || selectedStudent) && (
+                            <button 
+                              onClick={() => {
+                                setSelectedDate(undefined);
+                                setSelectedStudent(null);
+                              }}
+                              className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
+                              title="필터 초기화"
+                            >
+                              <X className="w-3 h-3 text-neutral-400" />
+                              <span>초기화</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Filter Button (Visually persistent, aligned right, same height/line) */}
+                      <div className="relative shrink-0">
+                        <button
+                          onClick={() => {
+                            if (activeTab === '필터') {
+                              const nextShow = !showFilters;
+                              setShowFilters(nextShow);
+                              if (!nextShow) {
+                                // Default back to '업무' tab when filters panel is completely toggled off from inside filter view
+                                setActiveTab('업무');
+                                setSelectedStudent(null);
+                                setSelectedDate(undefined);
+                              }
                             } else {
+                              setActiveTab('필터');
+                              setShowFilters(true);
+                              setSelectedStudent(null);
                               setSelectedDate(undefined);
                             }
                           }}
-                          className="h-7 px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer text-zinc-600 font-medium shrink-0"
-                        />
-
-                        {/* Reset Button */}
-                        {(selectedDate || selectedStudent) && (
-                          <button 
-                            onClick={() => {
-                              setSelectedDate(undefined);
-                              setSelectedStudent(null);
-                            }}
-                            className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
-                            title="필터 초기화"
-                          >
-                            <X className="w-3 h-3 text-neutral-400" />
-                            <span>초기화</span>
-                          </button>
+                          className={`h-7 w-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
+                            activeTab === '필터'
+                              ? 'bg-zinc-700 text-white shadow-sm hover:bg-zinc-800' 
+                              : (selectedDate || selectedStudent)
+                                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600'
+                          }`}
+                          title="필터 열기"
+                        >
+                          <Filter className="w-3.5 h-3.5" />
+                        </button>
+                        {activeTab !== '필터' && (selectedDate || selectedStudent) && (
+                          <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                          </span>
                         )}
                       </div>
-                    )}
+                    </div>
 
-                    {/* Filter Toggle Button */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowFilters(prev => !prev)}
-                        className={`h-7 w-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
-                          showFilters 
-                            ? 'bg-zinc-700 text-white shadow-sm hover:bg-zinc-800' 
-                            : (selectedDate || selectedStudent)
-                              ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600'
+                  </div>
+
+                  {/* MOBILE-ONLY SECOND ROW DROPDOWN (ONLY shown on small screens 'max-sm', aligned right right-below the line) */}
+                  {showFilters && (
+                    <div className="flex sm:hidden items-center justify-end gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150 w-full mt-1">
+                      {/* Student Filter Combobox */}
+                      <StudentCombobox
+                        students={students}
+                        value={selectedStudent || ''}
+                        onChange={(val) => setSelectedStudent(val || null)}
+                        placeholder="학생명"
+                        className="!w-[108px] font-sans"
+                        inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
+                          selectedStudent ? 'text-neutral-600' : '!text-zinc-500 placeholder:!text-zinc-500'
                         }`}
-                        title={showFilters ? '필터 닫기' : '필터 열기'}
-                      >
-                        <Filter className="w-3.5 h-3.5" />
-                      </button>
-                      {!showFilters && (selectedDate || selectedStudent) && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                        </span>
+                      />
+
+                      {/* Date filter picker */}
+                      <input 
+                        type={selectedDate || dateFocusedMobile ? "date" : "text"}
+                        value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+                        onFocus={() => setDateFocusedMobile(true)}
+                        onBlur={() => setDateFocusedMobile(false)}
+                        placeholder="마감일"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedDate(new Date(e.target.value));
+                          } else {
+                            setSelectedDate(undefined);
+                          }
+                        }}
+                        className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
+                          selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
+                        }`}
+                      />
+
+                      {/* Filter Reset Button */}
+                      {(selectedDate || selectedStudent) && (
+                        <button 
+                          onClick={() => {
+                            setSelectedDate(undefined);
+                            setSelectedStudent(null);
+                          }}
+                          className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
+                          title="필터 초기화"
+                        >
+                          <X className="w-3 h-3 text-neutral-400" />
+                          <span>초기화</span>
+                        </button>
                       )}
                     </div>
-                  </div>
+                  )}
+
                 </div>
 
-              {/* Collapsible groups */}
-              <div className="mt-4 space-y-4">
-                
-                {/* 1. TODO GROUP */}
-                <div className="space-y-1.5">
-                  <button 
-                    onClick={() => toggleGroup('todo')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-700/70 hover:text-zinc-700 transition-colors"
-                  >
-                    {expandedGroups.todo ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    <span className="flex items-center">
-                      <span>예정</span>
-                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
-                        {todoGroup.length}
-                      </span>
-                    </span>
-                  </button>
+                {/* Tab content area */}
+                <div className="mt-4">
+                  
+                  {activeTab === '업무' && (
+                    <div className="space-y-4">
+                      {/* 1. TODO GROUP */}
+                      <div className="space-y-1.5">
+                        <button 
+                          onClick={() => toggleGroup('todo')}
+                          className="flex items-center gap-1.5 text-[14px] font-semibold text-zinc-700/70 hover:text-zinc-700 transition-colors"
+                        >
+                          {expandedGroups.todo ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          <span className="flex items-center">
+                            <span>예정</span>
+                            <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
+                              {todoGroup.length}
+                            </span>
+                          </span>
+                        </button>
 
-                  <AnimatePresence initial={false}>
-                    {expandedGroups.todo && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden space-y-1.5 pl-0"
-                      >
-                        {todoGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
-                            등록되었거나 해당되는 예정된 일이 없습니다.
-                          </div>
-                        ) : (
-                          todoGroup.map(task => renderTaskRow(task))
-                        )}
+                        <AnimatePresence initial={false}>
+                          {expandedGroups.todo && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden space-y-1.5 pl-0"
+                            >
+                              {todoGroup.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
+                                  등록되었거나 해당되는 예정된 일이 없습니다.
+                                </div>
+                              ) : (
+                                todoGroup.map(task => renderTaskRow(task))
+                              )}
 
-                        {inlineAddGroup === 'todo' ? renderInlineAddForm('todo') : (
-                          <button 
-                            onClick={() => handleOpenInlineAdd('todo')}
-                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
-                            title="예정 업무 추가"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                              {inlineAddGroup === 'todo' ? renderInlineAddForm('todo') : (
+                                <button 
+                                  onClick={() => handleOpenInlineAdd('todo')}
+                                  className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
+                                  title="예정 업무 추가"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
 
-                {/* 2. IN PROGRESS GROUP */}
-                <div className="space-y-1.5">
-                  <button 
-                    onClick={() => toggleGroup('inProgress')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-emerald-700/70 hover:text-emerald-700 transition-colors"
-                  >
-                    {expandedGroups.inProgress ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    <span className="flex items-center">
-                      <span>진행</span>
-                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
-                        {inProgressGroup.length}
-                      </span>
-                    </span>
-                  </button>
+                      {/* 2. IN PROGRESS GROUP */}
+                      <div className="space-y-1.5">
+                        <button 
+                          onClick={() => toggleGroup('inProgress')}
+                          className="flex items-center gap-1.5 text-[14px] font-semibold text-emerald-700/70 hover:text-emerald-700 transition-colors"
+                        >
+                          {expandedGroups.inProgress ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          <span className="flex items-center">
+                            <span>진행</span>
+                            <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
+                              {inProgressGroup.length}
+                            </span>
+                          </span>
+                        </button>
 
-                  <AnimatePresence initial={false}>
-                    {expandedGroups.inProgress && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden space-y-1.5 pl-0"
-                      >
-                        {inProgressGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
-                            진행 중인 업무가 없습니다.
-                          </div>
-                        ) : (
-                          inProgressGroup.map(task => renderTaskRow(task))
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        <AnimatePresence initial={false}>
+                          {expandedGroups.inProgress && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden space-y-1.5 pl-0"
+                            >
+                              {inProgressGroup.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
+                                  진행 중인 업무가 없습니다.
+                                </div>
+                              ) : (
+                                inProgressGroup.map(task => renderTaskRow(task))
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
 
-                {/* 3. COMPLETED GROUP */}
-                <div className="space-y-1.5">
-                  <button 
-                    onClick={() => toggleGroup('completed')}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-blue-700/70 hover:text-blue-700 transition-colors"
-                  >
-                    {expandedGroups.completed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    <span className="flex items-center">
-                      <span>완료</span>
-                      <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
-                        {completedGroup.length}
-                      </span>
-                    </span>
-                  </button>
+                      {/* 3. COMPLETED GROUP */}
+                      <div className="space-y-1.5">
+                        <button 
+                          onClick={() => toggleGroup('completed')}
+                          className="flex items-center gap-1.5 text-[14px] font-semibold text-blue-700/70 hover:text-blue-700 transition-colors"
+                        >
+                          {expandedGroups.completed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          <span className="flex items-center">
+                            <span>완료</span>
+                            <span className="inline-flex items-center justify-center text-[12.5px] text-zinc-400 font-medium ml-3">
+                              {completedGroup.length}
+                            </span>
+                          </span>
+                        </button>
 
-                  <AnimatePresence initial={false}>
-                    {expandedGroups.completed && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden space-y-1.5 pl-0"
-                      >
-                        {completedGroup.length === 0 ? (
-                          <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
-                            완료되었거나 취소된 업무가 없습니다.
-                          </div>
-                        ) : (
-                          completedGroup.map(task => renderTaskRow(task))
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-            {/* 가정통신문 */}
-            <div className="w-full space-y-4">
-              <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none">
-                <div className="flex items-center justify-between pb-3 border-b border-border/40">
-                  <h2 className="font-semibold text-base text-zinc-650">가정통신문</h2>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  {familyTasks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
-                      해당되는 가정통신문 업무가 없습니다.
+                        <AnimatePresence initial={false}>
+                          {expandedGroups.completed && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden space-y-1.5 pl-0"
+                            >
+                              {completedGroup.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
+                                  완료되었거나 취소된 업무가 없습니다.
+                                </div>
+                              ) : (
+                                completedGroup.map(task => renderTaskRow(task))
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
-                  ) : (
-                    familyTasks.map(task => renderFamilyTaskRow(task))
                   )}
 
-                  {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
-                    <button 
-                      onClick={() => handleOpenInlineAdd('familyView')}
-                      className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
-                      title="가정통신문 추가"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                  {activeTab === '다음주' && (
+                    <div className="space-y-2">
+                      {nextWeekTasks.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                          등록되었거나 해당되는 다음주 할일이 없습니다.
+                        </div>
+                      ) : (
+                        nextWeekTasks.map(task => renderTaskRow(task))
+                      )}
+
+                      {inlineAddGroup === 'nextWeek' ? renderInlineAddForm('nextWeek') : (
+                        <button 
+                          onClick={() => handleOpenInlineAdd('nextWeek')}
+                          className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
+                          title="다음주 업무 추가"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   )}
+
+                  {activeTab === '가정통신문' && (
+                    <div className="space-y-2">
+                      {familyTasks.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                          해당되는 가정통신문 업무가 없습니다.
+                        </div>
+                      ) : (
+                        familyTasks.map(task => renderFamilyTaskRow(task))
+                      )}
+
+                      {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
+                        <button 
+                          onClick={() => handleOpenInlineAdd('familyView')}
+                          className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
+                          title="가정통신문 추가"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === '필터' && (
+                    <div className="space-y-4">
+                      {!selectedStudent && !selectedDate ? (
+                        <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
+                          <Filter className="w-10 h-10 text-zinc-300" />
+                          <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>
+                        </div>
+                      ) : filterTasks.length === 0 ? (
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                          필터 결과에 해당하는 할 일이 없습니다.
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {filterTasks.map(task => renderTaskRow(task))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
@@ -1427,7 +1633,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   }
 
   // INLINE ADDITION FORM - Allows full entry including student name and details on creation
-  function renderInlineAddForm(group: 'todo' | 'inProgress' | 'completed' | 'familyView') {
+  function renderInlineAddForm(group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek') {
     return (
       <div className="p-3 bg-zinc-50 rounded-xl border border-solid border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
