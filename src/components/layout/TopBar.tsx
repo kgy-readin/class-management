@@ -54,11 +54,7 @@ export default function TopBar({
   const handleTitleClick = () => {
     onSetSelectedStudent(null);
     const basePath = tabToPath[activeTab] || '/';
-    if (location.pathname === basePath) {
-      window.location.reload();
-    } else {
-      navigate(basePath);
-    }
+    navigate(basePath);
   };
 
   let quickLinkUrl = '';
