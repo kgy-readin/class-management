@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -7,7 +8,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import StudentList from './components/students/StudentList';
 import WritingTracker from './components/writing/WritingTracker';
 import StudentDetail from './components/students/StudentDetail';
-import { DashboardData } from './types/index';
+import { DashboardData, Student, getShortHash } from './types/index';
 import { Settings } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
 import StudentLog from './components/logs/StudentLog';
@@ -18,7 +19,56 @@ import MeetingNote from './components/meeting/MeetingNote';
 import { dataApi } from '@/src/services/api';
 import TopBar from './components/layout/TopBar';
 
+const tabToPath: Record<string, string> = {
+  dashboard: '/',
+  students: '/students',
+  writing: '/writing',
+  tasks: '/tasks',
+  logs: '/logs',
+  meeting: '/meeting',
+  comments: '/comments',
+  beginners: '/beginners',
+  familyLetter: '/newsletters',
+};
+
+const pathToTab: Record<string, string> = {
+  '/': 'dashboard',
+  '/students': 'students',
+  '/writing': 'writing',
+  '/tasks': 'tasks',
+  '/logs': 'logs',
+  '/meeting': 'meeting',
+  '/comments': 'comments',
+  '/beginners': 'beginners',
+  '/newsletters': 'familyLetter',
+};
+
+const getStudentPath = (name: string, _studentsList?: Student[]): string => {
+  return `/students/${getShortHash(name)}`;
+};
+
+const getStudentNameFromParam = (param: string, studentsList: Student[]): string | null => {
+  if (!param) return null;
+  const decoded = decodeURIComponent(param);
+  if (studentsList && studentsList.length > 0) {
+    const foundByHash = studentsList.find(s => getShortHash(s.name) === decoded);
+    if (foundByHash) return foundByHash.name;
+    const foundByName = studentsList.find(s => s.name === decoded);
+    if (foundByName) return foundByName.name;
+  }
+  if (/^\d+$/.test(decoded)) {
+    const index = parseInt(decoded, 10) - 1;
+    if (studentsList && index >= 0 && index < studentsList.length) {
+      return studentsList[index].name;
+    }
+  }
+  return decoded;
+};
+
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
@@ -26,22 +76,33 @@ export default function App() {
   
   const [studentEntrySource, setStudentEntrySource] = useState<'dashboard' | 'students'>('dashboard');
 
+  // Derive activeTab from current URL pathname
+  let activeTab = 'dashboard';
+  const path = location.pathname;
+  if (path.startsWith('/students')) {
+    activeTab = 'students';
+  } else if (path.startsWith('/writing')) {
+    activeTab = 'writing';
+  } else if (path.startsWith('/meeting')) {
+    activeTab = 'meeting';
+  } else if (path.startsWith('/comments')) {
+    activeTab = 'comments';
+  } else if (path.startsWith('/beginners')) {
+    activeTab = 'beginners';
+  } else if (path.startsWith('/newsletters')) {
+    activeTab = 'familyLetter';
+  } else if (path.startsWith('/logs')) {
+    activeTab = 'logs';
+  } else if (path.startsWith('/tasks')) {
+    activeTab = 'tasks';
+  } else {
+    activeTab = pathToTab[path] || 'dashboard';
+  }
+
   // App work mode: 'sub' (보조모드), 'class' (수업모드) or 'work' (업무모드)
   const [appMode, setAppMode] = useState<'sub' | 'class' | 'work'>(() => {
     const cached = localStorage.getItem('webapp_app_mode') as 'sub' | 'class' | 'work';
     return cached || 'class';
-  });
-
-  // Active tab selection
-  const [activeTab, setActiveTab] = useState(() => {
-    const mode = (localStorage.getItem('webapp_app_mode') as 'sub' | 'class' | 'work') || 'class';
-    if (mode === 'work') {
-      return localStorage.getItem('webapp_work_tab') || 'tasks';
-    } else if (mode === 'sub') {
-      return localStorage.getItem('webapp_sub_tab') || 'logs';
-    } else {
-      return localStorage.getItem('webapp_class_tab') || 'dashboard';
-    }
   });
 
   // Helper to define mode categories
@@ -55,22 +116,66 @@ export default function App() {
     return 'class';
   };
 
-  // Function to coordinate state variables when active tab shifts
-  const selectTab = (tab: string) => {
-    const mode = getModeByTab(tab);
-    setAppMode(mode);
-    localStorage.setItem('webapp_app_mode', mode);
+  // Automatically update and persist appMode & tabs whenever activeTab (URL-driven) shifts
+  useEffect(() => {
+    const computedMode = getModeByTab(activeTab);
+    setAppMode(computedMode);
+    localStorage.setItem('webapp_app_mode', computedMode);
+    localStorage.setItem('webapp_active_tab', activeTab);
     
-    setActiveTab(tab);
-    localStorage.setItem('webapp_active_tab', tab);
-    
-    if (mode === 'class') {
-      localStorage.setItem('webapp_class_tab', tab);
-    } else if (mode === 'sub') {
-      localStorage.setItem('webapp_sub_tab', tab);
+    if (computedMode === 'class') {
+      localStorage.setItem('webapp_class_tab', activeTab);
+    } else if (computedMode === 'sub') {
+      localStorage.setItem('webapp_sub_tab', activeTab);
     } else {
-      localStorage.setItem('webapp_work_tab', tab);
+      localStorage.setItem('webapp_work_tab', activeTab);
     }
+  }, [activeTab]);
+
+  // Restore last selected tab if accessing the root URL ('/')
+  useEffect(() => {
+    if (location.pathname === '/' || location.pathname === '') {
+      const savedActiveTab = localStorage.getItem('webapp_active_tab');
+      if (savedActiveTab && savedActiveTab !== 'dashboard') {
+        const path = tabToPath[savedActiveTab];
+        if (path) {
+          navigate(path, { replace: true });
+        }
+      }
+    }
+  }, [location.pathname, navigate]);
+
+  // Sync selectedStudent state based on location.pathname
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/students/') && path !== '/students') {
+      const param = path.substring('/students/'.length);
+      if (param) {
+        const name = getStudentNameFromParam(param, data?.students || []);
+        if (name) {
+          if (selectedStudent !== name) {
+            setSelectedStudent(name);
+          }
+        } else {
+          const decoded = decodeURIComponent(param);
+          if (selectedStudent !== decoded) {
+            setSelectedStudent(decoded);
+          }
+        }
+      }
+    } else {
+      if (path === '/students' || path === '/' || path === '/dashboard') {
+        if (selectedStudent !== null) {
+          setSelectedStudent(null);
+        }
+      }
+    }
+  }, [location.pathname, data?.students]);
+
+  // Navigate to corresponding URL path on tab select
+  const selectTab = (tab: string) => {
+    const computedPath = tabToPath[tab] || '/';
+    navigate(computedPath);
   };
 
   const handleModeChange = (mode: 'sub' | 'class' | 'work') => {
@@ -85,8 +190,7 @@ export default function App() {
       setSelectedStudent(null);
       return;
     }
-    setAppMode(mode);
-    localStorage.setItem('webapp_app_mode', mode);
+
     let targetTab = 'dashboard';
     if (mode === 'class') {
       targetTab = localStorage.getItem('webapp_class_tab') || 'dashboard';
@@ -95,8 +199,7 @@ export default function App() {
     } else {
       targetTab = localStorage.getItem('webapp_work_tab') || 'tasks';
     }
-    setActiveTab(targetTab);
-    localStorage.setItem('webapp_active_tab', targetTab);
+    selectTab(targetTab);
     setSelectedStudent(null);
   };
 
@@ -148,7 +251,7 @@ export default function App() {
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10">
       <Tabs value={activeTab} onValueChange={(val) => {
         selectTab(val);
-        if (val !== 'dashboard') {
+        if (val !== 'dashboard' && val !== 'students') {
           setSelectedStudent(null);
         }
       }} className="w-full">
@@ -185,13 +288,13 @@ export default function App() {
                 onBack={() => {
                   setSelectedStudent(null);
                   if (studentEntrySource === 'students') {
-                    selectTab('students');
+                    navigate('/students');
                   } else if (appMode === 'work') {
                     selectTab('tasks');
                   } else if (appMode === 'sub') {
                     selectTab('logs');
                   } else {
-                    selectTab('dashboard');
+                    navigate('/');
                   }
                 }} 
                 onRefresh={fetchData} 
@@ -201,8 +304,9 @@ export default function App() {
                 data={data} 
                 onRefresh={fetchData} 
                 onSelectStudent={(name) => {
-                  setSelectedStudent(name);
                   setStudentEntrySource('dashboard');
+                  const targetPath = getStudentPath(name, data?.students || []);
+                  navigate(targetPath);
                 }}
                 onNavigateToStudents={() => selectTab('students')}
               />
@@ -210,11 +314,36 @@ export default function App() {
           </TabsContent>
           
           <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <StudentList data={data} onRefresh={fetchData} onSelectStudent={(name) => {
-              setSelectedStudent(name);
-              setStudentEntrySource('students');
-              selectTab('dashboard');
-            }} />
+            {selectedStudent ? (
+              <StudentDetail 
+                studentName={selectedStudent} 
+                data={data} 
+                setData={setData}
+                onBack={() => {
+                  setSelectedStudent(null);
+                  if (studentEntrySource === 'students') {
+                    navigate('/students');
+                  } else if (appMode === 'work') {
+                    selectTab('tasks');
+                  } else if (appMode === 'sub') {
+                    selectTab('logs');
+                  } else {
+                    navigate('/');
+                  }
+                }} 
+                onRefresh={fetchData} 
+              />
+            ) : (
+              <StudentList 
+                data={data} 
+                onRefresh={fetchData} 
+                onSelectStudent={(name) => {
+                  setStudentEntrySource('students');
+                  const targetPath = getStudentPath(name, data?.students || []);
+                  navigate(targetPath);
+                }} 
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">

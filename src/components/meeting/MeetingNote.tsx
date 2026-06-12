@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
@@ -20,7 +21,42 @@ import { meetingNoteApi } from '@/src/services/api';
 import { MeetingNote as MeetingNoteType } from '@/src/types';
 import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
 
+const getMeetingId = (item: MeetingNoteType, allItems: MeetingNoteType[]): string => {
+  if (!item.date) return 'no-date';
+  const itemsOnSameDate = allItems.filter(x => x.date === item.date);
+  if (itemsOnSameDate.length <= 1) {
+    return item.date;
+  }
+  const sortedOnSameDate = [...itemsOnSameDate].sort((a, b) => (a.sheetRowIndex || 0) - (b.sheetRowIndex || 0));
+  const orderIndex = sortedOnSameDate.findIndex(x => x.sheetRowIndex === item.sheetRowIndex);
+  return `${item.date}-${orderIndex + 1}`;
+};
+
+const findMeetingByMeetingId = (id: string, allItems: MeetingNoteType[]): MeetingNoteType | undefined => {
+  if (!id) return undefined;
+  
+  const dashIndex = id.lastIndexOf('-');
+  let datePart = id;
+  let suffixIndex = 1;
+  // standard date length format yyyy-mm-dd is 10
+  if (dashIndex !== -1 && dashIndex === 10) {
+    datePart = id.slice(0, 10);
+    suffixIndex = parseInt(id.slice(11), 10) || 1;
+  }
+  
+  const itemsOnSameDate = allItems.filter(x => x.date === datePart);
+  if (itemsOnSameDate.length === 0) return undefined;
+  if (itemsOnSameDate.length === 1 && id === datePart) {
+    return itemsOnSameDate[0];
+  }
+  const sortedOnSameDate = [...itemsOnSameDate].sort((a, b) => (a.sheetRowIndex || 0) - (b.sheetRowIndex || 0));
+  return sortedOnSameDate[suffixIndex - 1] || sortedOnSameDate[0];
+};
+
 export default function MeetingNote() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [items, setItems] = useState<MeetingNoteType[]>(() => {
     const cached = localStorage.getItem('webapp_meeting_notes_backup');
     return cached ? JSON.parse(cached) : [];
@@ -92,6 +128,28 @@ export default function MeetingNote() {
   useEffect(() => {
     fetchMeetingNotes(true); // background sync on mount
   }, []);
+
+  // Sync selection from URL with full robustness
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/meeting')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["meeting", "id"]
+    if (parts[1]) {
+      const matched = findMeetingByMeetingId(parts[1], sortedItems);
+      if (matched) {
+        if (selectedRowIndex !== matched.sheetRowIndex) {
+          setSelectedRowIndex(matched.sheetRowIndex || null);
+        }
+        return;
+      }
+    }
+
+    // Default selection to first note if on /meeting and we have items
+    if (pathname === '/meeting' && sortedItems.length > 0) {
+      navigate(`/meeting/${getMeetingId(sortedItems[0], sortedItems)}`, { replace: true });
+    }
+  }, [location.pathname, items]);
 
   const handleCopy = async (rowIndex: number, text: string) => {
     try {
@@ -180,7 +238,6 @@ export default function MeetingNote() {
         setItems(updated);
         localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
         
-        setSelectedRowIndex(res.sheetRowIndex || null);
         setShowAddDialog(false);
         setAddForm({
           date: new Date().toISOString().split('T')[0],
@@ -188,6 +245,9 @@ export default function MeetingNote() {
           content: ''
         });
         toast.success(MESSAGES.meeting.registerSuccess);
+
+        // route to the new item
+        navigate(`/meeting/${getMeetingId(newNoteWithIndex, updated)}`);
       }
     } catch (err: any) {
       toast.error(MESSAGES.meeting.registerError(err.message));
@@ -205,8 +265,19 @@ export default function MeetingNote() {
     setItems(updated);
     localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
 
-    const nextIndex = updated[0]?.sheetRowIndex || null;
-    setSelectedRowIndex(nextIndex);
+    if (updated.length > 0) {
+      // Find the first sorting note remaining
+      const nextSortItem = [...updated].sort((a, b) => {
+        const dateA = new Date(a.date).getTime() || 0;
+        const dateB = new Date(b.date).getTime() || 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
+      })[0];
+      navigate(`/meeting/${getMeetingId(nextSortItem, updated)}`);
+    } else {
+      navigate('/meeting');
+      setSelectedRowIndex(null);
+    }
 
     try {
       await meetingNoteApi.remove(selectedRowIndex);
@@ -268,7 +339,7 @@ export default function MeetingNote() {
                 return (
                   <div
                     key={item.sheetRowIndex}
-                    onClick={() => setSelectedRowIndex(item.sheetRowIndex || null)}
+                    onClick={() => navigate(`/meeting/${getMeetingId(item, sortedItems)}`)}
                     className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all ${
                       isSelected 
                         ? 'bg-zinc-50 text-blue-700/80 font-semibold' 

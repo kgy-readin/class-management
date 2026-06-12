@@ -1,4 +1,4 @@
-import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, Note, StudentLogEntry, MeetingNote } from '../types';
+import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, StudentLogEntry, MeetingNote } from '../types';
 import { MESSAGES } from '../constants/messages';
 
 function cleanSpreadsheetId(idOrUrl: string | undefined): string {

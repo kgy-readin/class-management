@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Task, Student, getTagColor } from '../../types';
+import { Task, Student, getTagColor, getShortHash } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { 
@@ -31,6 +32,9 @@ interface TaskManagerProps {
 }
 
 export default function TaskManager({ students = [], onRefreshGlobal }: TaskManagerProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -90,6 +94,66 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  // Sync state from URL for Sub-tabs and filter state
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/tasks')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["tasks", ...]
+    const view = parts[1]; // "work", "next", "newsletter", "filter"
+
+    if (view === 'next') {
+      setActiveTab('다음주');
+      setSelectedDate(undefined);
+      setSelectedStudent(null);
+      setShowFilters(false);
+    } else if (view === 'newsletter') {
+      setActiveTab('가정통신문');
+      setSelectedDate(undefined);
+      setSelectedStudent(null);
+      setShowFilters(false);
+    } else if (view === 'filter') {
+      setActiveTab('필터');
+      setShowFilters(true);
+      const filterType = parts[2]; // "date" or "students"
+      const filterVal = parts[3];
+
+      if (filterType === 'date' && filterVal) {
+        try {
+          const parsed = new Date(filterVal);
+          if (!isNaN(parsed.getTime())) {
+            setSelectedDate(parsed);
+            setSelectedStudent(null);
+            return;
+          }
+        } catch {}
+      } else if (filterType === 'students' && filterVal) {
+        const found = students.find(s => getShortHash(s.name) === filterVal);
+        if (found) {
+          setSelectedStudent(found.name);
+          setSelectedDate(undefined);
+          return;
+        } else {
+          const uniqueNames = Array.from(new Set(tasks.map(t => t.name).filter(Boolean)));
+          const foundInTasks = uniqueNames.find(n => getShortHash(n) === filterVal);
+          if (foundInTasks) {
+            setSelectedStudent(foundInTasks);
+            setSelectedDate(undefined);
+            return;
+          }
+        }
+      }
+      setSelectedDate(undefined);
+      setSelectedStudent(null);
+    } else {
+      // Default /tasks or /tasks/work
+      setActiveTab('업무');
+      setSelectedDate(undefined);
+      setSelectedStudent(null);
+      setShowFilters(false);
+    }
+  }, [location.pathname, students, tasks]);
 
   // Helper to parse date strings
   const parseTaskDate = (dateStr: string): Date | null => {
@@ -690,9 +754,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         <button
                           key={tab}
                           onClick={() => {
-                            setActiveTab(tab);
+                            if (tab === '업무') {
+                              navigate('/tasks/work');
+                            } else if (tab === '다음주') {
+                              navigate('/tasks/next');
+                            } else if (tab === '가정통신문') {
+                              navigate('/tasks/newsletter');
+                            }
                             setInlineAddGroup(null); // Close any active inline add form when switching tabs
-                            setShowFilters(false); // Close filters panel when shifting to regular views
                           }}
                           className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[13px] font-medium rounded-lg text-center transition-all cursor-pointer whitespace-nowrap ${
                             activeTab === tab
@@ -715,7 +784,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           <StudentCombobox
                             students={students}
                             value={selectedStudent || ''}
-                            onChange={(val) => setSelectedStudent(val || null)}
+                            onChange={(val) => {
+                              if (val) {
+                                navigate(`/tasks/filter/students/${getShortHash(val)}`);
+                              } else {
+                                navigate('/tasks/filter');
+                              }
+                            }}
                             placeholder="학생명"
                             className="!w-[108px] font-sans"
                             inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
@@ -732,9 +807,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             placeholder="마감일"
                             onChange={(e) => {
                               if (e.target.value) {
-                                setSelectedDate(new Date(e.target.value));
+                                navigate(`/tasks/filter/date/${e.target.value}`);
                               } else {
-                                setSelectedDate(undefined);
+                                navigate('/tasks/filter');
                               }
                             }}
                             className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
@@ -746,8 +821,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           {(selectedDate || selectedStudent) && (
                             <button 
                               onClick={() => {
-                                setSelectedDate(undefined);
-                                setSelectedStudent(null);
+                                navigate('/tasks/filter');
                               }}
                               className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
                               title="필터 초기화"
@@ -764,19 +838,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         <button
                           onClick={() => {
                             if (activeTab === '필터') {
-                              const nextShow = !showFilters;
-                              setShowFilters(nextShow);
-                              if (!nextShow) {
-                                // Default back to '업무' tab when filters panel is completely toggled off from inside filter view
-                                setActiveTab('업무');
-                                setSelectedStudent(null);
-                                setSelectedDate(undefined);
-                              }
+                              navigate('/tasks/work');
                             } else {
-                              setActiveTab('필터');
-                              setShowFilters(true);
-                              setSelectedStudent(null);
-                              setSelectedDate(undefined);
+                              navigate('/tasks/filter');
                             }
                           }}
                           className={`h-7 w-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
@@ -808,7 +872,13 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       <StudentCombobox
                         students={students}
                         value={selectedStudent || ''}
-                        onChange={(val) => setSelectedStudent(val || null)}
+                        onChange={(val) => {
+                          if (val) {
+                            navigate(`/tasks/filter/students/${getShortHash(val)}`);
+                          } else {
+                            navigate('/tasks/filter');
+                          }
+                        }}
                         placeholder="학생명"
                         className="!w-[108px] font-sans"
                         inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
@@ -825,9 +895,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         placeholder="마감일"
                         onChange={(e) => {
                           if (e.target.value) {
-                            setSelectedDate(new Date(e.target.value));
+                            navigate(`/tasks/filter/date/${e.target.value}`);
                           } else {
-                            setSelectedDate(undefined);
+                            navigate('/tasks/filter');
                           }
                         }}
                         className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
@@ -839,8 +909,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       {(selectedDate || selectedStudent) && (
                         <button 
                           onClick={() => {
-                            setSelectedDate(undefined);
-                            setSelectedStudent(null);
+                            navigate('/tasks/filter');
                           }}
                           className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
                           title="필터 초기화"
@@ -1736,7 +1805,10 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             size="sm"
             variant="outline"
             disabled={submitting}
-            onClick={() => setNewForm(prev => ({ ...prev, todo: '', memo: '' })) || setInlineAddGroup(null)}
+            onClick={() => {
+              setNewForm(prev => ({ ...prev, todo: '', memo: '' }));
+              setInlineAddGroup(null);
+            }}
             className="h-7 rounded-lg px-3 text-xs hover:bg-zinc-100 font-semibold text-zinc-500"
           >
             취소

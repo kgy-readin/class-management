@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { beginnerFeedbackApi } from '@/src/services/api';
 import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
+import { getShortHash } from '../../types';
 
 interface BeginnerItem {
   bookTitle: string;
@@ -23,6 +25,9 @@ interface BeginnerItem {
 }
 
 export default function BeginnerFeedback() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [items, setItems] = useState<BeginnerItem[]>(() => {
     const cached = localStorage.getItem('webapp_beginner_feedback_backup');
     return cached ? JSON.parse(cached) : [];
@@ -42,6 +47,28 @@ export default function BeginnerFeedback() {
   const [savingItem, setSavingItem] = useState(false);
 
   const selectedItem = items.find(item => item.bookTitle === selectedBookTitle);
+
+  // Sync selection from URL path with high reliability
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/beginners')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["beginners", "hash"]
+    if (parts[1]) {
+      const matched = items.find(item => getShortHash(item.bookTitle) === parts[1]);
+      if (matched) {
+        if (selectedBookTitle !== matched.bookTitle) {
+          setSelectedBookTitle(matched.bookTitle);
+        }
+        return;
+      }
+    }
+
+    // Default select first item if we have loaded items
+    if (pathname === '/beginners' && items.length > 0) {
+      navigate(`/beginners/${getShortHash(items[0].bookTitle)}`, { replace: true });
+    }
+  }, [location.pathname, items]);
 
   // Update editText whenever selected item changes
   useEffect(() => {
@@ -226,7 +253,7 @@ export default function BeginnerFeedback() {
                 return (
                   <div
                     key={item.bookTitle}
-                    onClick={() => setSelectedBookTitle(item.bookTitle)}
+                    onClick={() => navigate(`/beginners/${getShortHash(item.bookTitle)}`)}
                     className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
                       isSelected 
                         ? 'bg-zinc-50 text-blue-700/80 font-semibold' 

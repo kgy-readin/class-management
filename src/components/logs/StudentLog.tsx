@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import StudentLogCalendar from './StudentLogCalendar';
@@ -10,7 +11,8 @@ import {
   StudentLogEntry, 
   LOG_CATEGORY_COLORS, 
   getTagColor, 
-  Student 
+  Student,
+  getShortHash
 } from '../../types';
 import { studentLogApi } from '@/src/services/api';
 import { toast } from 'sonner';
@@ -33,11 +35,15 @@ const getCategoryTagStyle = (category: string): string => {
 };
 
 export default function StudentLog({ students = [] }: StudentLogProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [logs, setLogs] = useState<StudentLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'monthly' | 'student'>('monthly');
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedStudent, setSelectedStudent] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Add Log Dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -78,6 +84,68 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  // Sync state from URL on mount and location changes
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/logs')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["logs", ...]
+    
+    if (parts[1] === 'students') {
+      setViewMode('student');
+      const hash = parts[2];
+      if (hash) {
+        const found = students.find(s => getShortHash(s.name) === hash);
+        if (found) {
+          setSelectedStudent(found.name);
+        } else {
+          setSelectedStudent('');
+        }
+      } else {
+        setSelectedStudent('');
+      }
+    } else if (parts[1] === 'date') {
+      const dateStr = parts[2];
+      if (dateStr) {
+        try {
+          const parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+            setSelectedDate(parsedDate);
+            setCurrentMonth(parsedDate);
+          }
+        } catch (e) {}
+      }
+      setViewMode('monthly');
+    } else if (parts[1] === 'monthly') {
+      setViewMode('monthly');
+    } else {
+      // Default /logs
+      setViewMode('monthly');
+    }
+  }, [location.pathname, students]);
+
+  const handleSetViewMode = (mode: 'monthly' | 'student') => {
+    if (mode === 'monthly') {
+      navigate('/logs/monthly');
+    } else {
+      if (selectedStudent) {
+        navigate(`/logs/students/${getShortHash(selectedStudent)}`);
+      } else {
+        navigate('/logs/students');
+      }
+    }
+  };
+
+  const handleSetSelectedStudent = (name: string) => {
+    setSelectedStudent(name);
+    navigate(`/logs/students/${getShortHash(name)}`);
+  };
+
+  const handleSetSelectedDate = (date: Date) => {
+    setSelectedDate(date);
+    navigate(`/logs/date/${format(date, 'yyyy-MM-dd')}`);
+  };
 
   const handleOpenAddDialog = (initialDate?: Date) => {
     setAddForm({
@@ -133,7 +201,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
         <StudentLogCalendar
           currentMonth={currentMonth}
           setCurrentMonth={setCurrentMonth}
-          setViewMode={setViewMode}
+          setViewMode={handleSetViewMode}
           setCurrentPage={() => {}} // Dummy as it's handled internally in StudentLogStudents
           logs={logs}
           handleCellClick={handleCellClick}
@@ -149,9 +217,11 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
           fetchLogs={fetchLogs}
           currentMonth={currentMonth}
           setCurrentMonth={setCurrentMonth}
-          setViewMode={setViewMode}
+          setViewMode={handleSetViewMode}
           handleOpenAddDialog={handleOpenAddDialog}
           sortedStudents={sortedStudents}
+          selectedDate={selectedDate}
+          setSelectedDate={handleSetSelectedDate}
         />
       )}
 
@@ -160,11 +230,11 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
         <StudentLogStudents
           sortedStudents={sortedStudents}
           selectedStudent={selectedStudent}
-          setSelectedStudent={setSelectedStudent}
+          setSelectedStudent={handleSetSelectedStudent}
           logs={logs}
           fetchLogs={fetchLogs}
           isMobile={isMobile}
-          setViewMode={setViewMode}
+          setViewMode={handleSetViewMode}
           handleOpenAddDialog={handleOpenAddDialog}
         />
       )}

@@ -45,6 +45,8 @@ interface StudentLogMobileCalendarProps {
   setViewMode: (mode: 'monthly' | 'student') => void;
   handleOpenAddDialog: (initialDate?: Date) => void;
   sortedStudents: Student[];
+  selectedDate?: Date;
+  setSelectedDate?: (date: Date) => void;
 }
 
 const CATEGORIES = [
@@ -77,9 +79,14 @@ export default function StudentLogMobileCalendar({
   setCurrentMonth,
   setViewMode,
   handleOpenAddDialog,
-  sortedStudents
+  sortedStudents,
+  selectedDate: propSelectedDate,
+  setSelectedDate: propSetSelectedDate
 }: StudentLogMobileCalendarProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [_localSelectedDate, _setLocalSelectedDate] = useState<Date>(new Date());
+  
+  const selectedDate = propSelectedDate || _localSelectedDate;
+  const setSelectedDate = propSetSelectedDate || _setLocalSelectedDate;
   
   // Edit Log State
   const [editingLog, setEditingLog] = useState<StudentLogEntry | null>(null);

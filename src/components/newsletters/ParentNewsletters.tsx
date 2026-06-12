@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { noteApi, RPN_DOCS_ID } from '@/src/services/api';
 import MarkdownRenderer, { DocTab, stripMarkdown } from '../common/MarkdownRenderer';
+import { getShortHash } from '../../types';
 
 // Leaf SVG Icon (Teal-500)
 const LeafIcon = ({ className }: { className?: string }) => (
@@ -68,7 +70,32 @@ const getCustomTabIcon = (title: string, className = "w-4 h-4 shrink-0", isSelec
   return <FileText className={`${className} ${isSelected ? (baseColorClass || 'text-blue-600') : 'text-neutral-400'}`} />;
 };
 
+const findNewsletterTabByHash = (tabs: DocTab[], hash: string): DocTab | null => {
+  for (const tab of tabs) {
+    if (getShortHash(tab.id) === hash) {
+      return tab;
+    }
+    if (tab.childTabs && tab.childTabs.length > 0) {
+      const found = findNewsletterTabByHash(tab.childTabs, hash);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+const findNewsletterParentFolder = (folders: DocTab[], childId: string): string | null => {
+  for (const folder of folders) {
+    if (folder.childTabs && folder.childTabs.some(ch => ch.id === childId)) {
+      return folder.id;
+    }
+  }
+  return null;
+};
+
 export default function CommentParentNewsletters() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
     const cached = localStorage.getItem('webapp_family_letter_tabs_backup');
     return cached ? JSON.parse(cached) : [];
@@ -86,6 +113,41 @@ export default function CommentParentNewsletters() {
 
   // Extract folder tabs (for family letter, all tabs are folders from the start)
   const folders = allTabs;
+
+  // Sync state from URL with auto-expanding folders
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/newsletters')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["newsletters", "hash"]
+    if (parts[1]) {
+      const matched = findNewsletterTabByHash(allTabs, parts[1]);
+      if (matched) {
+        if (selectedTabId !== matched.id) {
+          setSelectedTabId(matched.id);
+          const parentId = findNewsletterParentFolder(folders, matched.id);
+          if (parentId) {
+            setExpandedFolders(prev => ({
+              ...prev,
+              [parentId]: true
+            }));
+          }
+        }
+        return;
+      }
+    }
+
+    // Default select first available child tab under folders
+    if (pathname === '/newsletters' && folders.length > 0) {
+      const firstFolder = folders[0];
+      if (firstFolder.childTabs && firstFolder.childTabs.length > 0) {
+        const firstChild = firstFolder.childTabs[0];
+        navigate(`/newsletters/${getShortHash(firstChild.id)}`, { replace: true });
+      } else {
+        navigate(`/newsletters/${getShortHash(firstFolder.id)}`, { replace: true });
+      }
+    }
+  }, [location.pathname, allTabs]);
 
   // Find the currently selected sub-tab
   const findSelectedTab = (tabs: DocTab[], id: string | null): DocTab | null => {
@@ -319,7 +381,7 @@ export default function CommentParentNewsletters() {
                           return (
                             <div
                               key={child.id}
-                              onClick={() => setSelectedTabId(child.id)}
+                              onClick={() => navigate(`/newsletters/${getShortHash(child.id)}`)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
                                   ? activeClass 

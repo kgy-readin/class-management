@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { WritingStatus, getTagColor, Student } from '../../types';
+import { WritingStatus, getTagColor, Student, getShortHash } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil, Plus } from 'lucide-react';
@@ -15,7 +16,46 @@ import StudentCombobox from '../common/StudentCombobox';
 
 import 'react-day-picker/dist/style.css';
 
+const MONTHS_ENG = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+const formatMonthValue = (date: Date): string => {
+  const year = date.getFullYear();
+  const monthIdx = date.getMonth();
+  const monthName = MONTHS_ENG[monthIdx];
+  return `${year}-${monthName}`;
+};
+
+const parseMonthValue = (str: string): Date | null => {
+  const parts = str.toLowerCase().split('-');
+  if (parts.length !== 2) return null;
+  const year = parseInt(parts[0], 10);
+  if (isNaN(year)) return null;
+
+  let monthIdx = -1;
+  const secondPart = parts[1];
+
+  monthIdx = MONTHS_ENG.indexOf(secondPart.slice(0, 3));
+  if (monthIdx === -1) {
+    const numericMonth = parseInt(secondPart, 10);
+    if (!isNaN(numericMonth) && numericMonth >= 1 && numericMonth <= 12) {
+      monthIdx = numericMonth - 1;
+    }
+  }
+
+  if (monthIdx !== -1) {
+    const d = new Date();
+    d.setFullYear(year);
+    d.setMonth(monthIdx);
+    d.setDate(1);
+    return d;
+  }
+  return null;
+};
+
 export default function WritingTracker({ students = [] }: { students?: Student[] }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [statuses, setStatuses] = useState<WritingStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -25,6 +65,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ date: string; bookTitle: string; progress: string } | null>(null);
+
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [clearType, setClearType] = useState<'all' | 'period'>('period');
@@ -119,6 +160,61 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     fetchWritingStatus();
   }, []);
 
+  // Sync state from URL
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/writing')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["writing", ...]
+    if (parts[1] === 'date') {
+      const dateStr = parts[2];
+      if (dateStr) {
+        try {
+          const parsedDate = new Date(dateStr);
+          if (!isNaN(parsedDate.getTime())) {
+            setSelectedDate(parsedDate);
+            setCurrentMonth(parsedDate);
+            setSelectedStudent(null);
+            return;
+          }
+        } catch (e) {}
+      }
+    } else if (parts[1] === 'month') {
+      const monthStr = parts[2];
+      if (monthStr) {
+        const parsedMonth = parseMonthValue(monthStr);
+        if (parsedMonth) {
+          setSelectedDate(undefined);
+          setCurrentMonth(parsedMonth);
+          setSelectedStudent(null);
+          return;
+        }
+      }
+    } else if (parts[1] === 'students') {
+      const hash = parts[2];
+      if (hash) {
+        const found = students.find(s => getShortHash(s.name) === hash);
+        if (found) {
+          setSelectedStudent(found.name);
+          setSelectedDate(undefined);
+          return;
+        } else {
+          const uniqueNames = Array.from(new Set(statuses.map(s => s.name)));
+          const foundInStatus = uniqueNames.find(n => getShortHash(n) === hash);
+          if (foundInStatus) {
+            setSelectedStudent(foundInStatus);
+            setSelectedDate(undefined);
+            return;
+          }
+        }
+      }
+    }
+    
+    // Default /writing
+    setSelectedDate(new Date());
+    setSelectedStudent(null);
+  }, [location.pathname, students, statuses]);
+
   const handleClearMonth = async () => {
     if (clearType === 'period') {
       if (!clearStartDate || !clearEndDate) {
@@ -196,14 +292,19 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     });
 
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (date) setSelectedStudent(null);
+    if (date) {
+      navigate(`/writing/date/${format(date, 'yyyy-MM-dd')}`);
+    } else {
+      navigate('/writing');
+    }
   };
 
   const handleStudentSelect = (name: string | null) => {
-    setSelectedStudent(name);
-    if (name) setSelectedDate(undefined);
-    else setSelectedDate(new Date());
+    if (name) {
+      navigate(`/writing/students/${getShortHash(name)}`);
+    } else {
+      navigate('/writing');
+    }
   };
 
   return (
@@ -240,10 +341,10 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 border-zinc-200 border-solid flex items-center justify-center transition-all"
+              className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 border-zinc-200 border-solid flex items-center justify-center transition-all bg-white gap-2"
               onClick={() => {
-                setSelectedDate(undefined);
-                setSelectedStudent(null);
+                const targetDate = selectedDate || currentMonth || new Date();
+                navigate(`/writing/month/${formatMonthValue(targetDate)}`);
               }}
               title={`${format(currentMonth, 'M월')} 전체 보기`}
             >
@@ -400,7 +501,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 <h2 className="text-lg font-semibold text-foreground">
                   {selectedStudent ? `${selectedStudent} 학생 글쓰기 기록` : 
                    selectedDate ? format(selectedDate, 'yyyy년 MM월 dd일', { locale: ko }) : 
-                   `${format(currentMonth, 'yyyy년 MM월')} 글쓰기 기록`}
+                   `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월 글쓰기 기록`}
                 </h2>
                 <p className="text-[13px] font-medium text-zinc-500">총 {filteredStatuses.length}건의 기록</p>
               </div>
@@ -480,11 +581,11 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                               </select>
                             ) : (
                               <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                                (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                                ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
                                 status.progress === '진행' ? getTagColor('노란색') :
                                 getTagColor('기본')
                               }`}>
-                                {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                                {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
                               </Badge>
                             )}
                           </div>
@@ -552,11 +653,11 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         <span className="text-sm font-normal text-foreground">{status.name}</span>
                         {!isEditing && (
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
-                            (status.progress === '완료' || status.progress === '완성') ? getTagColor('파란색') :
+                            ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
                             status.progress === '진행' ? getTagColor('노란색') :
                             getTagColor('기본')
                           }`}>
-                            {(status.progress === '완료' || status.progress === '완성') ? '완료' : status.progress}
+                            {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
                           </Badge>
                         )}
                       </div>

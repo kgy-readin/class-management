@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
@@ -20,8 +21,34 @@ import {
 } from 'lucide-react';
 import { noteApi } from '@/src/services/api';
 import MarkdownRenderer, { DocTab, stripMarkdown } from '../common/MarkdownRenderer';
+import { getShortHash } from '../../types';
+
+const findTabByHash = (tabs: DocTab[], hash: string): DocTab | null => {
+  for (const tab of tabs) {
+    if (getShortHash(tab.id) === hash) {
+      return tab;
+    }
+    if (tab.childTabs && tab.childTabs.length > 0) {
+      const found = findTabByHash(tab.childTabs, hash);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+const findParentFolderOfTab = (folders: DocTab[], childId: string): string | null => {
+  for (const folder of folders) {
+    if (folder.childTabs && folder.childTabs.some(ch => ch.id === childId)) {
+      return folder.id;
+    }
+  }
+  return null;
+};
 
 export default function CommentBank() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
     const cached = localStorage.getItem('webapp_tabs_data_backup');
     return cached ? JSON.parse(cached) : [];
@@ -43,6 +70,41 @@ export default function CommentBank() {
 
   // Extract folder tabs (excluding the first tab '메모')
   const folders = allTabs.length > 1 ? allTabs.slice(1) : allTabs;
+
+  // Sync state from URL with auto-expanding folders
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (!pathname.startsWith('/comments')) return;
+
+    const parts = pathname.split('/').filter(Boolean); // ["comments", "hash"]
+    if (parts[1]) {
+      const matched = findTabByHash(allTabs, parts[1]);
+      if (matched) {
+        if (selectedTabId !== matched.id) {
+          setSelectedTabId(matched.id);
+          const parentId = findParentFolderOfTab(folders, matched.id);
+          if (parentId) {
+            setExpandedFolders(prev => ({
+              ...prev,
+              [parentId]: true
+            }));
+          }
+        }
+        return;
+      }
+    }
+
+    // Default select first available child tab or folder
+    if (pathname === '/comments' && folders.length > 0) {
+      const firstFolder = folders[0];
+      if (firstFolder.childTabs && firstFolder.childTabs.length > 0) {
+        const firstChild = firstFolder.childTabs[0];
+        navigate(`/comments/${getShortHash(firstChild.id)}`, { replace: true });
+      } else {
+        navigate(`/comments/${getShortHash(firstFolder.id)}`, { replace: true });
+      }
+    }
+  }, [location.pathname, allTabs]);
 
   // Find the currently selected sub-tab
   const findSelectedTab = (tabs: DocTab[], id: string | null): DocTab | null => {
@@ -310,7 +372,7 @@ export default function CommentBank() {
                           return (
                             <div
                               key={child.id}
-                              onClick={() => setSelectedTabId(child.id)}
+                              onClick={() => navigate(`/comments/${getShortHash(child.id)}`)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
                                   ? 'bg-zinc-50 text-blue-700/80 font-semibold' 

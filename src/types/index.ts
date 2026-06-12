@@ -53,12 +53,6 @@ export interface Task {
   memo: string;       // 메모
 }
 
-export interface Note {
-  sheetRowIndex?: number; // Row index in Google Sheets for editing/deleting (A2:B)
-  parent: string;         // 상위항목
-  memo: string;           // 메모
-}
-
 export interface DashboardData {
   students: Student[];
   curriculums: Curriculum[];
@@ -124,3 +118,14 @@ export const LOG_CATEGORY_COLORS: Record<string, string> = {
   '가정소통': '파란색',
   '운영방침': '보라색'
 };
+
+export function getShortHash(str: string): string {
+  if (!str) return '0000000';
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36).padStart(7, '0');
+}
+
