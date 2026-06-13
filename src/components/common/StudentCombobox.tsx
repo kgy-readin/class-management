@@ -69,8 +69,14 @@ export default function StudentCombobox({
 
   const handleInputChange = (val: string) => {
     setSearchTerm(val);
-    onChange(val);
     if (!isOpen) setIsOpen(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      onChange(searchTerm);
+      setIsOpen(false);
+    }
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -95,6 +101,7 @@ export default function StudentCombobox({
           type="text"
           value={searchTerm}
           onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           onClick={() => setIsOpen(true)}
