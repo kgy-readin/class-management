@@ -57,16 +57,69 @@ export default function TopBar({
     navigate(basePath);
   };
 
-  let quickLinkUrl = '';
-  if (activeTab === 'tasks') {
-    quickLinkUrl = process.env.QUICK_TASKS_LINK || '';
-  } else if (activeTab === 'writing') {
-    quickLinkUrl = process.env.QUICK_WRITING_LINK || '';
-  } else if (activeTab === 'familyLetter') {
-    quickLinkUrl = process.env.QUICK_NEWSLETTERS_LINK || '';
-  } else if (activeTab === 'meeting') {
-    quickLinkUrl = process.env.QUICK_MEETING_LINK || '';
-  }
+  const getRawQuickLink = (tab: string): string => {
+    try {
+      if (tab === 'tasks') {
+        return (
+          process.env.QUICK_TASKS_LINK || 
+          import.meta.env.VITE_QUICK_TASKS_LINK || 
+          import.meta.env.VITE_GOOGLE_SHEETS_ID || 
+          ''
+        );
+      }
+      if (tab === 'writing') {
+        return (
+          process.env.QUICK_WRITING_LINK || 
+          import.meta.env.VITE_QUICK_WRITING_LINK || 
+          import.meta.env.VITE_GOOGLE_DOCS_ID || 
+          ''
+        );
+      }
+      if (tab === 'familyLetter') {
+        return (
+          process.env.QUICK_NEWSLETTERS_LINK || 
+          import.meta.env.VITE_QUICK_NEWSLETTERS_LINK || 
+          import.meta.env.VITE_RPN_DOCS_ID || 
+          ''
+        );
+      }
+      if (tab === 'meeting') {
+        return (
+          process.env.QUICK_MEETING_LINK || 
+          import.meta.env.VITE_QUICK_MEETING_LINK || 
+          import.meta.env.VITE_GOOGLE_DOCS_ID || 
+          ''
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return '';
+  };
+
+  const formatQuickLink = (link: string, tab: string): string => {
+    if (!link) return '';
+    const trimmed = link.trim();
+    if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || trimmed === '""' || trimmed === "''") {
+      return '';
+    }
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    if (trimmed.includes('.') && !trimmed.startsWith('/') && !trimmed.startsWith('.')) {
+      return `https://${trimmed}`;
+    }
+    if (/^[a-zA-Z0-9-_]{20,}$/.test(trimmed)) {
+      if (tab === 'tasks') {
+        return `https://docs.google.com/spreadsheets/d/${trimmed}/edit`;
+      } else {
+        return `https://docs.google.com/document/d/${trimmed}/edit`;
+      }
+    }
+    return trimmed;
+  };
+
+  const quickLinkUrl = formatQuickLink(getRawQuickLink(activeTab), activeTab);
 
   const getPageTitle = (tab: string) => {
     switch (tab) {
