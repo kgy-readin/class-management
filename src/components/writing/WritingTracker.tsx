@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,31 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   const [isDeleting, setIsDeleting] = useState(false);
 
   const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+  const studentFirstProgressMap = useMemo(() => {
+    if (!selectedStudent) return {};
+    const map: Record<string, string> = {};
+    for (const status of statuses) {
+      if (status.name === selectedStudent) {
+        if (!map[status.date]) {
+          map[status.date] = status.progress;
+        }
+      }
+    }
+    return map;
+  }, [statuses, selectedStudent]);
+
+  const isCompletedDay = (date: Date) => {
+    if (!selectedStudent) return false;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return studentFirstProgressMap[dateStr] === '완료';
+  };
+
+  const isOngoingDay = (date: Date) => {
+    if (!selectedStudent) return false;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return studentFirstProgressMap[dateStr] === '진행';
+  };
 
   const handleOpenAddDialog = () => {
     setAddForm({
@@ -287,7 +312,13 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
         // Sort by date ascending when a student is selected
         return a.date.localeCompare(b.date);
       }
-      // Default sort by name ascending
+      if (!selectedStudent && !selectedDate) {
+        // 월 전체보기: 날짜 오름차순 정렬, 날짜가 같으면 이름 오름차순
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return a.name.localeCompare(b.name, 'ko');
+      }
+      // Default sort by name ascending (e.g. 특정 날짜 선택 시)
       return a.name.localeCompare(b.name, 'ko');
     });
 
@@ -317,12 +348,26 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               .rdp-months { width: 100%; display: flex; justify-content: center; padding: 0.3rem 1rem 0.3rem 1rem; }
               .rdp-caption_label { font-weight: 600; transform: translate(12px, -4px); }
               .rdp-nav { transform: translateX(-12px) scale(0.8); }
-              .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white; border-radius: 10px; }
-              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 10px; }
+              .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white !important; border-radius: 9999px !important; }
+              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 9999px !important; }
               .rdp-head_cell { font-size: 11px; font-weight: 600; color: var(--muted-foreground); padding-bottom: 8px; }
               .rdp-table { width: 100%; border-collapse: collapse; max-width: 280px; }
               .rdp-cell { padding: 1px; }
-              .rdp-button { width: 32px; height: 32px; display: flex; items-center: center; justify-content: center; }
+              .rdp-button { width: 32px; height: 32px; display: flex; items-center: center; justify-content: center; position: relative; }
+
+              /* Custom modifiers styling for student-specific view */
+              .rdp-day_completed:not([disabled]):not(.rdp-day_selected) {
+                background-color: #dbeafe !important; /* bg-blue-100 */
+                color: #2563eb !important; /* text-blue-600 */
+                border-radius: 9999px !important;
+                font-weight: 700 !important;
+              }
+              .rdp-day_ongoing:not([disabled]):not(.rdp-day_selected) {
+                background-color: #fef3c7 !important; /* bg-amber-100 */
+                color: #d97706 !important; /* text-amber-700 */
+                border-radius: 9999px !important;
+                font-weight: 700 !important;
+              }
             `}</style>
             <DayPicker
               mode="single"
@@ -333,6 +378,14 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               locale={ko}
               weekStartsOn={1}
               className="mx-auto"
+              modifiers={{
+                completed: isCompletedDay,
+                ongoing: isOngoingDay,
+              }}
+              modifiersClassNames={{
+                completed: 'rdp-day_completed',
+                ongoing: 'rdp-day_ongoing',
+              }}
             />
           </CardContent>
         </Card>
@@ -409,18 +462,24 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         <label className="text-xs font-bold text-zinc-500 block">시작일</label>
                         <input
                           type="date"
-                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all"
+                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all cursor-pointer"
                           value={clearStartDate}
                           onChange={(e) => setClearStartDate(e.target.value)}
+                          onClick={(e) => {
+                            try { e.currentTarget.showPicker(); } catch {}
+                          }}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-zinc-500 block">종료일</label>
                         <input
                           type="date"
-                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all"
+                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all cursor-pointer"
                           value={clearEndDate}
                           onChange={(e) => setClearEndDate(e.target.value)}
+                          onClick={(e) => {
+                            try { e.currentTarget.showPicker(); } catch {}
+                          }}
                         />
                       </div>
                       <p className="text-[11px] font-semibold text-rose-500 text-center leading-relaxed">
@@ -549,9 +608,12 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           {isEditing ? (
                             <input 
                               type="date"
-                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20 text-center"
-                              value={editValues?.date}
+                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20 text-center cursor-pointer h-7"
+                              value={editValues?.date || ''}
                               onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
+                              onClick={(e) => {
+                                try { e.currentTarget.showPicker(); } catch {}
+                              }}
                             />
                           ) : (
                             <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'MM.dd')}</span>
@@ -646,7 +708,15 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {isEditing ? (
-                          <input type="date" className="text-xs bg-white border border-border/50 rounded px-2 py-1 outline-none focus:ring-1 ring-primary/20" value={editValues?.date} onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)} />
+                          <input 
+                            type="date"
+                            className="text-xs bg-white border border-border/50 rounded px-2 py-1 outline-none focus:ring-1 ring-primary/20 cursor-pointer h-7"
+                            value={editValues?.date || ''}
+                            onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
+                            onClick={(e) => {
+                              try { e.currentTarget.showPicker(); } catch {}
+                            }}
+                          />
                         ) : (
                           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">{format(parseISO(status.date), 'M월 d일')}</span>
                         )}
@@ -730,9 +800,12 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                   <label className="text-xs font-bold text-zinc-500 block">날짜</label>
                   <input
                     type="date"
-                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
+                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all cursor-pointer h-10"
                     value={addForm.date}
-                    onChange={e => setAddForm(prev => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, date: e.target.value }))}
+                    onClick={(e) => {
+                      try { e.currentTarget.showPicker(); } catch {}
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">

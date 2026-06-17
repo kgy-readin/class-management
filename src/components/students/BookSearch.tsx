@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Book } from '../../types';
-import { Search, Hash } from 'lucide-react';
+import { Search, Hash, ChevronDown } from 'lucide-react';
 import { formatLevel } from '@/lib/utils';
 
 interface BookSearchProps {
@@ -12,12 +12,119 @@ interface BookSearchProps {
   onSelect: (title: string) => void;
 }
 
+interface MultiSelectPopoverProps {
+  label: string;
+  options: string[];
+  selectedValues: string[];
+  onChange: (values: string[]) => void;
+  placeholder: string;
+}
+
+function MultiSelectPopover({ label, options, selectedValues, onChange, placeholder }: MultiSelectPopoverProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const getButtonText = () => {
+    if (selectedValues.length === 0) return placeholder;
+
+    if (label === '난이도') {
+      const diffOrder = ['최상', '상', '중상', '중', '중하', '하', '최하'];
+      const indices = selectedValues
+        .map(val => diffOrder.indexOf(val))
+        .filter(idx => idx !== -1)
+        .sort((a, b) => a - b);
+
+      if (indices.length === 0) return placeholder;
+
+      const groups: number[][] = [];
+      let currentGroup: number[] = [indices[0]];
+
+      for (let i = 1; i < indices.length; i++) {
+        if (indices[i] === indices[i - 1] + 1) {
+          currentGroup.push(indices[i]);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [indices[i]];
+        }
+      }
+      groups.push(currentGroup);
+
+      const formattedGroups = groups.map(group => {
+        if (group.length === 1) {
+          return diffOrder[group[0]];
+        } else {
+          return `${diffOrder[group[0]]}~${diffOrder[group[group.length - 1]]}`;
+        }
+      });
+
+      return formattedGroups.join(', ');
+    }
+
+    // For categories/therapies etc, show all sorted by options order
+    const sortedSelected = options.filter(opt => selectedValues.includes(opt));
+    return sortedSelected.join(', ');
+  };
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold focus:ring-1 ring-neutral-900 outline-none flex items-center justify-between text-left cursor-pointer w-full text-neutral-700 hover:border-neutral-300 transition-colors"
+      >
+        <span className="truncate">{getButtonText()}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-2xl p-1.5 max-h-[220px] overflow-y-auto">
+          {options.map((option) => {
+            const isChecked = selectedValues.includes(option);
+            return (
+              <label
+                key={option}
+                className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-neutral-50 rounded-xl cursor-pointer transition-colors text-[13px] text-zinc-700 font-medium select-none"
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {
+                    if (isChecked) {
+                      onChange(selectedValues.filter((v) => v !== option));
+                    } else {
+                      onChange([...selectedValues, option]);
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-neutral-300 text-primary focus:ring-primary cursor-pointer shrink-0"
+                />
+                <span className="truncate">{option}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BookSearch({ books, existingBookTitles, onSelect }: BookSearchProps) {
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
-  const [difficultyFilter, setDifficultyFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [therapyFilter, setTherapyFilter] = useState('all');
+  const [difficultyFilters, setDifficultyFilters] = useState<string[]>([]);
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [therapyFilters, setTherapyFilters] = useState<string[]>([]);
   const [requiredOnly, setRequiredOnly] = useState(false);
   const [careerOnly, setCareerOnly] = useState(false);
 
@@ -80,16 +187,16 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
       result = result.filter(book => String(book.level) === levelFilter);
     }
 
-    if (difficultyFilter !== 'all') {
-      result = result.filter(book => book.difficulty === difficultyFilter);
+    if (difficultyFilters.length > 0) {
+      result = result.filter(book => book.difficulty && difficultyFilters.includes(book.difficulty));
     }
 
-    if (categoryFilter !== 'all') {
-      result = result.filter(book => book.category === categoryFilter);
+    if (categoryFilters.length > 0) {
+      result = result.filter(book => book.category && categoryFilters.includes(book.category));
     }
 
-    if (therapyFilter !== 'all') {
-      result = result.filter(book => book.therapy === therapyFilter);
+    if (therapyFilters.length > 0) {
+      result = result.filter(book => book.therapy && therapyFilters.includes(book.therapy));
     }
 
     if (requiredOnly) {
@@ -98,10 +205,12 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
 
     if (careerOnly) {
       result = result.filter(book => book.career && book.career.trim() !== '');
+    } else {
+      result = result.filter(book => !book.career || book.career.trim() === '');
     }
 
-    return result.slice(0, 20); // Limit to 20 results for performance
-  }, [search, books, levelFilter, difficultyFilter, categoryFilter, therapyFilter, requiredOnly, careerOnly]);
+    return result.slice(0, 50); // Limit to 50 results for utility while scrolled
+  }, [search, books, levelFilter, difficultyFilters, categoryFilters, therapyFilters, requiredOnly, careerOnly]);
 
   return (
     <div className="space-y-4 py-4 -mt-[28px]">
@@ -120,7 +229,7 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
         <div className="flex gap-4 items-start">
           <div className="grid grid-cols-2 gap-2 flex-1">
             <select 
-              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-medium focus:ring-1 ring-neutral-900 outline-none"
+              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold focus:ring-1 ring-neutral-900 outline-none"
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
             >
@@ -130,38 +239,29 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
               ))}
             </select>
             
-            <select 
-              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-medium focus:ring-1 ring-neutral-900 outline-none"
-              value={difficultyFilter}
-              onChange={(e) => setDifficultyFilter(e.target.value)}
-            >
-              <option value="all">모든 난이도</option>
-              {difficulties.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
+            <MultiSelectPopover
+              label="난이도"
+              options={difficulties}
+              selectedValues={difficultyFilters}
+              onChange={setDifficultyFilters}
+              placeholder="모든 난이도"
+            />
 
-            <select 
-              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-medium focus:ring-1 ring-neutral-900 outline-none"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="all">모든 영역</option>
-              {categories.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <MultiSelectPopover
+              label="영역"
+              options={categories}
+              selectedValues={categoryFilters}
+              onChange={setCategoryFilters}
+              placeholder="모든 영역"
+            />
 
-            <select 
-              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-medium focus:ring-1 ring-neutral-900 outline-none"
-              value={therapyFilter}
-              onChange={(e) => setTherapyFilter(e.target.value)}
-            >
-              <option value="all">모든 테라피</option>
-              {therapies.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+            <MultiSelectPopover
+              label="테라피"
+              options={therapies}
+              selectedValues={therapyFilters}
+              onChange={setTherapyFilters}
+              placeholder="모든 테라피"
+            />
           </div>
 
           <div className="flex flex-col gap-2 pr-2">
@@ -249,7 +349,7 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
               </button>
             );
           })
-        ) : (search.trim() || levelFilter !== 'all' || difficultyFilter !== 'all' || categoryFilter !== 'all' || therapyFilter !== 'all') ? (
+        ) : (search.trim() || levelFilter !== 'all' || difficultyFilters.length > 0 || categoryFilters.length > 0 || therapyFilters.length > 0) ? (
             <div className="py-10 text-center text-neutral-400">
               <p className="text-sm">검색 결과가 없습니다.</p>
             </div>

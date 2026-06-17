@@ -197,6 +197,23 @@ input[type="date"] {
   box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
+  position: relative !important;
+}
+
+/* Make clicking anywhere on the native date input trigger the browser's native picker popover */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
 input[type="date"]::-webkit-date-and-time-value {

@@ -3,12 +3,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen } from 'lucide-react';
+import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen, UserCog } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
 import React, { useState, useEffect, useOptimistic, useTransition } from 'react';
-import { curriculumApi, writingStatusApi } from '@/src/services/api';
+import { curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
+import { getWeeksSince } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 interface StudentDetailProps {
   studentName: string;
@@ -26,6 +28,23 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
   const [deletingItem, setDeletingItem] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Mobile curriculum edit states
+  const [mobileEditItem, setMobileEditItem] = useState<any | null>(null);
+  const [mobileEditIndex, setMobileEditIndex] = useState<number>(0);
+  const [mobileEditTitle, setMobileEditTitle] = useState<string>('');
+  const [mobileEditStatus, setMobileEditStatus] = useState<string>('예정');
+
+  // Student info edit states
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editGrade, setEditGrade] = useState('');
+  const [editLevel, setEditLevel] = useState('0');
+  const [editSubProgram, setEditSubProgram] = useState('');
+  const [editAttendanceDays, setEditAttendanceDays] = useState<string[]>([]);
+  const [editHomeworkMissed, setEditHomeworkMissed] = useState<number>(0);
+  const [editBooksCompleted, setEditBooksCompleted] = useState<number>(0);
+  const [editLastResultDate, setEditLastResultDate] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     // Scroll window to bottom when entering the student details
@@ -246,50 +265,229 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     });
   };
 
+  const handleMobileUpdate = async () => {
+    if (!mobileEditItem) return;
+    const bookId = mobileEditItem.bookId;
+    const originalIndex = mobileEditItem.index;
+    const status = mobileEditStatus;
+    const index = mobileEditIndex;
+    const bookTitle = mobileEditTitle;
+
+    startTransition(async () => {
+      setOptimisticCurriculum({ 
+        type: 'update', 
+        payload: { bookId, originalIndex, status, index, bookTitle } 
+      });
+      setMobileEditItem(null);
+      try {
+        await curriculumApi.update({ 
+          studentName, 
+          bookId, 
+          status,
+          index,
+          bookTitle,
+          originalIndex
+        });
+        toast.success('정보가 업데이트되었습니다.');
+        
+        if (setData) {
+          setData(prev => {
+            if (!prev) return prev;
+            
+            let updatedStudents = prev.students;
+            const previousItem = prev.curriculums.find(c => c.studentName === studentName && c.bookId === bookId && c.index === originalIndex);
+            
+            if (previousItem && previousItem.status !== status) {
+              const isBook = bookId && bookId.trim() !== '' && bookId.trim() !== '-';
+              if (isBook) {
+                updatedStudents = prev.students.map(s => {
+                  if (s.name === studentName) {
+                    let diff = 0;
+                    if (status === '통과' && previousItem.status !== '통과') diff = 1;
+                    else if (previousItem.status === '통과' && status !== '통과') diff = -1;
+                    
+                    return {
+                      ...s,
+                      booksCompleted: Math.max(0, s.booksCompleted + diff)
+                    };
+                  }
+                  return s;
+                });
+              }
+            }
+
+            const updatedCurriculums = prev.curriculums.map(c => {
+              if (c.studentName === studentName && c.bookId === bookId && c.index === originalIndex) {
+                return {
+                  ...c,
+                  status: status as any,
+                  index,
+                  bookTitle
+                };
+              }
+              return c;
+            }).sort((a, b) => a.index - b.index);
+
+            return {
+              ...prev,
+              students: updatedStudents,
+              curriculums: updatedCurriculums
+            };
+          });
+        }
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    });
+  };
+
+  const handleMobileDelete = async () => {
+    if (!mobileEditItem) return;
+    const itemToDelete = mobileEditItem;
+    setMobileEditItem(null);
+    await handleDeleteCurriculum(itemToDelete);
+  };
+
+  const handleMobileAddToWriting = async () => {
+    if (!mobileEditItem) return;
+    const itemToAdd = mobileEditItem;
+    setMobileEditItem(null);
+    await handleAddToWritingStatus(itemToAdd);
+  };
+
+  const student = data.students.find(s => s.name === studentName);
+
+  const getDisplayGrade = (grade: string) => {
+    if (!grade) return '';
+    const trimmed = grade.trim();
+    if (trimmed === '유7') return '유치부';
+    return trimmed;
+  };
+
+  const formatDisplayLevel = (level: any) => {
+    const l = String(level).trim();
+    if (!l || l === '0' || l === '0.0' || l === 'null' || l === 'undefined' || l === '기초') return '기초';
+    if (l === '11' || l === '구연동화') return '구연동화';
+    const digits = l.replace(/[^0-9.]/g, '');
+    if (digits) {
+      return `Lv.${digits}`;
+    }
+    return l;
+  };
+
+  const displayGrade = student ? getDisplayGrade(student.grade) : '';
+  const displayLevel = student ? formatDisplayLevel(student.level) : '';
+  const attendance = student?.attendanceDays ? student.attendanceDays.replace(/[\s,]/g, '') : '';
+  const subProg = student?.subProgram ? student.subProgram.trim() : '';
+  const completedCount = `${student?.booksCompleted || 0}권`;
+
+  const handleOpenEdit = () => {
+    if (!student) return;
+    setEditGrade(student.grade);
+    setEditLevel(student.level || '0');
+    setEditSubProgram(student.subProgram || '');
+    setEditAttendanceDays(
+      student.attendanceDays
+        ? student.attendanceDays.split(',').map(s => s.trim()).filter(Boolean)
+        : []
+    );
+    setEditHomeworkMissed(student.homeworkMissed || 0);
+    setEditBooksCompleted(student.booksCompleted || 0);
+    setEditLastResultDate(student.lastResultDate || '');
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!student) return;
+    try {
+      setIsSavingEdit(true);
+      await studentApi.update(student.name, {
+        grade: editGrade,
+        level: editLevel,
+        subProgram: editSubProgram.trim() || '-',
+        attendanceDays: editAttendanceDays.join(', '),
+        homeworkMissed: Number(editHomeworkMissed) || 0,
+        booksCompleted: Number(editBooksCompleted) || 0,
+        lastResultDate: editLastResultDate
+      });
+      toast.success(`${student.name} 학생의 정보가 수정되었습니다.`);
+      setIsEditOpen(false);
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4 -mt-3 border-b border-border/10 mb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <Button variant="ghost" onClick={onBack} className="w-fit gap-2 rounded-xl">
-            <ChevronLeft className="w-4 h-4" />
-            뒤로 가기
-          </Button>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 items-start sm:items-center">
-            <h2 className="text-[21px] font-extrabold px-3 sm:px-0 text-left">{studentName} 학생 도서 목록</h2>
-            <div className="flex items-center justify-start gap-1 sm:gap-2 px-3 sm:px-0">
-              <Dialog>
-                <DialogTrigger render={
-                  <Button 
-                    variant="outline"
-                    className="rounded-xl gap-2 bg-[#f0f7ff] text-primary border-[#dbeafe] shadow-sm hover:bg-[#e0efff] transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
-                  >
-                    <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                    도서
-                  </Button>
-                } />
-                <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
-                  </DialogHeader>
-                  <div className="pt-4">
-                    <BookSearch 
-                      books={data.books} 
-                      existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
-                      onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
-                    />
-                  </div>
-                </DialogContent>
-               </Dialog>
-
-               <Button 
-                 variant="outline"
-                 className="rounded-xl gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] shadow-sm transition-all font-semibold scale-[0.85] origin-left sm:scale-100 h-9 sm:h-10"
-                 onClick={() => handleAddCurriculum(undefined, true)}
-               >
-                 <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                 글쓰기
-               </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
+          
+          {/* Left: Back Button, Candidate Name & Info Badge */}
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <Button variant="ghost" onClick={onBack} size="icon" className="w-[36px] h-[36px] flex items-center justify-center rounded-xl shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-baseline gap-2 min-w-0 flex-wrap pb-[2px]">
+              <span className="text-[19px] md:text-[21px] font-extrabold text-foreground whitespace-nowrap align-baseline">
+                {studentName}  학생
+              </span>
+              {/* Mobile/Tablet text in a rounded box */}
+              <span className="xl:hidden text-[13px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-block align-baseline">
+                {[displayGrade, displayLevel, completedCount, attendance].filter(Boolean).join(' · ')}
+              </span>
+              {/* Desktop text in a rounded box */}
+              <span className="hidden xl:inline-block text-[15px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-3 py-1 align-baseline">
+                {[displayGrade, displayLevel, completedCount, attendance, subProg].filter(Boolean).join(' · ')}
+              </span>
             </div>
+          </div>
+
+          {/* Right: Responsive buttons (automatically left-aligned on mobile portrait, right-aligned on tablet/desktop) */}
+          <div className="flex items-center justify-start sm:justify-end gap-1.5 sm:gap-2 shrink-0 self-start sm:self-auto w-full sm:w-auto mt-0.5 sm:mt-0 pl-10 sm:pl-0">
+            <Dialog>
+              <DialogTrigger render={
+                <Button 
+                  variant="outline"
+                  className="rounded-xl gap-1 lg:gap-2 bg-[#f0f7ff] text-primary border-[#dbeafe] shadow-sm hover:bg-[#e0efff] transition-all font-semibold h-8 text-[12px] px-2.5 lg:h-10 lg:text-sm lg:px-4"
+                >
+                  <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                  도서
+                </Button>
+              } />
+              <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
+                </DialogHeader>
+                <div className="pt-4">
+                  <BookSearch 
+                    books={data.books} 
+                    existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
+                    onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button 
+              variant="outline"
+              className="rounded-xl gap-1 lg:gap-2 border-[#f3e8ff] bg-[#faf5ff] text-purple-600 hover:bg-[#f3e8ff] shadow-sm transition-all font-semibold h-8 text-[12px] px-2.5 lg:h-10 lg:text-sm lg:px-4"
+              onClick={() => handleAddCurriculum(undefined, true)}
+            >
+              <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              글쓰기
+            </Button>
+
+            <Button 
+              variant="outline"
+              size="icon"
+              className="rounded-xl border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800 shadow-sm transition-all h-8 w-8 lg:h-10 lg:w-10 flex items-center justify-center p-0 shrink-0"
+              onClick={handleOpenEdit}
+            >
+              <UserCog className="w-4 h-4 lg:w-5 lg:h-5" />
+            </Button>
           </div>
         </div>
       </div>
@@ -324,7 +522,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                 optimisticCurriculum.map((item, idx) => {
                   const isLast = idx === optimisticCurriculum.length - 1;
                   return (
-                    <TableRow key={item.index} className="border-border/20 hover:bg-secondary/10 transition-colors">
+                    <TableRow key={`${item.index}-${item.bookTitle}-${idx}`} className="border-border/20 hover:bg-secondary/10 transition-colors">
                     <TableCell className={`text-center pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
                     {editingIndex === item.index ? (
                       <input 
@@ -402,46 +600,93 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                       </div>
                     ) : (
                       <div className="flex items-center justify-start gap-0">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          title="수정"
-                          className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                          onClick={() => {
-                            setEditingIndex(item.index);
-                            setEditValues({ 
-                              status: item.status,
-                              index: item.index,
-                              bookTitle: item.bookTitle
-                            });
-                          }}
-                        >
-                          <Pencil className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                        </Button>
-                        {item.bookTitle !== '글쓰기' && (
-                          <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
+                        {/* Desktop actions (shown on medium and larger screens) */}
+                        <div className="hidden md:flex items-center justify-start gap-0">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="수정"
+                            className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              setEditingIndex(item.index);
+                              setEditValues({ 
+                                status: item.status,
+                                index: item.index,
+                                bookTitle: item.bookTitle
+                              });
+                            }}
+                          >
+                            <Pencil className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                          </Button>
+                          {item.bookTitle !== '글쓰기' && (
+                            <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
+                              <DialogTrigger render={
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className={`h-8 w-8 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 ${addingWriting === item.bookId ? 'animate-pulse' : ''}`}
+                                  onClick={() => setWritingConfirmItem(item)}
+                                  disabled={addingWriting === item.bookId}
+                                  title="글쓰기 현황 추가"
+                                >
+                                  <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                                </Button>
+                              } />
+                              <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+                                <div className="p-8 text-center space-y-6">
+                                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                                    <FilePlus className="w-8 h-8 text-primary" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
+                                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                                      <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
+                                      글쓰기 현황을 추가하시겠습니까?
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-3">
+                                    <DialogClose render={
+                                      <Button 
+                                        variant="secondary" 
+                                        className="flex-1 h-12 rounded-2xl font-bold"
+                                      >
+                                        취소
+                                      </Button>
+                                    } />
+                                    <Button 
+                                      className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+                                      onClick={() => handleAddToWritingStatus(item)}
+                                    >
+                                      추가
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                          
+                          <Dialog open={deletingItem?.bookId === item.bookId && deletingItem?.index === item.index} onOpenChange={(open) => !open && setDeletingItem(null)}>
                             <DialogTrigger render={
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className={`h-8 w-8 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 ${addingWriting === item.bookId ? 'animate-pulse' : ''}`}
-                                onClick={() => setWritingConfirmItem(item)}
-                                disabled={addingWriting === item.bookId}
-                                title="글쓰기 현황 추가"
+                                className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeletingItem(item)}
+                                title="삭제"
                               >
-                                <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                                <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                               </Button>
                             } />
                             <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
                               <div className="p-8 text-center space-y-6">
-                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                                  <FilePlus className="w-8 h-8 text-primary" />
+                                <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                                  <Trash2 className="w-8 h-8 text-destructive" />
                                 </div>
                                 <div className="space-y-2">
-                                  <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
+                                  <h3 className="text-lg font-extrabold text-foreground">항목 삭제</h3>
                                   <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                    <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
-                                    글쓰기 현황을 추가하시겠습니까?
+                                    <span className="text-destructive font-bold">'{item.bookTitle}'</span> 항목을<br />
+                                    목록에서 삭제하시겠습니까?
                                   </p>
                                 </div>
                                 <div className="flex gap-3">
@@ -454,62 +699,36 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                                     </Button>
                                   } />
                                   <Button 
-                                    className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
-                                    onClick={() => handleAddToWritingStatus(item)}
+                                    variant="destructive"
+                                    className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
+                                    onClick={() => handleDeleteCurriculum(item)}
+                                    disabled={isDeleting}
                                   >
-                                    추가
+                                    {isDeleting ? '삭제 중...' : '삭제'}
                                   </Button>
                                 </div>
                               </div>
                             </DialogContent>
                           </Dialog>
-                        )}
-                        
-                        <Dialog open={deletingItem?.bookId === item.bookId && deletingItem?.index === item.index} onOpenChange={(open) => !open && setDeletingItem(null)}>
-                          <DialogTrigger render={
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeletingItem(item)}
-                              title="삭제"
-                            >
-                              <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                            </Button>
-                          } />
-                          <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                            <div className="p-8 text-center space-y-6">
-                              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                                <Trash2 className="w-8 h-8 text-destructive" />
-                              </div>
-                              <div className="space-y-2">
-                                <h3 className="text-lg font-extrabold text-foreground">항목 삭제</h3>
-                                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                  <span className="text-destructive font-bold">'{item.bookTitle}'</span> 항목을<br />
-                                  목록에서 삭제하시겠습니까?
-                                </p>
-                              </div>
-                              <div className="flex gap-3">
-                                <DialogClose render={
-                                  <Button 
-                                    variant="secondary" 
-                                    className="flex-1 h-12 rounded-2xl font-bold"
-                                  >
-                                    취소
-                                  </Button>
-                                } />
-                                <Button 
-                                  variant="destructive"
-                                  className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
-                                  onClick={() => handleDeleteCurriculum(item)}
-                                  disabled={isDeleting}
-                                >
-                                  {isDeleting ? '삭제 중...' : '삭제'}
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        </div>
+
+                        {/* Mobile actions (shown only on mobile/tablet portrait under md breakpoint) */}
+                        <div className="flex md:hidden items-center justify-start">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="수정"
+                            className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              setMobileEditItem(item);
+                              setMobileEditIndex(item.index);
+                              setMobileEditTitle(item.bookTitle);
+                              setMobileEditStatus(item.status);
+                            }}
+                          >
+                            <Pencil className="w-[15px] h-[15px]" />
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </TableCell>
@@ -521,6 +740,268 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={(open) => {
+        setIsEditOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6">
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                <UserCog className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-foreground">{studentName} 학생 정보 수정</h3>
+                <p className="text-xs text-muted-foreground font-semibold">학생의 정보를 수정합니다.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-600">학년 *</label>
+                  <select
+                    value={editGrade}
+                    onChange={(e) => setEditGrade(e.target.value)}
+                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  >
+                    <option value="" disabled hidden>선택</option>
+                    <option value="유7">유7</option>
+                    <option value="초1">초1</option>
+                    <option value="초2">초2</option>
+                    <option value="초3">초3</option>
+                    <option value="초4">초4</option>
+                    <option value="초5">초5</option>
+                    <option value="초6">초6</option>
+                    <option value="중1">중1</option>
+                    <option value="중2">중2</option>
+                    <option value="중3">중3</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-600">레벨 *</label>
+                  <select 
+                    value={editLevel} 
+                    onChange={(e) => setEditLevel(e.target.value)}
+                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  >
+                    <option value="0">기초</option>
+                    <option value="1">Lv.1</option>
+                    <option value="2">Lv.2</option>
+                    <option value="3">Lv.3</option>
+                    <option value="4">Lv.4</option>
+                    <option value="5">Lv.5</option>
+                    <option value="6">Lv.6</option>
+                    <option value="7">Lv.7</option>
+                    <option value="8">Lv.8</option>
+                    <option value="9">Lv.9</option>
+                    <option value="10">Lv.10</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600">서브프로그램</label>
+                <Input
+                  placeholder="예: 독해력, 어휘력"
+                  value={editSubProgram}
+                  onChange={(e) => setEditSubProgram(e.target.value)}
+                  className="rounded-xl h-10 border-neutral-200 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600">등원 요일</label>
+                <div className="grid grid-cols-6 gap-1.5 pt-1">
+                  {['월', '화', '수', '목', '금', '토'].map((day) => {
+                    const isSelected = editAttendanceDays.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setEditAttendanceDays(editAttendanceDays.filter(d => d !== day));
+                          } else {
+                            setEditAttendanceDays([...editAttendanceDays, day]);
+                          }
+                        }}
+                        className={`h-9 rounded-xl border text-sm font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-primary border-primary text-white shadow-sm font-bold'
+                            : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-600">숙제 미수행</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="미수행 횟수"
+                    value={editHomeworkMissed}
+                    onChange={(e) => setEditHomeworkMissed(Number(e.target.value) || 0)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-600">완독권수</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="완독권수"
+                    value={editBooksCompleted}
+                    onChange={(e) => setEditBooksCompleted(Number(e.target.value) || 0)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600">결과물 마지막 날짜</label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="date"
+                    value={editLastResultDate}
+                    onChange={(e) => setEditLastResultDate(e.target.value)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm flex-1 cursor-pointer"
+                  />
+                  <div className="w-24 shrink-0 text-center text-sm font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 h-10 flex items-center justify-center rounded-xl px-2">
+                    {editLastResultDate ? (
+                      typeof getWeeksSince(editLastResultDate) === 'number' ? (
+                        `${getWeeksSince(editLastResultDate)}주 전`
+                      ) : (
+                        '-'
+                      )
+                    ) : (
+                      '-'
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <DialogClose render={
+                <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold">
+                  취소
+                </Button>
+              } />
+              <Button 
+                onClick={handleSaveEdit}
+                disabled={isSavingEdit}
+                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-lg"
+              >
+                {isSavingEdit ? '저장 중...' : '저장'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile Curriculum Edit Dialog */}
+      <Dialog open={!!mobileEditItem} onOpenChange={(open) => {
+        if (!open) setMobileEditItem(null);
+      }}>
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-[380px] rounded-[2.5rem] border-none shadow-2xl p-6">
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                <Pencil className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-foreground">도서 기록 수정</h3>
+                <p className="text-xs text-muted-foreground font-semibold">순서, 도서명, 상태를 세부 변경합니다.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1 col-span-1">
+                  <label className="text-xs font-bold text-neutral-600">순서</label>
+                  <Input
+                    type="number"
+                    value={mobileEditIndex}
+                    onChange={(e) => setMobileEditIndex(parseInt(e.target.value) || 0)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm text-center"
+                  />
+                </div>
+
+                <div className="space-y-1 col-span-2">
+                  <label className="text-xs font-bold text-neutral-600">상태</label>
+                  <select
+                    value={mobileEditStatus}
+                    onChange={(e) => setMobileEditStatus(e.target.value)}
+                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  >
+                    {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-neutral-600">도서명</label>
+                <Input
+                  value={mobileEditTitle}
+                  onChange={(e) => setMobileEditTitle(e.target.value)}
+                  className="rounded-xl h-10 border-neutral-200 text-sm"
+                />
+              </div>
+
+              {/* Special row actions section inside popup: Delete & Writing Status */}
+              <div className="flex flex-col gap-2 pt-2">
+                {mobileEditItem?.bookTitle !== '글쓰기' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-10 rounded-xl text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 font-bold text-xs gap-1.5"
+                    onClick={handleMobileAddToWriting}
+                    disabled={addingWriting === mobileEditItem?.bookId}
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    글쓰기 기록 추가
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 rounded-xl text-destructive border-destructive/20 bg-destructive/5 hover:bg-destructive/10 font-bold text-xs gap-1.5"
+                  onClick={handleMobileDelete}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  커리큘럼 삭제
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-neutral-100">
+              <DialogClose render={
+                <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold bg-zinc-100 hover:bg-zinc-200 border-none text-zinc-700">
+                  취소
+                </Button>
+              } />
+              <Button 
+                onClick={handleMobileUpdate}
+                disabled={isPending}
+                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-lg"
+              >
+                {isPending ? '저장 중...' : '저장'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
