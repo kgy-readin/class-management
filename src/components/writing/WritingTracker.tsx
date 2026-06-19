@@ -786,7 +786,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
 
       {/* Adding Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-hidden">
+        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-visible">
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-[19px] font-extrabold text-foreground">글쓰기 기록 추가</h3>

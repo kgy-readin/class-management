@@ -268,3 +268,14 @@ textarea {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
 }
+
+/* Force specific date inputs to maintain fixed width under any circumstances */
+.fixed-date-input,
+input[type="date"].fixed-date-input,
+input[type="text"].fixed-date-input {
+  width: 108px !important;
+  min-width: 108px !important;
+  max-width: 108px !important;
+  box-sizing: border-box !important;
+}
+

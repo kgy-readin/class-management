@@ -311,7 +311,7 @@ export default function StudentLogStudents({
                       return (
                         <tr key={`${log.name}-${idx}`} className="bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                           {/* Date Edit */}
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                          <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
                             <input
                               type="date"
                               className="w-full h-8 px-1.5 border border-zinc-200 rounded text-[14px] font-normal text-zinc-800 bg-white focus:border-primary focus:outline-none"
@@ -321,7 +321,7 @@ export default function StudentLogStudents({
                           </td>
 
                           {/* Category Edit */}
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                          <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
                             <select
                               className="w-full h-8 px-1.5 border border-zinc-200 rounded text-[14px] font-normal text-zinc-800 bg-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/25 cursor-pointer"
                               value={editForm.category}
@@ -334,21 +334,21 @@ export default function StudentLogStudents({
                           </td>
 
                           {/* Content Edit */}
-                          <td className="px-3 py-2 text-left">
-                            <input
-                              type="text"
-                              className="w-full h-8 px-2 border border-zinc-200 rounded text-[14px] font-normal text-zinc-800 bg-white focus:border-primary focus:outline-none"
+                          <td className="px-3 pt-[12px] pb-[12px] text-left align-top overflow-visible">
+                            <textarea
+                              rows={2}
+                              className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[14px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-y"
                               value={editForm.content}
                               onChange={e => setEditForm({ ...editForm, content: e.target.value })}
                             />
                           </td>
 
                           {/* Control Actions during Edit */}
-                          <td className="px-3 py-2 whitespace-nowrap text-center">
+                          <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
                             <div className="flex items-center justify-center gap-1.5">
                               <Button
                                 size="sm"
-                                className="h-8 px-2.5 text-xs bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm"
+                                className="h-8 px-2.5 text-xs bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm cursor-pointer"
                                 onClick={handleUpdateLog}
                                 disabled={submittingEdit}
                               >
@@ -357,7 +357,7 @@ export default function StudentLogStudents({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 px-2 text-xs text-zinc-500 hover:bg-zinc-100 rounded-lg"
+                                className="h-8 px-2 text-xs text-zinc-500 hover:bg-zinc-100 rounded-lg cursor-pointer"
                                 onClick={() => {
                                   setEditingLog(null);
                                   setEditForm(null);
@@ -375,28 +375,28 @@ export default function StudentLogStudents({
                       <tr key={`${log.name}-${idx}`} className="hover:bg-zinc-50/20 transition-colors group">
                         
                         {/* Date */}
-                        <td className="px-4 py-2.5 whitespace-nowrap text-center">
-                          <span className="text-[14px] font-normal text-zinc-800">{dateFormatted}</span>
+                        <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
+                          <span className="text-[14px] font-normal text-zinc-805 leading-5">{dateFormatted}</span>
                         </td>
 
                         {/* Category */}
-                        <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                        <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
                           <div className="flex justify-center items-center w-full">
-                            <div className={`inline-flex items-center justify-center h-7 px-3 text-[13px] font-semibold rounded-full select-none text-center min-w-[76px] ${getCategoryTagStyle(log.category)}`}>
+                            <div className={`inline-flex items-center justify-center h-[21px] px-2.5 text-[11.5px] font-semibold rounded-full select-none text-center min-w-[72px] ${getCategoryTagStyle(log.category)}`}>
                               {log.category}
                             </div>
                           </div>
                         </td>
 
                         {/* Content */}
-                        <td className="px-4 py-2.5 text-left">
-                          <span className="text-[14px] font-normal text-zinc-800 line-clamp-1" title={log.content}>
+                        <td className="px-4 pt-[12px] pb-[12px] text-left align-top">
+                          <div className="text-[14px] font-normal text-zinc-800 leading-5 whitespace-pre-wrap break-all" title={log.content}>
                             {log.content}
-                          </span>
+                          </div>
                         </td>
 
                         {/* Control Actions */}
-                        <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                        <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
                           <div className="flex items-center justify-center gap-1">
                             <Button
                               size="icon"
@@ -554,9 +554,9 @@ export default function StudentLogStudents({
                       {/* Content text strictly 13px and beautiful, breaking word wrapping nicely */}
                       <div className="text-[13px] font-medium text-zinc-800 leading-relaxed pr-2">
                         {isEditing && editForm ? (
-                          <input
-                            type="text"
-                            className="w-full h-8 px-2 border border-zinc-200 rounded text-[13px] font-medium text-zinc-800 bg-white focus:border-primary focus:outline-none"
+                          <textarea
+                            rows={2}
+                            className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-y"
                             value={editForm.content}
                             onChange={e => setEditForm({ ...editForm, content: e.target.value })}
                           />

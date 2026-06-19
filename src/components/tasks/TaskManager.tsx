@@ -802,8 +802,21 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           <input 
                             type={selectedDate || dateFocusedDesktop ? "date" : "text"}
                             value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                            onFocus={() => setDateFocusedDesktop(true)}
+                            onFocus={(e) => {
+                              setDateFocusedDesktop(true);
+                              const target = e.currentTarget;
+                              setTimeout(() => {
+                                try {
+                                  target.showPicker();
+                                } catch (err) {}
+                              }, 30);
+                            }}
                             onBlur={() => setDateFocusedDesktop(false)}
+                            onClick={(e) => {
+                              try {
+                                e.currentTarget.showPicker();
+                              } catch (err) {}
+                            }}
                             placeholder="마감일"
                             onChange={(e) => {
                               if (e.target.value) {
@@ -812,7 +825,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                 navigate('/tasks/filter');
                               }
                             }}
-                            className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
+                            className={`fixed-date-input h-7 w-[108px] min-w-[108px] max-w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
                               selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
                             }`}
                           />
@@ -890,8 +903,21 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       <input 
                         type={selectedDate || dateFocusedMobile ? "date" : "text"}
                         value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                        onFocus={() => setDateFocusedMobile(true)}
+                        onFocus={(e) => {
+                          setDateFocusedMobile(true);
+                          const target = e.currentTarget;
+                          setTimeout(() => {
+                            try {
+                              target.showPicker();
+                            } catch (err) {}
+                          }, 30);
+                        }}
                         onBlur={() => setDateFocusedMobile(false)}
+                        onClick={(e) => {
+                          try {
+                            e.currentTarget.showPicker();
+                          } catch (err) {}
+                        }}
                         placeholder="마감일"
                         onChange={(e) => {
                           if (e.target.value) {
@@ -900,7 +926,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             navigate('/tasks/filter');
                           }
                         }}
-                        className={`h-7 w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
+                        className={`fixed-date-input h-7 w-[108px] min-w-[108px] max-w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
                           selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
                         }`}
                       />
@@ -946,11 +972,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         <AnimatePresence initial={false}>
                           {expandedGroups.todo && (
                             <motion.div 
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
+                              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+                              animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
+                              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="overflow-hidden space-y-1.5 pl-0"
+                              className="space-y-1.5 pl-0"
                             >
                               {todoGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
@@ -992,11 +1018,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         <AnimatePresence initial={false}>
                           {expandedGroups.inProgress && (
                             <motion.div 
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
+                              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+                              animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
+                              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="overflow-hidden space-y-1.5 pl-0"
+                              className="space-y-1.5 pl-0"
                             >
                               {inProgressGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
@@ -1028,11 +1054,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         <AnimatePresence initial={false}>
                           {expandedGroups.completed && (
                             <motion.div 
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
+                              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+                              animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
+                              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="overflow-hidden space-y-1.5 pl-0"
+                              className="space-y-1.5 pl-0"
                             >
                               {completedGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
