@@ -102,6 +102,7 @@ export interface StudentLogEntry {
 
 export interface MeetingNote {
   date: string;
+  category: string;
   title: string;
   content: string;
   sheetRowIndex?: number;

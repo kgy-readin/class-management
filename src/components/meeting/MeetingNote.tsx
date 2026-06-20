@@ -15,11 +15,53 @@ import {
   Copy,
   Plus,
   Trash2,
-  Calendar
+  Calendar,
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { meetingNoteApi } from '@/src/services/api';
-import { MeetingNote as MeetingNoteType } from '@/src/types';
+import { MeetingNote as MeetingNoteType, getTagColor } from '@/src/types';
 import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
+
+const CATEGORIES = ['회의', '보고', '기타'] as const;
+
+const CATEGORY_COLORS: Record<string, string> = {
+  '회의': '초록색',
+  '보고': '보라색',
+  '기타': '회색'
+};
+
+const getCategoryStyle = (category: string): string => {
+  const colorName = CATEGORY_COLORS[category] || '기본';
+  return getTagColor(colorName);
+};
+
+const getFolderName = (item: MeetingNoteType): string => {
+  const category = (item.category || '회의').trim();
+  if (category === '회의') {
+    if (!item.date) return '미분류 회의';
+    const dateParts = item.date.split('-');
+    if (dateParts.length >= 2) {
+      const year = dateParts[0];
+      const month = parseInt(dateParts[1], 10);
+      if (!isNaN(month)) {
+        let quarter = '';
+        if (month >= 1 && month <= 3) quarter = '1분기';
+        else if (month >= 4 && month <= 6) quarter = '2분기';
+        else if (month >= 7 && month <= 9) quarter = '3분기';
+        else if (month >= 10 && month <= 12) quarter = '4분기';
+        
+        if (quarter) {
+          return `${year}년 ${quarter} 회의록`;
+        }
+      }
+    }
+    return '미분류 회의';
+  }
+  return category;
+};
 
 const getMeetingId = (item: MeetingNoteType, allItems: MeetingNoteType[]): string => {
   if (!item.date) return 'no-date';
@@ -70,6 +112,7 @@ export default function MeetingNote() {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editCategory, setEditCategory] = useState('회의');
   const [editContent, setEditContent] = useState('');
   const [savingItem, setSavingItem] = useState(false);
 
@@ -77,10 +120,12 @@ export default function MeetingNote() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [addForm, setAddForm] = useState({
     date: new Date().toISOString().split('T')[0],
+    category: '회의',
     title: '',
     content: ''
   });
   const [addingNote, setAddingNote] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Sorting: Date Descending, then Row Index Descending
   const sortedItems = [...items].sort((a, b) => {
@@ -94,11 +139,69 @@ export default function MeetingNote() {
 
   const selectedItem = selectedRowIndex !== null ? sortedItems.find(item => item.sheetRowIndex === selectedRowIndex) : undefined;
 
+  // New folding logic state & group logic
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+
+  const toggleFolder = (folderName: string) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderName]: !prev[folderName]
+    }));
+  };
+
+  // Filter items based on title or body content
+  const filteredItems = sortedItems.filter(item => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return item.title.toLowerCase().includes(query) || 
+           item.content.toLowerCase().includes(query) ||
+           item.date.includes(query) ||
+           (item.category || '회의').toLowerCase().includes(query);
+  });
+
+  const groupedFolders = React.useMemo(() => {
+    const foldersMap: Record<string, MeetingNoteType[]> = {};
+    
+    filteredItems.forEach(item => {
+      const folderName = getFolderName(item);
+      if (!foldersMap[folderName]) {
+        foldersMap[folderName] = [];
+      }
+      foldersMap[folderName].push(item);
+    });
+
+    const folderGroups = Object.keys(foldersMap).map(folderName => {
+      const folderItems = foldersMap[folderName];
+      // Sort items inside this folder: Date Descending, then sheetRowIndex Descending
+      const sortedFolderItems = [...folderItems].sort((a, b) => {
+        const dateA = new Date(a.date).getTime() || 0;
+        const dateB = new Date(b.date).getTime() || 0;
+        if (dateB !== dateA) return dateB - dateA;
+        return (b.sheetRowIndex || 0) - (a.sheetRowIndex || 0);
+      });
+
+      // Get max date in this folder (or 0 if none)
+      const maxDate = sortedFolderItems.length > 0 
+        ? new Date(sortedFolderItems[0].date).getTime() || 0 
+        : 0;
+
+      return {
+        folderName,
+        items: sortedFolderItems,
+        maxDate
+      };
+    });
+
+    // Sort folders by maxDate descending
+    return folderGroups.sort((a, b) => b.maxDate - a.maxDate);
+  }, [filteredItems]);
+
   // Update edit form whenever selected item changes
   useEffect(() => {
     if (selectedItem) {
       setEditTitle(selectedItem.title || '');
       setEditDate(selectedItem.date || '');
+      setEditCategory(selectedItem.category || '회의');
       setEditContent(selectedItem.content || '');
     }
     setIsEditing(false);
@@ -141,6 +244,14 @@ export default function MeetingNote() {
         if (selectedRowIndex !== matched.sheetRowIndex) {
           setSelectedRowIndex(matched.sheetRowIndex || null);
         }
+        // Auto-expand folder of selected item
+        const fName = getFolderName(matched);
+        setExpandedFolders(prev => {
+          if (!prev[fName]) {
+            return { ...prev, [fName]: true };
+          }
+          return prev;
+        });
         return;
       }
     } else {
@@ -183,7 +294,7 @@ export default function MeetingNote() {
     // Optimistically update local state first
     const updatedItems = items.map(item => {
       if (item.sheetRowIndex === selectedRowIndex) {
-        return { ...item, title: editTitle, date: editDate, content: editContent };
+        return { ...item, title: editTitle, date: editDate, category: editCategory, content: editContent };
       }
       return item;
     });
@@ -196,6 +307,7 @@ export default function MeetingNote() {
       await meetingNoteApi.update(selectedRowIndex, {
         sheetRowIndex: selectedRowIndex,
         title: editTitle,
+        category: editCategory,
         date: editDate,
         content: editContent
       });
@@ -219,6 +331,7 @@ export default function MeetingNote() {
       setAddingNote(true);
       const res = await meetingNoteApi.add({
         date: addForm.date,
+        category: addForm.category,
         title: addForm.title,
         content: addForm.content
       });
@@ -227,6 +340,7 @@ export default function MeetingNote() {
         const newNoteWithIndex: MeetingNoteType = {
           sheetRowIndex: res.sheetRowIndex,
           date: addForm.date,
+          category: addForm.category,
           title: addForm.title,
           content: addForm.content
         };
@@ -238,6 +352,7 @@ export default function MeetingNote() {
         setShowAddDialog(false);
         setAddForm({
           date: new Date().toISOString().split('T')[0],
+          category: '회의',
           title: '',
           content: ''
         });
@@ -255,7 +370,9 @@ export default function MeetingNote() {
 
   const handleDeleteNote = async () => {
     if (!selectedRowIndex) return;
-    if (!window.confirm('정말 이 회의록을 삭제하시겠습니까?')) return;
+    
+    // Close confirmation modal
+    setShowDeleteConfirm(false);
 
     // Optimistically update
     const updated = items.filter(item => item.sheetRowIndex !== selectedRowIndex);
@@ -283,15 +400,6 @@ export default function MeetingNote() {
       toast.error(MESSAGES.meeting.deleteError(err.message));
     }
   };
-
-  // Filter items based on title or body content
-  const filteredItems = sortedItems.filter(item => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return true;
-    return item.title.toLowerCase().includes(query) || 
-           item.content.toLowerCase().includes(query) ||
-           item.date.includes(query);
-  });
 
   return (
     <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
@@ -323,7 +431,7 @@ export default function MeetingNote() {
             </Button>
           </div>
 
-          {/* Meeting Lists */}
+                  {/* Meeting Lists */}
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 max-lg:max-h-[250px]">
             {filteredItems.length === 0 ? (
               <div className="py-20 text-center text-[13px] md:text-[15px] text-neutral-400 flex flex-col items-center justify-center gap-2">
@@ -331,20 +439,60 @@ export default function MeetingNote() {
                 <span>검색 결과가 없거나 회의록이 존재하지 않습니다.</span>
               </div>
             ) : (
-              filteredItems.map((item) => {
-                const isSelected = selectedRowIndex === item.sheetRowIndex;
+              groupedFolders.map(({ folderName, items: folderItems }) => {
+                const isExpanded = !!expandedFolders[folderName];
                 return (
-                  <div
-                    key={item.sheetRowIndex}
-                    onClick={() => navigate(`/meeting/${getMeetingId(item, sortedItems)}`)}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all ${
-                      isSelected 
-                        ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                        : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
-                    }`}
-                  >
-                    <MessageSquareQuote className={`w-4.5 h-4.5 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
-                    <span className="truncate text-[13px] md:text-[15px] leading-snug">{item.title}</span>
+                  <div key={folderName} className="space-y-1 animate-in fade-in duration-200">
+                    {/* Folder Header */}
+                    <div 
+                      onClick={() => toggleFolder(folderName)}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f6f7f9] cursor-pointer transition-all text-neutral-700 select-none hover:text-zinc-900"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isExpanded ? (
+                          <FolderOpen className="w-4 h-4 text-blue-500 shrink-0" />
+                        ) : (
+                          <Folder className="w-4 h-4 text-neutral-450 shrink-0" />
+                        )}
+                        <span className="font-semibold text-[13px] md:text-[14px] truncate text-zinc-650 max-w-[140px] md:max-w-none">
+                          {folderName}
+                        </span>
+                        <span className="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-full font-mono shrink-0">
+                          {folderItems.length}
+                        </span>
+                      </div>
+                      <div>
+                        {isExpanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Folder Items */}
+                    {isExpanded && (
+                      <div className="pl-3 border-l border-neutral-100 ml-3.5 space-y-0.5">
+                        {folderItems.map((item) => {
+                          const isSelected = selectedRowIndex === item.sheetRowIndex;
+                          
+                          return (
+                            <div
+                              key={item.sheetRowIndex}
+                              onClick={() => navigate(`/meeting/${getMeetingId(item, sortedItems)}`)}
+                              className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] min-w-0 ${
+                                isSelected 
+                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
+                                  : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
+                              }`}
+                            >
+                              <MessageSquareQuote className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-450'}`} />
+                              <span className="truncate flex-1" title={item.title}>{item.title}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -368,18 +516,32 @@ export default function MeetingNote() {
                         className="w-full text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 px-2 py-1 border border-neutral-200 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                         placeholder="회의 제목을 입력하세요..."
                       />
-                      <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <input
-                          type="date"
-                          value={editDate}
-                          onChange={(e) => setEditDate(e.target.value)}
-                          className="px-2 py-0.5 border border-neutral-200 rounded text-zinc-650 outline-none"
-                        />
+                      <div className="flex items-center gap-3 text-zinc-400 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-zinc-400 shrink-0" />
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className="px-2 py-0.5 border border-neutral-200 rounded text-zinc-650 outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Folder className="w-4 h-4 text-zinc-400 shrink-0" />
+                          <select
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="px-2 py-0.5 border border-neutral-200 rounded bg-white text-zinc-650 outline-none font-medium cursor-pointer text-[11px]"
+                          >
+                            <option value="회의">회의</option>
+                            <option value="보고">보고</option>
+                            <option value="기타">기타</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <MessageSquareQuote className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
                       <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
                         {selectedItem.title}
@@ -460,8 +622,8 @@ export default function MeetingNote() {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        onClick={handleDeleteNote}
-                        className="rounded-full w-8 h-8 hover:bg-red-55 text-rose-500 hover:text-rose-700 cursor-pointer animate-in fade-in duration-205"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="rounded-full w-8 h-8 hover:bg-rose-50 text-neutral-500 hover:text-rose-600 cursor-pointer animate-in fade-in duration-205"
                         title="회의록 삭제"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -548,6 +710,30 @@ export default function MeetingNote() {
                   </div>
                 </div>
 
+                {/* Category Button Selection (3열 1행 배치) */}
+                <div className="space-y-1.5">
+                  <div className="grid grid-cols-3 gap-2">
+                    {CATEGORIES.map(cat => {
+                      const isSelected = addForm.category === cat;
+                      const tagStyle = getCategoryStyle(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setAddForm(prev => ({ ...prev, category: cat }))}
+                          className={`py-2 rounded-xl text-xs font-semibold transition-all text-center cursor-pointer ${tagStyle} ${
+                            isSelected 
+                              ? 'scale-[1.02] ring-2 ring-zinc-400/35 opacity-100 shadow-sm'
+                              : 'opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Title */}
                 <div className="space-y-1.5">
                   <input
@@ -590,6 +776,54 @@ export default function MeetingNote() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog modal */}
+      {showDeleteConfirm && selectedItem && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[200] flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-[2.5rem] w-full max-w-[380px] shadow-2xl p-8 flex flex-col items-center border border-zinc-150 animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 p-1.5 rounded-full transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-18 h-18 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mt-2 mb-6">
+              <Trash2 className="w-8 h-8" />
+            </div>
+
+            <h3 className="text-xl font-bold text-zinc-900 text-center tracking-tight mb-4">
+              회의록 삭제
+            </h3>
+
+            <div className="text-center space-y-1.5 mb-8 w-full">
+              <p className="text-zinc-650 text-[14px] md:text-[15px] font-medium leading-normal break-all px-2">
+                '{selectedItem.title}'을(를) 삭제할까요?
+              </p>
+              <p className="text-[#e23c3c] text-[14px] md:text-[15px] font-semibold leading-normal px-2">
+                삭제 시 모든 회의록 데이터가 영구 삭제됩니다.
+              </p>
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <Button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3.5 h-[52px] bg-[#e8f1ff] hover:bg-[#d4e5ff] text-blue-600 font-bold rounded-full transition-colors cursor-pointer text-sm"
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDeleteNote}
+                className="flex-1 py-3.5 h-[52px] bg-[#e23c3c] hover:bg-[#c93232] text-white font-bold rounded-full transition-colors cursor-pointer text-sm shadow-sm"
+              >
+                삭제
+              </Button>
+            </div>
           </div>
         </div>
       )}

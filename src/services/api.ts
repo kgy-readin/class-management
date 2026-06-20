@@ -806,23 +806,24 @@ export const noteApi = {
 };
 
 export const beginnerFeedbackApi = {
-  get: async (): Promise<{ bookTitle: string; content: string }[]> => {
-    const data = await getSheetData('기초첨삭', 'A2:B');
+  get: async (): Promise<{ bookTitle: string; difficulty: string; content: string }[]> => {
+    const data = await getSheetData('기초첨삭', 'A2:C');
     return data
       .filter((row: any[]) => row && row[0])
       .map((row: any[]) => ({
         bookTitle: String(row[0] || '').trim(),
-        content: String(row[1] || '').trim(),
+        difficulty: String(row[1] || '').trim(),
+        content: String(row[2] || '').trim(),
       }));
   },
-  update: async (originalBookTitle: string, data: { bookTitle: string; content: string }) => {
-    const rawData = await getSheetData('기초첨삭', 'A2:B');
+  update: async (originalBookTitle: string, data: { bookTitle: string; difficulty: string; content: string }) => {
+    const rawData = await getSheetData('기초첨삭', 'A2:C');
     const rowIndex = rawData.findIndex((row: any[]) => String(row[0] || '').trim() === originalBookTitle.trim()) + 2;
     if (rowIndex < 2) {
       const nextEmptyRow = rawData.length + 2;
-      await updateSheetData('기초첨삭', `A${nextEmptyRow}:B${nextEmptyRow}`, [[data.bookTitle, data.content]]);
+      await updateSheetData('기초첨삭', `A${nextEmptyRow}:C${nextEmptyRow}`, [[data.bookTitle, data.difficulty, data.content]]);
     } else {
-      await updateSheetData('기초첨삭', `A${rowIndex}:B${rowIndex}`, [[data.bookTitle, data.content]]);
+      await updateSheetData('기초첨삭', `A${rowIndex}:C${rowIndex}`, [[data.bookTitle, data.difficulty, data.content]]);
     }
     return { success: true };
   }
@@ -890,26 +891,27 @@ export const studentLogApi = {
 
 export const meetingNoteApi = {
   get: async (): Promise<MeetingNote[]> => {
-    const data = await getSheetData('회의록', 'A2:C');
+    const data = await getSheetData('회의록', 'A2:D');
     return data
       .map((row: any[], index: number) => ({
         sheetRowIndex: index + 2,
         date: row[0] || '',
-        title: row[1] || '',
-        content: row[2] || '',
+        category: row[1] || '',
+        title: row[2] || '',
+        content: row[3] || '',
       }))
       .filter((note: MeetingNote) => note.title || note.content);
   },
   add: async (note: Omit<MeetingNote, 'sheetRowIndex'>) => {
-    const existing = await getSheetData('회의록', 'A2:C');
+    const existing = await getSheetData('회의록', 'A2:D');
     const nextEmptyRow = existing.length + 2;
-    const newRow = [note.date, note.title, note.content];
-    await updateSheetData('회의록', `A${nextEmptyRow}:C${nextEmptyRow}`, [newRow]);
+    const newRow = [note.date, note.category || '회의', note.title, note.content];
+    await updateSheetData('회의록', `A${nextEmptyRow}:D${nextEmptyRow}`, [newRow]);
     return { success: true, sheetRowIndex: nextEmptyRow };
   },
   update: async (sheetRowIndex: number, note: MeetingNote) => {
-    const updatedRow = [note.date, note.title, note.content];
-    await updateSheetData('회의록', `A${sheetRowIndex}:C${sheetRowIndex}`, [updatedRow]);
+    const updatedRow = [note.date, note.category || '회의', note.title, note.content];
+    await updateSheetData('회의록', `A${sheetRowIndex}:D${sheetRowIndex}`, [updatedRow]);
     return { success: true };
   },
   remove: async (sheetRowIndex: number) => {

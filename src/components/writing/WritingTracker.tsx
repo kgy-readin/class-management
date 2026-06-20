@@ -512,7 +512,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                       onClick={handleClearMonth}
                       disabled={clearing}
                     >
-                      {clearing ? '삭제 중...' : '삭제 진행'}
+                      {clearing ? '삭제 중...' : '삭제'}
                     </Button>
                   </div>
                 </div>

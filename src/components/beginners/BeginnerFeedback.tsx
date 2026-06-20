@@ -13,15 +13,37 @@ import {
   X,
   Copy,
   User,
-  Pilcrow
+  Pilcrow,
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { beginnerFeedbackApi } from '@/src/services/api';
 import MarkdownRenderer, { stripMarkdown } from '../common/MarkdownRenderer';
 import { getShortHash } from '../../types';
 
 interface BeginnerItem {
   bookTitle: string;
+  difficulty: string;
   content: string;
+}
+
+const MERGED_DIFFICULTY_ORDER = ['최상-상', '중상', '중', '중하', '하-최하'];
+
+function getGroupedDifficulty(rawDiff: string): string {
+  const norm = (rawDiff || '').trim();
+  if (norm === '최상' || norm === '상') {
+    return '최상-상';
+  }
+  if (norm === '하' || norm === '최하') {
+    return '하-최하';
+  }
+  if (!norm) {
+    return '미분류';
+  }
+  return norm;
 }
 
 export default function BeginnerFeedback() {
@@ -30,7 +52,19 @@ export default function BeginnerFeedback() {
 
   const [items, setItems] = useState<BeginnerItem[]>(() => {
     const cached = localStorage.getItem('webapp_beginner_feedback_backup');
-    return cached ? JSON.parse(cached) : [];
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        return Array.isArray(parsed) ? parsed.map((item: any) => ({
+          bookTitle: String(item.bookTitle || '').trim(),
+          difficulty: String(item.difficulty || '').trim(),
+          content: String(item.content || '').trim()
+        })) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
   });
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +94,14 @@ export default function BeginnerFeedback() {
         if (selectedBookTitle !== matched.bookTitle) {
           setSelectedBookTitle(matched.bookTitle);
         }
+        // Auto-expand folder of selected item
+        const diffKey = getGroupedDifficulty(matched.difficulty);
+        setExpandedFolders(prev => {
+          if (!prev[diffKey]) {
+            return { ...prev, [diffKey]: true };
+          }
+          return prev;
+        });
         return;
       }
     } else {
@@ -158,6 +200,7 @@ export default function BeginnerFeedback() {
       setSavingItem(true);
       await beginnerFeedbackApi.update(selectedBookTitle, {
         bookTitle: selectedBookTitle,
+        difficulty: selectedItem?.difficulty || '',
         content: editText
       });
       toast.success(MESSAGES.beginners.saveSuccess);
@@ -177,6 +220,39 @@ export default function BeginnerFeedback() {
     if (!query) return true;
     return item.bookTitle.toLowerCase().includes(query);
   });
+
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+
+  const toggleFolder = (difficulty: string) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [difficulty]: !prev[difficulty]
+    }));
+  };
+
+  const groupedByDifficulty = React.useMemo(() => {
+    const groups: Record<string, BeginnerItem[]> = {};
+    
+    filteredItems.forEach(item => {
+      const groupKey = getGroupedDifficulty(item.difficulty);
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(item);
+    });
+
+    const otherKeys = Object.keys(groups).filter(key => !MERGED_DIFFICULTY_ORDER.includes(key) && key !== '미분류');
+    const finalKeys = [
+      ...MERGED_DIFFICULTY_ORDER.filter(key => groups[key] && groups[key].length > 0),
+      ...otherKeys,
+      ...(groups['미분류'] && groups['미분류'].length > 0 ? ['미분류'] : [])
+    ];
+
+    return finalKeys.map(key => ({
+      difficulty: key,
+      items: groups[key]
+    }));
+  }, [filteredItems]);
 
   // Apply replacement for rendering
   const getRenderText = (rawText: string) => {
@@ -239,26 +315,65 @@ export default function BeginnerFeedback() {
 
           {/* Book Lists */}
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1 max-lg:max-h-[250px]">
-            {filteredItems.length === 0 ? (
+            {groupedByDifficulty.length === 0 ? (
               <div className="py-20 text-center text-[13px] md:text-[15px] text-neutral-400 flex flex-col items-center justify-center gap-2">
                 <FileText className="w-9 h-9 text-neutral-300" />
                 <span>검색 결과가 없거나 기초첨삭 데이터가 존재하지 않습니다.</span>
               </div>
             ) : (
-              filteredItems.map((item) => {
-                const isSelected = selectedBookTitle === item.bookTitle;
+              groupedByDifficulty.map(({ difficulty, items: folderItems }) => {
+                const isExpanded = searchQuery.trim() !== '' ? true : !!expandedFolders[difficulty];
                 return (
-                  <div
-                    key={item.bookTitle}
-                    onClick={() => navigate(`/beginners/${getShortHash(item.bookTitle)}`)}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
-                      isSelected 
-                        ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                        : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
-                    }`}
-                  >
-                    <Pilcrow className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-400'}`} />
-                    <span className="truncate flex-1">{item.bookTitle}</span>
+                  <div key={difficulty} className="space-y-1">
+                    {/* Folder Header */}
+                    <div 
+                      onClick={() => toggleFolder(difficulty)}
+                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#f6f7f9] cursor-pointer transition-colors text-neutral-700"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {isExpanded ? (
+                          <FolderOpen className="w-4.5 h-4.5 text-blue-500 shrink-0" />
+                        ) : (
+                          <Folder className="w-4.5 h-4.5 text-neutral-450 shrink-0" />
+                        )}
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
+                          {difficulty}
+                        </span>
+                        <span className="text-[11px] md:text-[13px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full font-mono shrink-0">
+                          {folderItems.length}
+                        </span>
+                      </div>
+                      <div>
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-neutral-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-neutral-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Folder Items */}
+                    {isExpanded && (
+                      <div className="pl-4 border-l border-neutral-100 ml-4.5 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                        {folderItems.map((item) => {
+                          const isSelected = selectedBookTitle === item.bookTitle;
+                          return (
+                            <div
+                              key={item.bookTitle}
+                              onClick={() => navigate(`/beginners/${getShortHash(item.bookTitle)}`)}
+                              className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
+                                isSelected 
+                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
+                                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
+                              }`}
+                            >
+                              <Pilcrow className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
+                              <span className="truncate flex-1" title={item.bookTitle}>{item.bookTitle}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })

@@ -364,10 +364,10 @@ export default function CommentBank() {
                             <div
                               key={child.id}
                               onClick={() => navigate(`/comments/${getShortHash(child.id)}`)}
-                              className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
+                              className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
                                   ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
+                                  : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
                               }`}
                             >
                               <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
