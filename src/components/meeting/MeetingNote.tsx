@@ -446,26 +446,26 @@ export default function MeetingNote() {
                     {/* Folder Header */}
                     <div 
                       onClick={() => toggleFolder(folderName)}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f6f7f9] cursor-pointer transition-all text-neutral-700 select-none hover:text-zinc-900"
+                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#f6f7f9] cursor-pointer transition-all text-neutral-700 select-none hover:text-zinc-900"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         {isExpanded ? (
-                          <FolderOpen className="w-4 h-4 text-blue-500 shrink-0" />
+                          <FolderOpen className="w-4.5 h-4.5 text-primary shrink-0" />
                         ) : (
-                          <Folder className="w-4 h-4 text-neutral-450 shrink-0" />
+                          <Folder className="w-4.5 h-4.5 text-zinc-500 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[14px] truncate text-zinc-650 max-w-[140px] md:max-w-none">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-800 max-w-[140px] md:max-w-none">
                           {folderName}
                         </span>
-                        <span className="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-full font-mono shrink-0">
+                        <span className="text-[11px] md:text-[13px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full font-mono shrink-0">
                           {folderItems.length}
                         </span>
                       </div>
                       <div>
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                          <ChevronDown className="w-4 h-4 text-neutral-400" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                          <ChevronRight className="w-4 h-4 text-neutral-400" />
                         )}
                       </div>
                     </div>
@@ -482,11 +482,11 @@ export default function MeetingNote() {
                               onClick={() => navigate(`/meeting/${getMeetingId(item, sortedItems)}`)}
                               className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] min-w-0 ${
                                 isSelected 
-                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                                  : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
+                                  ? 'bg-zinc-50 text-primary font-semibold' 
+                                  : 'text-zinc-800 hover:bg-[#f6f7f9] hover:text-zinc-900'
                               }`}
                             >
-                              <MessageSquareQuote className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-450'}`} />
+                              <MessageSquareQuote className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
                               <span className="truncate flex-1" title={item.title}>{item.title}</span>
                             </div>
                           );
@@ -542,7 +542,7 @@ export default function MeetingNote() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <MessageSquareQuote className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
+                      <MessageSquareQuote className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
                       <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
                         {selectedItem.title}
                       </h2>

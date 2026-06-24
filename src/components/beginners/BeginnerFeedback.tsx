@@ -332,11 +332,11 @@ export default function BeginnerFeedback() {
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {isExpanded ? (
-                          <FolderOpen className="w-4.5 h-4.5 text-blue-500 shrink-0" />
+                          <FolderOpen className="w-4.5 h-4.5 text-primary shrink-0" />
                         ) : (
-                          <Folder className="w-4.5 h-4.5 text-neutral-450 shrink-0" />
+                          <Folder className="w-4.5 h-4.5 text-zinc-500 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-800">
                           {difficulty}
                         </span>
                         <span className="text-[11px] md:text-[13px] bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full font-mono shrink-0">
@@ -363,11 +363,11 @@ export default function BeginnerFeedback() {
                               onClick={() => navigate(`/beginners/${getShortHash(item.bookTitle)}`)}
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                                  : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
+                                  ? 'bg-zinc-50 text-primary font-semibold' 
+                                  : 'text-zinc-800 hover:bg-zinc-50 hover:text-zinc-800'
                               }`}
                             >
-                              <Pilcrow className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
+                              <Pilcrow className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
                               <span className="truncate flex-1" title={item.bookTitle}>{item.bookTitle}</span>
                             </div>
                           );
@@ -388,7 +388,7 @@ export default function BeginnerFeedback() {
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-zinc-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Pilcrow className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
+                  <Pilcrow className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
                   <h2 className="text-[14px] md:text-[16px] lg:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.bookTitle}>
                     {selectedItem.bookTitle}
                   </h2>

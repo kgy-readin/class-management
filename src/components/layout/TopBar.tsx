@@ -206,12 +206,12 @@ export default function TopBar({
                           }}
                           className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-zinc-50 text-blue-700/80 font-semibold text-left'
+                              ? 'bg-zinc-50 text-primary font-semibold text-left'
                               : 'text-zinc-650 hover:bg-zinc-50 hover:text-zinc-900 text-left'
                           }`}
                         >
                           <Icon 
-                            className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600/80' : 'text-zinc-400'}`} 
+                            className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-400'}`} 
                             strokeWidth={item.id === 'familyLetter' ? 2.4 : undefined} 
                           />
                           <span>{item.label}</span>

@@ -65,7 +65,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
         {attendingStudents.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-24 text-muted-foreground bg-white rounded-[2.5rem] border border-solid border-zinc-50 shadow-sm">
             <div className="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6">
-              <UsersRound className="w-10 h-10 text-blue-500" />
+              <UsersRound className="w-10 h-10 text-primary" />
             </div>
             <p className="text-lg font-medium text-zinc-600 mb-2">현재 등원 중인 학생이 없습니다.</p>
             <p className="text-sm font-medium text-zinc-400">학생 관리 탭에서 등원 체크를 해주세요.</p>

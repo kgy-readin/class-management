@@ -331,9 +331,9 @@ export default function CommentParentNewsletters() {
                         {isExpanded ? (
                           <FolderOpen className="w-4.5 h-4.5 text-primary shrink-0" />
                         ) : (
-                          <Folder className="w-4.5 h-4.5 text-neutral-400 shrink-0" />
+                          <Folder className="w-4.5 h-4.5 text-zinc-500 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-800">
                           {folder.title}
                         </span>
                         {hasChildren && (
@@ -376,7 +376,7 @@ export default function CommentParentNewsletters() {
                               className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
                                   ? activeClass 
-                                  : 'text-neutral-500 hover:bg-[#fcfcfe] hover:text-neutral-800'
+                                  : 'text-zinc-800 hover:bg-[#fcfcfe] hover:text-neutral-800'
                               }`}
                             >
                               {getCustomTabIcon(child.title, "w-4 h-4 shrink-0", isSelected)}

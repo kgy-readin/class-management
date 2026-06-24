@@ -333,9 +333,9 @@ export default function CommentBank() {
                         {isExpanded ? (
                           <FolderOpen className="w-4.5 h-4.5 text-primary shrink-0" />
                         ) : (
-                          <Folder className="w-4.5 h-4.5 text-neutral-400 shrink-0" />
+                          <Folder className="w-4.5 h-4.5 text-zinc-500 shrink-0" />
                         )}
-                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-650">
+                        <span className="font-semibold text-[13px] md:text-[15px] truncate text-zinc-800">
                           {folder.title}
                         </span>
                         {hasChildren && (
@@ -366,11 +366,11 @@ export default function CommentBank() {
                               onClick={() => navigate(`/comments/${getShortHash(child.id)}`)}
                               className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? 'bg-zinc-50 text-blue-700/80 font-semibold' 
-                                  : 'text-zinc-650 hover:bg-[#f6f7f9] hover:text-zinc-900'
+                                  ? 'bg-zinc-50 text-primary font-semibold' 
+                                  : 'text-zinc-800 hover:bg-[#f6f7f9] hover:text-zinc-900'
                               }`}
                             >
-                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600' : 'text-zinc-400'}`} />
+                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
                               <span className="truncate">{child.title}</span>
                             </div>
                           );
@@ -391,7 +391,7 @@ export default function CommentBank() {
               {/* Note Header */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4.5 h-4.5 text-blue-600 shrink-0 ml-1" />
+                  <FileText className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
                   <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate">{selectedTab.title}</h2>
                 </div>
                 
