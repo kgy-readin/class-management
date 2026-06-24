@@ -53,7 +53,7 @@ export const stripMarkdown = (text: string): string => {
         processedLine = processedLine.slice(2);
       }
 
-      // Remove inline markup: **, _, ~
+      // Remove inline markup: **, __, _
       let result = '';
       let i = 0;
       while (i < processedLine.length) {
@@ -65,16 +65,16 @@ export const stripMarkdown = (text: string): string => {
             continue;
           }
         }
-        if (processedLine.startsWith('_', i)) {
-          const close = processedLine.indexOf('_', i + 1);
+        if (processedLine.startsWith('__', i)) {
+          const close = processedLine.indexOf('__', i + 2);
           if (close !== -1) {
-            result += processedLine.slice(i + 1, close);
-            i = close + 1;
+            result += processedLine.slice(i + 2, close);
+            i = close + 2;
             continue;
           }
         }
-        if (processedLine.startsWith('~', i)) {
-          const close = processedLine.indexOf('~', i + 1);
+        if (processedLine.startsWith('_', i)) {
+          const close = processedLine.indexOf('_', i + 1);
           if (close !== -1) {
             result += processedLine.slice(i + 1, close);
             i = close + 1;
@@ -221,6 +221,20 @@ export const parseInlineStyles = (text: string): ReactNode => {
         matched = true;
       }
     }
+    // Underline: __text__
+    else if (text.startsWith('__', currentIndex)) {
+      const closingIndex = text.indexOf('__', currentIndex + 2);
+      if (closingIndex !== -1) {
+        const content = text.slice(currentIndex + 2, closingIndex);
+        parts.push(
+          <span key={currentIndex} className="underline decoration-neutral-400">
+            {parseInlineStyles(content)}
+          </span>
+        );
+        currentIndex = closingIndex + 2;
+        matched = true;
+      }
+    }
     // Italic: _text_
     else if (text.startsWith('_', currentIndex)) {
       const closingIndex = text.indexOf('_', currentIndex + 1);
@@ -235,29 +249,15 @@ export const parseInlineStyles = (text: string): ReactNode => {
         matched = true;
       }
     }
-    // Underline: ~text~
-    else if (text.startsWith('~', currentIndex)) {
-      const closingIndex = text.indexOf('~', currentIndex + 1);
-      if (closingIndex !== -1) {
-        const content = text.slice(currentIndex + 1, closingIndex);
-        parts.push(
-          <span key={currentIndex} className="underline decoration-neutral-400">
-            {parseInlineStyles(content)}
-          </span>
-        );
-        currentIndex = closingIndex + 1;
-        matched = true;
-      }
-    }
 
     if (!matched) {
       const nextSpecial = [];
       const bIdx = text.indexOf('**', currentIndex + 1);
       if (bIdx !== -1) nextSpecial.push(bIdx);
+      const uIdx = text.indexOf('__', currentIndex + 1);
+      if (uIdx !== -1) nextSpecial.push(uIdx);
       const iIdx = text.indexOf('_', currentIndex + 1);
       if (iIdx !== -1) nextSpecial.push(iIdx);
-      const uIdx = text.indexOf('~', currentIndex + 1);
-      if (uIdx !== -1) nextSpecial.push(uIdx);
 
       const nextIndex = nextSpecial.length > 0 ? Math.min(...nextSpecial) : text.length;
       const plainText = text.slice(currentIndex, nextIndex);

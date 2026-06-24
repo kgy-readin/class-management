@@ -21,7 +21,9 @@ import {
   ChevronRight, 
   UsersRound, 
   Pencil,
-  Calendar
+  Calendar,
+  Save,
+  X
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -347,23 +349,27 @@ export default function StudentLogStudents({
                           <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
                             <div className="flex items-center justify-center gap-1.5">
                               <Button
-                                size="sm"
-                                className="h-8 px-2.5 text-xs bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm cursor-pointer"
-                                onClick={handleUpdateLog}
+                                size="icon"
+                                variant="ghost"
                                 disabled={submittingEdit}
+                                onClick={handleUpdateLog}
+                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                                title="저장"
                               >
-                                저장
+                                <Save className="w-3.5 h-3.5" />
                               </Button>
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="ghost"
-                                className="h-8 px-2 text-xs text-zinc-500 hover:bg-zinc-100 rounded-lg cursor-pointer"
+                                disabled={submittingEdit}
                                 onClick={() => {
                                   setEditingLog(null);
                                   setEditForm(null);
                                 }}
+                                className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg cursor-pointer"
+                                title="취소"
                               >
-                                취소
+                                <X className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </td>
@@ -500,23 +506,27 @@ export default function StudentLogStudents({
                           {isEditing ? (
                             <>
                               <Button 
-                                size="sm" 
-                                className="h-6 px-2.5 text-[12px] bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-sm cursor-pointer"
-                                onClick={handleUpdateLog}
+                                size="icon" 
+                                variant="ghost"
                                 disabled={submittingEdit}
+                                onClick={handleUpdateLog}
+                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
+                                title="저장"
                               >
-                                저장
+                                <Save className="w-3.5 h-3.5" />
                               </Button>
                               <Button 
-                                size="sm" 
+                                size="icon" 
                                 variant="ghost" 
-                                className="h-6 px-2.5 text-[12px] text-zinc-500 hover:bg-zinc-100 rounded-lg cursor-pointer"
+                                disabled={submittingEdit}
                                 onClick={() => {
                                   setEditingLog(null);
                                   setEditForm(null);
                                 }}
+                                className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg cursor-pointer"
+                                title="취소"
                               >
-                                취소
+                                <X className="w-3.5 h-3.5" />
                               </Button>
                             </>
                           ) : (
@@ -629,23 +639,22 @@ export default function StudentLogStudents({
       <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
         <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
           <div className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 className="w-8 h-8 text-destructive" />
+            <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-[27px] h-[27px] text-destructive" />
             </div>
             
-            <div className="space-y-1.5">
-              <h3 className="text-[17px] font-black text-foreground">교무수첩 기록 삭제</h3>
-              <p className="text-sm text-zinc-500 font-semibold leading-relaxed">
-                <span className="text-destructive font-extrabold">'{deletingItem?.name}'</span> 학생의 <br />
-                <span className="font-extrabold text-zinc-700">'{deletingItem?.category}'</span> 기록을 삭제하시겠습니까?
+            <div className="space-y-2">
+              <h3 className="text-lg font-extrabold text-foreground">교무기록 삭제</h3>
+              <p className="text-sm text-zinc-600 font-normal leading-relaxed">
+                <span className="text-destructive font-bold">'{deletingItem?.name}'</span> 학생의 <br />
+                <span className="font-semibold text-zinc-750">'{deletingItem?.category}'</span> 기록을 삭제하시겠습니까?
               </p>
             </div>
             
             <div className="flex gap-3">
               <Button 
                 type="button"
-                variant="secondary" 
-                className="flex-1 h-11 rounded-xl font-extrabold cursor-pointer"
+                className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
                 onClick={() => setDeletingItem(null)}
               >
                 취소
@@ -653,7 +662,7 @@ export default function StudentLogStudents({
               <Button 
                 type="button"
                 variant="destructive"
-                className="flex-1 h-11 rounded-xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
+                className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
                 onClick={() => deletingItem && handleDeleteLog(deletingItem)}
                 disabled={isDeleting}
               >

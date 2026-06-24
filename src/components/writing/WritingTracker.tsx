@@ -419,21 +419,21 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                   <Trash2 className="w-4 h-4" />
                 </Button>
               } />
-              <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-hidden">
-                <div className="space-y-6">
+              <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
+                <div className="p-8 space-y-6">
                   <div className="text-center space-y-2">
-                    <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mx-auto">
-                      <Trash2 className="w-6 h-6 text-rose-500" />
+                    <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                      <Trash2 className="w-[27px] h-[27px] text-destructive" />
                     </div>
-                    <h3 className="text-lg font-bold text-foreground">글쓰기 데이터 삭제</h3>
-                    <p className="text-xs text-muted-foreground font-medium">데이터를 정리할 방식을 선택하세요.</p>
+                    <h3 className="text-lg font-extrabold text-foreground">글쓰기 데이터 삭제</h3>
+                    <p className="text-sm text-zinc-600 font-normal leading-relaxed">데이터를 정리할 방식을 선택하세요.</p>
                   </div>
 
                   {/* Clear Type Selection Tabs */}
                   <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
                     <button
                       type="button"
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                         clearType === 'period'
                           ? 'bg-white text-foreground shadow-sm'
                           : 'text-zinc-500 hover:text-zinc-800'
@@ -444,9 +444,9 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                     </button>
                     <button
                       type="button"
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                         clearType === 'all'
-                          ? 'bg-white text-rose-600 shadow-sm'
+                          ? 'bg-white text-destructive shadow-sm'
                           : 'text-zinc-500 hover:text-zinc-800'
                       }`}
                       onClick={() => setClearType('all')}
@@ -458,7 +458,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                   {/* Date range inputs if 'period' is selected */}
                   {clearType === 'period' ? (
                     <div className="space-y-3.5 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 text-left">
                         <label className="text-xs font-bold text-zinc-500 block">시작일</label>
                         <input
                           type="date"
@@ -470,7 +470,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           }}
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 text-left">
                         <label className="text-xs font-bold text-zinc-500 block">종료일</label>
                         <input
                           type="date"
@@ -482,24 +482,23 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           }}
                         />
                       </div>
-                      <p className="text-[11px] font-semibold text-rose-500 text-center leading-relaxed">
+                      <p className="text-[11px] font-semibold text-destructive text-center leading-relaxed">
                         ※ 선택한 해당 기간 내 유효한 기록들이 일괄 삭제됩니다.
                       </p>
                     </div>
                   ) : (
-                    <div className="p-4 bg-rose-50/40 rounded-2xl border border-rose-100 text-center">
-                      <p className="text-xs text-rose-600 font-semibold leading-relaxed">
+                    <div className="p-4 bg-destructive/10 rounded-2xl border border-destructive/20 text-center">
+                      <p className="text-xs text-destructive font-semibold leading-relaxed">
                         경고: 글쓰기현황 시트 내 모든 데이터가 소멸됩니다.<br />
                         이 작업은 취소할 수 없습니다.
                       </p>
                     </div>
                   )}
 
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3">
                     <Button
                       type="button"
-                      variant="secondary"
-                      className="flex-1 h-11 rounded-xl font-bold"
+                      className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer text-sm"
                       onClick={() => setClearDialogOpen(false)}
                       disabled={clearing}
                     >
@@ -508,7 +507,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                     <Button
                       type="button"
                       variant="destructive"
-                      className="flex-1 h-11 rounded-xl font-extrabold shadow-lg bg-rose-600 hover:bg-rose-700 text-white border-none shadow-rose-500/15"
+                      className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer text-sm"
                       onClick={handleClearMonth}
                       disabled={clearing}
                     >
@@ -720,7 +719,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         ) : (
                           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">{format(parseISO(status.date), 'M월 d일')}</span>
                         )}
-                        <span className="text-sm font-normal text-foreground">{status.name}</span>
+                        <span className="text-sm font-normal text-foreground whitespace-nowrap shrink-0">{status.name}</span>
                         {!isEditing && (
                           <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
                             ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
@@ -788,16 +787,14 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-visible">
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-[19px] font-extrabold text-foreground">글쓰기 기록 추가</h3>
-              <p className="text-[13px] text-muted-foreground mt-1 font-medium">학생의 새로운 글쓰기 기록 정보를 입력해 주세요.</p>
+            <div className="text-left border-b border-solid border-zinc-100 pb-3">
+              <h3 className="text-[19px] font-black text-zinc-800">글쓰기 기록 추가</h3>
             </div>
 
             <div className="space-y-4">
               {/* Date and Student side by side */}
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 block">날짜</label>
                   <input
                     type="date"
                     className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all cursor-pointer h-10"
@@ -809,7 +806,6 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-500 block">학생명</label>
                   <StudentCombobox
                     students={sortedStudents}
                     value={addForm.name}
@@ -822,7 +818,6 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
 
               {/* Book Title */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 block">도서명</label>
                 <input
                   type="text"
                   placeholder="도서명을 입력하세요"
@@ -837,9 +832,8 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
             <div className="flex gap-3 pt-2">
               <Button 
                 type="button" 
-                variant="secondary" 
                 onClick={() => setAddOpen(false)} 
-                className="flex-1 h-11 rounded-xl font-semibold"
+                className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-600 font-bold border-none cursor-pointer"
               >
                 취소
               </Button>
@@ -847,7 +841,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 type="button" 
                 onClick={handleAddStatus} 
                 disabled={submittingAdd}
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
               >
                 {submittingAdd ? '저장 중...' : '추가'}
               </Button>
@@ -860,12 +854,12 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
         <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
           <div className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 className="w-8 h-8 text-destructive" />
+            <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-[27px] h-[27px] text-destructive" />
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-extrabold text-foreground">글쓰기 기록 삭제</h3>
-              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+              <p className="text-sm text-zinc-600 font-normal leading-relaxed">
                 <span className="text-destructive font-bold">'{deletingItem?.name}'</span> 학생의 <br />
                 <span className="font-semibold">'{deletingItem?.bookTitle}'</span> 글쓰기 기록을 삭제하시겠습니까?
               </p>
@@ -874,8 +868,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               <DialogClose render={
                 <Button 
                   type="button"
-                  variant="secondary" 
-                  className="flex-1 h-12 rounded-2xl font-bold"
+                  className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none"
                 >
                   취소
                 </Button>

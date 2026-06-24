@@ -69,7 +69,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
   // Add Student form states
   const [newName, setNewName] = useState('');
   const [newGrade, setNewGrade] = useState('');
-  const [newLevel, setNewLevel] = useState('0');
+  const [newLevel, setNewLevel] = useState('');
   const [newSubProgram, setNewSubProgram] = useState('');
   const [newAttendanceDays, setNewAttendanceDays] = useState<string[]>([]);
   const [newBooksCompleted, setNewBooksCompleted] = useState<number>(0);
@@ -222,6 +222,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
       toast.error('학년을 입력해 주세요.');
       return;
     }
+    if (!newLevel) {
+      toast.error('레벨을 선택해 주세요.');
+      return;
+    }
 
     try {
       setIsAdding(true);
@@ -238,7 +242,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
       // Reset form fields
       setNewName('');
       setNewGrade('');
-      setNewLevel('0');
+      setNewLevel('');
       setNewSubProgram('');
       setNewAttendanceDays([]);
       setNewBooksCompleted(0);
@@ -291,28 +295,29 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     <LogOut className="w-4 h-4" />
                   </Button>
                 } />
-                <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-6">
-                  <div className="text-center space-y-5">
-                    <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                      <LogOut className="w-6 h-6" />
+                <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
+                  <div className="p-8 text-center space-y-6">
+                    <div className="w-[54px] h-[54px] bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto">
+                      <LogOut className="w-[27px] h-[27px]" />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-lg font-extrabold text-foreground">학생 일괄 하원</h3>
-                      <p className="text-sm text-muted-foreground font-semibold leading-relaxed">
-                        현재 등원 중인 <strong className="text-red-500">{attendingStudentsCount}</strong>명의 학생을<br />
+                      <p className="text-sm text-zinc-600 font-normal leading-relaxed">
+                        현재 등원 중인 <strong className="text-destructive font-bold">{attendingStudentsCount}</strong>명의 학생을<br />
                         모두 일괄 하원 처리 하시겠습니까?
                       </p>
                     </div>
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-3">
                       <DialogClose render={
-                        <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold">
+                        <Button className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer">
                           취소
                         </Button>
                       } />
                       <Button 
                         onClick={handleBulkDismiss}
                         disabled={isBulkDismissing}
-                        className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold shadow-lg shadow-red-200"
+                        variant="destructive"
+                        className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
                       >
                         {isBulkDismissing ? '처리 중...' : '확인'}
                       </Button>
@@ -333,17 +338,15 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                   </Button>
                 } />
                 <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6">
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-extrabold text-foreground tracking-tight">새로운 학생 추가</h3>
-                      <p className="text-xs text-muted-foreground font-medium">등원 및 커리큘럼 관리를 위한 신규 학생을 등록합니다.</p>
+                  <div className="space-y-5">
+                    <div className="text-left border-b border-solid border-zinc-100 pb-3">
+                      <h3 className="text-[19px] font-black text-zinc-800">새로운 학생 추가</h3>
                     </div>
                     
                     <div className="space-y-3 pt-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-neutral-600">이름 *</label>
                         <Input
-                          placeholder="이름 입력 (예: 김철수)"
+                          placeholder="이름 입력 (예: 김철수) *"
                           value={newName}
                           onChange={(e) => setNewName(e.target.value)}
                           className="rounded-xl h-10 border-neutral-200"
@@ -352,13 +355,12 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="text-xs font-bold text-neutral-600">학년 *</label>
                           <select
                             value={newGrade}
                             onChange={(e) => setNewGrade(e.target.value)}
                             className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                           >
-                            <option value="" disabled hidden>선택</option>
+                            <option value="" disabled hidden>학년 선택 *</option>
                             <option value="유7">유7</option>
                             <option value="초1">초1</option>
                             <option value="초2">초2</option>
@@ -373,12 +375,12 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-xs font-bold text-neutral-600">레벨 *</label>
                           <select 
                             value={newLevel} 
                             onChange={(e) => setNewLevel(e.target.value)}
                             className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                           >
+                            <option value="" disabled hidden>레벨 선택 *</option>
                             <option value="0">기초</option>
                             <option value="1">Lv.1</option>
                             <option value="2">Lv.2</option>
@@ -395,7 +397,6 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-neutral-600">서브프로그램</label>
                         <Input
                           placeholder="서브프로그램 입력 (예: 독서지도)"
                           value={newSubProgram}
@@ -405,7 +406,6 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-neutral-600">등원 요일</label>
                         <div className="grid grid-cols-6 gap-1.5 pt-1">
                           {['월', '화', '수', '목', '금', '토'].map((day) => {
                             const isSelected = newAttendanceDays.includes(day);
@@ -434,7 +434,6 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-neutral-600">완독 권수</label>
                         <Input
                           type="number"
                           min={0}
@@ -448,14 +447,17 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
                     <div className="flex gap-2 pt-2">
                       <DialogClose render={
-                        <Button variant="secondary" className="flex-1 h-11 rounded-xl font-bold">
+                        <Button 
+                          type="button"
+                          className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-600 font-bold border-none cursor-pointer"
+                        >
                           취소
                         </Button>
                       } />
                       <Button 
                         onClick={handleAddStudent} 
                         disabled={isAdding}
-                        className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-md shadow-primary/15"
+                        className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
                       >
                         {isAdding ? '등록 중...' : '학생 추가'}
                       </Button>
@@ -569,31 +571,34 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     } />
-                    <DialogContent className="sm:max-w-[365px] rounded-[2.5rem] border-none shadow-2xl p-6 text-center space-y-5">
-                      <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                        <Trash2 className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-extrabold text-foreground">{student.name} 학생 삭제</h3>
-                        <p className="text-sm text-neutral-500 font-medium leading-relaxed">
-                          정말로 이 학생을 삭제하시겠습니다?<br />
-                          <span className="text-destructive font-semibold">학생 정보와 모든 커리큘럼 기록이 영구 삭제됩니다.</span>
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <DialogClose render={
-                          <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold">
-                            취소
-                          </Button>
-                        } />
-                        <DialogClose render={
-                          <Button 
-                            className="flex-1 h-11 rounded-xl bg-destructive hover:bg-destructive/90 text-white font-extrabold shadow-md shadow-destructive/15"
-                            onClick={() => handleDeleteStudent(student.name)}
-                          >
-                            삭제
-                          </Button>
-                        } />
+                    <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
+                      <div className="p-8 text-center space-y-6">
+                        <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                          <Trash2 className="w-[27px] h-[27px] text-destructive" />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-extrabold text-foreground">{student.name} 학생 삭제</h3>
+                          <p className="text-sm text-zinc-600 font-normal leading-relaxed">
+                            정말로 이 학생을 삭제하시겠습니까?<br />
+                            <span className="text-destructive font-semibold">학생 정보와 모든 커리큘럼 기록이 영구 삭제됩니다.</span>
+                          </p>
+                        </div>
+                        <div className="flex gap-3">
+                          <DialogClose render={
+                            <Button className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer">
+                              취소
+                            </Button>
+                          } />
+                          <DialogClose render={
+                            <Button 
+                              variant="destructive"
+                              className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
+                              onClick={() => handleDeleteStudent(student.name)}
+                            >
+                              삭제
+                            </Button>
+                          } />
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -627,7 +632,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                           등원
                         </Button>
                       } />
-                      <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-[400px] rounded-[2.5rem] sm:rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden">
+                      <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
                         <div className="w-full p-5 min-h-0 min-[370px]:p-6 sm:p-10 flex flex-col items-center text-center space-y-5 sm:space-y-7">
                           <div className="space-y-2">
                             <h3 className="text-xl min-[370px]:text-[22px] font-extrabold text-foreground tracking-tight">{student.name} 학생 등원</h3>
@@ -693,8 +698,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                           <div className="flex gap-3 w-full">
                             <DialogClose render={
                               <Button 
-                                variant="secondary" 
-                                className="flex-1 h-12 rounded-2xl font-bold"
+                                className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
                               >
                                 취소
                               </Button>
@@ -726,21 +730,21 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     } />
                     <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
                       <div className="p-8 text-center space-y-6">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                          <ArrowUpCircle className="w-8 h-8 text-primary" />
+                        <div className="w-[54px] h-[54px] bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                          <ArrowUpCircle className="w-[27px] h-[27px] text-primary" />
                         </div>
                         <div className="space-y-2">
                           <h3 className="text-lg font-extrabold text-foreground">{student.name} 학생 레벨업</h3>
-                          <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                          <p className="text-sm text-zinc-600 font-normal leading-relaxed">
                             {student.name} 학생을 레벨업 하시겠습니까?<br />
-                            <span className="text-destructive">레벨업 시 모든 커리큘럼 데이터가 삭제됩니다.</span>
+                            <span className="text-destructive font-semibold">레벨업 시 모든 커리큘럼 데이터가 삭제됩니다.</span>
                           </p>
                         </div>
                         <div className="flex gap-3">
                           <DialogClose render={
                             <Button 
-                              variant="secondary" 
-                              className="flex-1 h-12 rounded-2xl font-bold"
+                              type="button" 
+                              className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
                             >
                               취소
                             </Button>
@@ -769,28 +773,21 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
         setIsEditOpen(open);
         if (!open) setEditingStudent(null);
       }}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6">
+        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white">
           <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <UserCog className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold text-foreground">{editingStudent?.name} 학생 정보 수정</h3>
-                <p className="text-xs text-muted-foreground font-semibold">학생의 정보를 수정합니다.</p>
-              </div>
+            <div className="text-left border-b border-solid border-zinc-100 pb-3">
+              <h3 className="text-[19px] font-black text-zinc-800">{editingStudent?.name} 학생 정보 수정</h3>
             </div>
 
             <div className="space-y-4 pt-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">학년 *</label>
                   <select
                     value={editGrade}
                     onChange={(e) => setEditGrade(e.target.value)}
                     className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   >
-                    <option value="" disabled hidden>선택</option>
+                    <option value="" disabled hidden>학년 선택</option>
                     <option value="유7">유7</option>
                     <option value="초1">초1</option>
                     <option value="초2">초2</option>
@@ -805,12 +802,12 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">레벨 *</label>
                   <select 
                     value={editLevel} 
                     onChange={(e) => setEditLevel(e.target.value)}
                     className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                   >
+                    <option value="" disabled hidden>레벨 선택</option>
                     <option value="0">기초</option>
                     <option value="1">Lv.1</option>
                     <option value="2">Lv.2</option>
@@ -827,9 +824,8 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">서브프로그램</label>
                 <Input
-                  placeholder="예: 독해력, 어휘력"
+                  placeholder="서브프로그램 (예: 독해력, 어휘력)"
                   value={editSubProgram}
                   onChange={(e) => setEditSubProgram(e.target.value)}
                   className="rounded-xl h-10 border-neutral-200 text-sm"
@@ -837,7 +833,6 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">등원 요일</label>
                 <div className="grid grid-cols-6 gap-1.5 pt-1">
                   {['월', '화', '수', '목', '금', '토'].map((day) => {
                     const isSelected = editAttendanceDays.includes(day);
@@ -867,11 +862,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">숙제 미수행</label>
                   <Input
                     type="number"
                     min="0"
-                    placeholder="미수행 횟수"
+                    placeholder="숙제 미수행 횟수"
                     value={editHomeworkMissed}
                     onChange={(e) => setEditHomeworkMissed(Number(e.target.value) || 0)}
                     className="rounded-xl h-10 border-neutral-200 text-sm"
@@ -879,11 +873,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">완독권수</label>
                   <Input
                     type="number"
                     min="0"
-                    placeholder="완독권수"
+                    placeholder="완독 권수"
                     value={editBooksCompleted}
                     onChange={(e) => setEditBooksCompleted(Number(e.target.value) || 0)}
                     className="rounded-xl h-10 border-neutral-200 text-sm"
@@ -892,7 +885,6 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">결과물 마지막 날짜</label>
                 <div className="flex items-center gap-3">
                   <Input
                     type="date"
@@ -917,14 +909,17 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
             <div className="flex gap-2 pt-2">
               <DialogClose render={
-                <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold">
+                <Button 
+                  type="button"
+                  className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-600 font-bold border-none cursor-pointer"
+                >
                   취소
                 </Button>
               } />
               <Button 
                 onClick={handleSaveEdit}
                 disabled={isSavingEdit}
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-lg"
+                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
               >
                 {isSavingEdit ? '저장 중...' : '저장'}
               </Button>

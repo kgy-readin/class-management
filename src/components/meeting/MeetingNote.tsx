@@ -623,7 +623,7 @@ export default function MeetingNote() {
                         size="icon"
                         variant="ghost"
                         onClick={() => setShowDeleteConfirm(true)}
-                        className="rounded-full w-8 h-8 hover:bg-rose-50 text-neutral-500 hover:text-rose-600 cursor-pointer animate-in fade-in duration-205"
+                        className="rounded-full w-8 h-8 hover:bg-red-50 text-neutral-500 hover:text-red-600 cursor-pointer animate-in fade-in duration-205"
                         title="회의록 삭제"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -682,21 +682,24 @@ export default function MeetingNote() {
       {/* Add New Meeting Note Dialog modal */}
       {showAddDialog && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col border border-zinc-100 animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-              <h3 className="text-xl font-medium text-zinc-900">
+          <div className="relative bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl p-7 flex flex-col border border-zinc-100 animate-in zoom-in-95 duration-200">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setShowAddDialog(false)}
+              className="absolute top-4 right-4 rounded-lg cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <div className="text-left border-b border-solid border-zinc-100 pb-3">
+              <h3 className="text-[19px] font-black text-zinc-800">
                 회의록 작성
               </h3>
-              <button
-                onClick={() => setShowAddDialog(false)}
-                className="text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 p-1.5 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            <form onSubmit={handleCreateNote}>
-              <div className="p-6 space-y-4">
+            <form onSubmit={handleCreateNote} className="space-y-6 mt-6">
+              <div className="space-y-5">
                 {/* Date Row */}
                 <div className="space-y-1.5">
                   <div className="relative">
@@ -758,19 +761,18 @@ export default function MeetingNote() {
                 </div>
               </div>
 
-              <div className="p-6 bg-zinc-50/50 border-t border-zinc-100 flex items-center justify-end gap-3.5">
+              <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
-                  variant="ghost"
                   onClick={() => setShowAddDialog(false)}
-                  className="px-5 h-[42px] text-zinc-500 font-medium hover:bg-zinc-100 rounded-xl"
+                  className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
                 >
                   취소
                 </Button>
                 <Button
                   type="submit"
                   disabled={addingNote}
-                  className="bg-primary hover:bg-primary/95 text-white font-medium px-5 h-[42px] rounded-xl shadow-sm cursor-pointer transition-all"
+                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
                 >
                   {addingNote ? '등록 중...' : '등록'}
                 </Button>
@@ -783,46 +785,37 @@ export default function MeetingNote() {
       {/* Delete Confirmation Dialog modal */}
       {showDeleteConfirm && selectedItem && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[200] flex items-center justify-center p-4">
-          <div className="relative bg-white rounded-[2.5rem] w-full max-w-[380px] shadow-2xl p-8 flex flex-col items-center border border-zinc-150 animate-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 p-1.5 rounded-full transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="bg-white rounded-[2.5rem] w-full max-w-[360px] shadow-2xl overflow-hidden border border-zinc-100 animate-in zoom-in-95 duration-200">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-[54px] h-[54px] bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 className="w-[27px] h-[27px] text-red-500" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-lg font-extrabold text-foreground">회의록 삭제</h3>
+                <p className="text-sm text-zinc-600 font-normal leading-relaxed">
+                  <span className="text-red-500 font-bold">'{selectedItem.title}'</span> 회의록을 <br />
+                  <span className="font-semibold text-zinc-750">영구 삭제하시겠습니까?</span>
+                </p>
+              </div>
 
-            <div className="w-18 h-18 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mt-2 mb-6">
-              <Trash2 className="w-8 h-8" />
-            </div>
-
-            <h3 className="text-xl font-bold text-zinc-900 text-center tracking-tight mb-4">
-              회의록 삭제
-            </h3>
-
-            <div className="text-center space-y-1.5 mb-8 w-full">
-              <p className="text-zinc-650 text-[14px] md:text-[15px] font-medium leading-normal break-all px-2">
-                '{selectedItem.title}'을(를) 삭제할까요?
-              </p>
-              <p className="text-[#e23c3c] text-[14px] md:text-[15px] font-semibold leading-normal px-2">
-                삭제 시 모든 회의록 데이터가 영구 삭제됩니다.
-              </p>
-            </div>
-
-            <div className="flex gap-3 w-full">
-              <Button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-3.5 h-[52px] bg-[#e8f1ff] hover:bg-[#d4e5ff] text-blue-600 font-bold rounded-full transition-colors cursor-pointer text-sm"
-              >
-                취소
-              </Button>
-              <Button
-                type="button"
-                onClick={handleDeleteNote}
-                className="flex-1 py-3.5 h-[52px] bg-[#e23c3c] hover:bg-[#c93232] text-white font-bold rounded-full transition-colors cursor-pointer text-sm shadow-sm"
-              >
-                삭제
-              </Button>
+              <div className="flex gap-3">
+                <Button 
+                  type="button"
+                  className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  취소
+                </Button>
+                <Button 
+                  type="button"
+                  variant="destructive"
+                  className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-red-500/15 cursor-pointer"
+                  onClick={handleDeleteNote}
+                >
+                  삭제
+                </Button>
+              </div>
             </div>
           </div>
         </div>
