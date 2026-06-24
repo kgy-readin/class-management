@@ -457,7 +457,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                       <Button 
                         onClick={handleAddStudent} 
                         disabled={isAdding}
-                        className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
+                        className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
                       >
                         {isAdding ? '등록 중...' : '학생 추가'}
                       </Button>
@@ -682,7 +682,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                             </div>
 
                             {/* Final Calculated Dismissal Time Input */}
-                            <div className="flex items-center justify-center gap-2 min-[370px]:gap-3 border-t border-solid border-neutral-200 pt-4">
+                            <div className="flex items-center justify-center gap-2 min-[370px]:gap-3 border-t border-solid border-zinc-100 pt-4">
                               <label className="text-[13px] min-[370px]:text-[14px] font-medium text-[#427fe1] leading-tight text-center w-[70px] min-[370px]:w-[84px] shrink-0">
                                 하원 예정
                               </label>
@@ -705,7 +705,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                             } />
                             <DialogClose render={
                               <Button 
-                                className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
+                                className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-semibold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
                                 onClick={() => handleAttendance(student.name, true, dismissalTime)}
                               >
                                 등원
@@ -751,7 +751,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                           } />
                           <DialogClose render={
                             <Button 
-                              className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+                              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
                               onClick={() => handleLevelUp(student.name)}
                             >
                               확인
@@ -919,7 +919,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
               <Button 
                 onClick={handleSaveEdit}
                 disabled={isSavingEdit}
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
+                className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
               >
                 {isSavingEdit ? '저장 중...' : '저장'}
               </Button>

@@ -772,7 +772,7 @@ export default function MeetingNote() {
                 <Button
                   type="submit"
                   disabled={addingNote}
-                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
+                  className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
                 >
                   {addingNote ? '등록 중...' : '등록'}
                 </Button>

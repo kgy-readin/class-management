@@ -246,7 +246,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
             
             {/* Popover Title */}
             <div className="text-left border-b border-solid border-zinc-100 pb-3">
-              <h3 className="text-[19px] font-black text-zinc-800">학생 기록 추가</h3>
+              <h3 className="text-[19px] font-black text-zinc-800">교무기록 추가</h3>
             </div>
 
             <div className="space-y-5">
@@ -321,7 +321,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
               <Button 
                 type="button" 
                 onClick={handleAddLog} 
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20 border-none cursor-pointer"
+                className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
                 disabled={submittingAdd}
               >
                 {submittingAdd ? '저장 중...' : '저장'}
