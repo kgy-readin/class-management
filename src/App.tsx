@@ -18,6 +18,7 @@ import BeginnerFeedback from './components/beginners/BeginnerFeedback';
 import MeetingNote from './components/meeting/MeetingNote';
 import { dataApi } from '@/src/services/api';
 import TopBar from './components/layout/TopBar';
+import LoginGate from './components/common/LoginGate';
 
 const tabToPath: Record<string, string> = {
   dashboard: '/',
@@ -72,6 +73,14 @@ export default function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const savedTimestamp = sessionStorage.getItem('site_login_timestamp');
+    if (savedTimestamp) {
+      const elapsed = Date.now() - Number(savedTimestamp);
+      return elapsed < 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+    }
+    return false;
+  });
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   
   const [studentEntrySource, setStudentEntrySource] = useState<'dashboard' | 'students'>('dashboard');
@@ -244,6 +253,18 @@ export default function App() {
           <div className="text-muted-foreground font-medium">로딩 중...</div>
         </div>
       </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <LoginGate onLoginSuccess={() => {
+          sessionStorage.setItem('site_login_timestamp', Date.now().toString());
+          setIsLoggedIn(true);
+        }} />
+        <Toaster position="top-center" />
+      </>
     );
   }
 
