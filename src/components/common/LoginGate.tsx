@@ -44,7 +44,7 @@ export default function LoginGate({ onLoginSuccess }: LoginGateProps) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="max-w-sm w-full py-8 translate-y-[20px]"
+        className="max-w-sm w-full py-8"
       >
         <div className="relative">
           <div className="text-center">
