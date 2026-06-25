@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { AddLogDialog } from './LogPopups';
 import StudentLogCalendar from './StudentLogCalendar';
 import StudentLogStudents from './StudentLogStudents';
 import StudentLogMobileCalendar from './StudentLogMobileCalendar';
@@ -240,97 +241,17 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
       )}
 
       {/* --- ADD NEW ENTRY DIALOG (POPUP) --- */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-7 bg-white overflow-hidden animate-in fade-in zoom-in duration-300">
-          <div className="space-y-6">
-            
-            {/* Popover Title */}
-            <div className="text-left border-b border-solid border-zinc-100 pb-3">
-              <h3 className="text-[19px] font-black text-zinc-800">교무기록 추가</h3>
-            </div>
-
-            <div className="space-y-5">
-              
-              {/* Row: Date & Student side-by-side (병렬 배치) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="min-w-0">
-                  <input
-                    type="date"
-                    className="w-full min-w-0 bg-zinc-50 border border-solid border-zinc-100 rounded-xl px-3 py-2.5 text-[14px] font-medium focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all cursor-pointer"
-                    value={addForm.date}
-                    onChange={e => setAddForm(prev => ({ ...prev, date: e.target.value }))}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <StudentCombobox
-                    students={sortedStudents}
-                    value={addForm.name}
-                    onChange={(val) => setAddForm(prev => ({ ...prev, name: val }))}
-                    placeholder="학생명"
-                    inputClassName="bg-zinc-50 border-solid border-zinc-100"
-                  />
-                </div>
-              </div>
-
-              {/* Category selector in 3x3 Button Grid (3열 3행 배치) */}
-              <div>
-                <div className="grid grid-cols-3 gap-2">
-                  {CATEGORIES.map(cat => {
-                    const isSelected = addForm.category === cat;
-                    const tagStyle = getCategoryTagStyle(cat);
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setAddForm(prev => ({ ...prev, category: cat }))}
-                        className={`py-2 rounded-xl text-xs font-semibold transition-all text-center cursor-pointer ${tagStyle} ${
-                          isSelected 
-                            ? 'scale-102 ring-2 ring-zinc-400/35 opacity-100'
-                            : 'opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Detail Content textarea */}
-              <div>
-                <textarea
-                  rows={4}
-                  placeholder="기록할 내용을 작성해 주세요."
-                  className="w-full bg-zinc-50 border border-solid border-zinc-100 rounded-lg px-4 py-3 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all resize-none"
-                  value={addForm.content}
-                  onChange={e => setAddForm(prev => ({ ...prev, content: e.target.value }))}
-                />
-              </div>
-
-            </div>
-
-            {/* Save and Cancel buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button 
-                type="button" 
-                onClick={() => setAddOpen(false)} 
-                className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-600 font-bold border-none cursor-pointer"
-              >
-                취소
-              </Button>
-              <Button 
-                type="button" 
-                onClick={handleAddLog} 
-                className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
-                disabled={submittingAdd}
-              >
-                {submittingAdd ? '저장 중...' : '저장'}
-              </Button>
-            </div>
-
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddLogDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        students={sortedStudents}
+        addForm={addForm}
+        setAddForm={setAddForm}
+        onConfirm={handleAddLog}
+        isSubmitting={submittingAdd}
+        categories={CATEGORIES}
+        getCategoryTagStyle={getCategoryTagStyle}
+      />
 
     </div>
   );

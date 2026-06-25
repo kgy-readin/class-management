@@ -279,3 +279,10 @@ input[type="text"].fixed-date-input {
   box-sizing: border-box !important;
 }
 
+/* Prevent iOS Safari from auto-zooming on focus while preserving custom base font sizes */
+@media screen and (max-width: 1024px) {
+  input:focus, textarea:focus, select:focus {
+    font-size: 16px !important;
+  }
+}
+

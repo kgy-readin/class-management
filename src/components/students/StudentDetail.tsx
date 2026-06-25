@@ -7,6 +7,11 @@ import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
+import {
+  AddCurriculumDialog,
+  StudentEditInfoDialog,
+  MobileEditCurriculumDialog
+} from './StudentPopups';
 import React, { useState, useEffect, useOptimistic, useTransition } from 'react';
 import { curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
 import { getWeeksSince } from '@/lib/utils';
@@ -31,20 +36,13 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
 
   // Mobile curriculum edit states
   const [mobileEditItem, setMobileEditItem] = useState<any | null>(null);
-  const [mobileEditIndex, setMobileEditIndex] = useState<number>(0);
-  const [mobileEditTitle, setMobileEditTitle] = useState<string>('');
-  const [mobileEditStatus, setMobileEditStatus] = useState<string>('예정');
 
   // Student info edit states
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editGrade, setEditGrade] = useState('');
-  const [editLevel, setEditLevel] = useState('0');
-  const [editSubProgram, setEditSubProgram] = useState('');
-  const [editAttendanceDays, setEditAttendanceDays] = useState<string[]>([]);
-  const [editHomeworkMissed, setEditHomeworkMissed] = useState<number>(0);
-  const [editBooksCompleted, setEditBooksCompleted] = useState<number>(0);
-  const [editLastResultDate, setEditLastResultDate] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Add Book Dialog state
+  const [isAddBookOpen, setIsAddBookOpen] = useState(false);
 
   useEffect(() => {
     // Scroll window to bottom when entering the student details
@@ -265,13 +263,12 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     });
   };
 
-  const handleMobileUpdate = async () => {
-    if (!mobileEditItem) return;
-    const bookId = mobileEditItem.bookId;
-    const originalIndex = mobileEditItem.index;
-    const status = mobileEditStatus;
-    const index = mobileEditIndex;
-    const bookTitle = mobileEditTitle;
+  const handleMobileUpdate = async (
+    bookId: string,
+    originalIndex: number,
+    updateData: { index: number; status: string; bookTitle: string }
+  ) => {
+    const { index, status, bookTitle } = updateData;
 
     startTransition(async () => {
       setOptimisticCurriculum({ 
@@ -382,33 +379,29 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
   const completedCount = `${student?.booksCompleted || 0}권`;
 
   const handleOpenEdit = () => {
-    if (!student) return;
-    setEditGrade(student.grade);
-    setEditLevel(student.level || '0');
-    setEditSubProgram(student.subProgram || '');
-    setEditAttendanceDays(
-      student.attendanceDays
-        ? student.attendanceDays.split(',').map(s => s.trim()).filter(Boolean)
-        : []
-    );
-    setEditHomeworkMissed(student.homeworkMissed || 0);
-    setEditBooksCompleted(student.booksCompleted || 0);
-    setEditLastResultDate(student.lastResultDate || '');
     setIsEditOpen(true);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = async (formData: {
+    grade: string;
+    level: string;
+    subProgram: string;
+    attendanceDays: string[];
+    homeworkMissed: number;
+    booksCompleted: number;
+    lastResultDate: string;
+  }) => {
     if (!student) return;
     try {
       setIsSavingEdit(true);
       await studentApi.update(student.name, {
-        grade: editGrade,
-        level: editLevel,
-        subProgram: editSubProgram.trim() || '-',
-        attendanceDays: editAttendanceDays.join(', '),
-        homeworkMissed: Number(editHomeworkMissed) || 0,
-        booksCompleted: Number(editBooksCompleted) || 0,
-        lastResultDate: editLastResultDate
+        grade: formData.grade,
+        level: formData.level,
+        subProgram: formData.subProgram.trim() || '-',
+        attendanceDays: formData.attendanceDays.join(', '),
+        homeworkMissed: Number(formData.homeworkMissed) || 0,
+        booksCompleted: Number(formData.booksCompleted) || 0,
+        lastResultDate: formData.lastResultDate
       });
       toast.success(`${student.name} 학생의 정보가 수정되었습니다.`);
       setIsEditOpen(false);
@@ -447,29 +440,14 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
 
           {/* Right: Responsive buttons (automatically left-aligned on mobile portrait, right-aligned on tablet/desktop) */}
           <div className="flex items-center justify-start sm:justify-end gap-1.5 sm:gap-2 shrink-0 self-start sm:self-auto w-full sm:w-auto mt-0.5 sm:mt-0 pl-10 sm:pl-0">
-            <Dialog>
-              <DialogTrigger render={
-                <Button 
-                  variant="outline"
-                  className="rounded-xl gap-1 lg:gap-2 bg-[#f0f7ff] text-primary border-[#dbeafe] shadow-sm hover:bg-[#e0efff] transition-all font-semibold h-8 text-[12px] px-2.5 lg:h-10 lg:text-sm lg:px-4"
-                >
-                  <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-                  도서
-                </Button>
-              } />
-              <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
-                </DialogHeader>
-                <div className="pt-4">
-                  <BookSearch 
-                    books={data.books} 
-                    existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
-                    onSelect={(bookTitle) => handleAddCurriculum(bookTitle)} 
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              variant="outline"
+              onClick={() => setIsAddBookOpen(true)}
+              className="rounded-xl gap-1 lg:gap-2 bg-[#f0f7ff] text-primary border-[#dbeafe] shadow-sm hover:bg-[#e0efff] transition-all font-semibold h-8 text-[12px] px-2.5 lg:h-10 lg:text-sm lg:px-4 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              도서
+            </Button>
 
             <Button 
               variant="outline"
@@ -741,267 +719,62 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         </CardContent>
       </Card>
 
-      {/* Edit Student Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={(open) => {
-        setIsEditOpen(open);
-      }}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6">
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <UserCog className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold text-foreground">{studentName} 학생 정보 수정</h3>
-                <p className="text-xs text-muted-foreground font-semibold">학생의 정보를 수정합니다.</p>
-              </div>
-            </div>
+      {/* --- Unified Popups --- */}
+      <AddCurriculumDialog 
+        open={isAddBookOpen}
+        onOpenChange={setIsAddBookOpen}
+        studentName={studentName}
+        books={data.books}
+        existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
+        onSelect={(bookTitle) => handleAddCurriculum(bookTitle)}
+      />
 
-            <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">학년 *</label>
-                  <select
-                    value={editGrade}
-                    onChange={(e) => setEditGrade(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    <option value="" disabled hidden>선택</option>
-                    <option value="유7">유7</option>
-                    <option value="초1">초1</option>
-                    <option value="초2">초2</option>
-                    <option value="초3">초3</option>
-                    <option value="초4">초4</option>
-                    <option value="초5">초5</option>
-                    <option value="초6">초6</option>
-                    <option value="중1">중1</option>
-                    <option value="중2">중2</option>
-                    <option value="중3">중3</option>
-                  </select>
-                </div>
+      {isEditOpen && student && (
+        <StudentEditInfoDialog 
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          student={student}
+          onSave={handleSaveEdit}
+          isSaving={isSavingEdit}
+        />
+      )}
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">레벨 *</label>
-                  <select 
-                    value={editLevel} 
-                    onChange={(e) => setEditLevel(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    <option value="0">기초</option>
-                    <option value="1">Lv.1</option>
-                    <option value="2">Lv.2</option>
-                    <option value="3">Lv.3</option>
-                    <option value="4">Lv.4</option>
-                    <option value="5">Lv.5</option>
-                    <option value="6">Lv.6</option>
-                    <option value="7">Lv.7</option>
-                    <option value="8">Lv.8</option>
-                    <option value="9">Lv.9</option>
-                    <option value="10">Lv.10</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">서브프로그램</label>
-                <Input
-                  placeholder="예: 독해력, 어휘력"
-                  value={editSubProgram}
-                  onChange={(e) => setEditSubProgram(e.target.value)}
-                  className="rounded-xl h-10 border-neutral-200 text-sm"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">등원 요일</label>
-                <div className="grid grid-cols-6 gap-1.5 pt-1">
-                  {['월', '화', '수', '목', '금', '토'].map((day) => {
-                    const isSelected = editAttendanceDays.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setEditAttendanceDays(editAttendanceDays.filter(d => d !== day));
-                          } else {
-                            setEditAttendanceDays([...editAttendanceDays, day]);
-                          }
-                        }}
-                        className={`h-9 rounded-xl border text-sm font-semibold transition-all ${
-                          isSelected
-                            ? 'bg-primary border-primary text-white shadow-sm font-bold'
-                            : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">숙제 미수행</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="미수행 횟수"
-                    value={editHomeworkMissed}
-                    onChange={(e) => setEditHomeworkMissed(Number(e.target.value) || 0)}
-                    className="rounded-xl h-10 border-neutral-200 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-neutral-600">완독권수</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="완독권수"
-                    value={editBooksCompleted}
-                    onChange={(e) => setEditBooksCompleted(Number(e.target.value) || 0)}
-                    className="rounded-xl h-10 border-neutral-200 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">결과물 마지막 날짜</label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="date"
-                    value={editLastResultDate}
-                    onChange={(e) => setEditLastResultDate(e.target.value)}
-                    className="rounded-xl h-10 border-neutral-200 text-sm flex-1 cursor-pointer"
-                  />
-                  <div className="w-24 shrink-0 text-center text-sm font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 h-10 flex items-center justify-center rounded-xl px-2">
-                    {editLastResultDate ? (
-                      typeof getWeeksSince(editLastResultDate) === 'number' ? (
-                        `${getWeeksSince(editLastResultDate)}주 전`
-                      ) : (
-                        '-'
-                      )
-                    ) : (
-                      '-'
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <DialogClose render={
-                <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold">
-                  취소
-                </Button>
-              } />
-              <Button 
-                onClick={handleSaveEdit}
-                disabled={isSavingEdit}
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-lg"
-              >
-                {isSavingEdit ? '저장 중...' : '저장'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Mobile Curriculum Edit Dialog */}
-      <Dialog open={!!mobileEditItem} onOpenChange={(open) => {
-        if (!open) setMobileEditItem(null);
-      }}>
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-[380px] rounded-[2.5rem] border-none shadow-2xl p-6">
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <Pencil className="w-5 h-5 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-lg font-extrabold text-foreground">도서 기록 수정</h3>
-                <p className="text-xs text-muted-foreground font-semibold">순서, 도서명, 상태를 세부 변경합니다.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1 col-span-1">
-                  <label className="text-xs font-bold text-neutral-600">순서</label>
-                  <Input
-                    type="number"
-                    value={mobileEditIndex}
-                    onChange={(e) => setMobileEditIndex(parseInt(e.target.value) || 0)}
-                    className="rounded-xl h-10 border-neutral-200 text-sm text-center"
-                  />
-                </div>
-
-                <div className="space-y-1 col-span-2">
-                  <label className="text-xs font-bold text-neutral-600">상태</label>
-                  <select
-                    value={mobileEditStatus}
-                    onChange={(e) => setMobileEditStatus(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  >
-                    {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-neutral-600">도서명</label>
-                <Input
-                  value={mobileEditTitle}
-                  onChange={(e) => setMobileEditTitle(e.target.value)}
-                  className="rounded-xl h-10 border-neutral-200 text-sm"
-                />
-              </div>
-
-              {/* Special row actions section inside popup: Delete & Writing Status */}
-              <div className="flex flex-col gap-2 pt-2">
-                {mobileEditItem?.bookTitle !== '글쓰기' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-10 rounded-xl text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 font-bold text-xs gap-1.5"
-                    onClick={handleMobileAddToWriting}
-                    disabled={addingWriting === mobileEditItem?.bookId}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    글쓰기 기록 추가
-                  </Button>
-                )}
+      {mobileEditItem && (
+        <MobileEditCurriculumDialog 
+          open={!!mobileEditItem}
+          onOpenChange={(open) => !open && setMobileEditItem(null)}
+          item={mobileEditItem}
+          onSave={handleMobileUpdate}
+          isSaving={isPending}
+          statusOptions={['예정', '진행', '통과', '불통']}
+          extraActions={
+            <div className="flex flex-col gap-2 pt-2">
+              {mobileEditItem?.bookTitle !== '글쓰기' && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-10 rounded-xl text-destructive border-destructive/20 bg-destructive/5 hover:bg-destructive/10 font-bold text-xs gap-1.5"
-                  onClick={handleMobileDelete}
-                  disabled={isDeleting}
+                  className="w-full h-10 rounded-xl text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 font-bold text-xs gap-1.5 cursor-pointer"
+                  onClick={handleMobileAddToWriting}
+                  disabled={addingWriting === mobileEditItem?.bookId}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  커리큘럼 삭제
+                  <PlusCircle className="w-4 h-4" />
+                  글쓰기 기록 추가
                 </Button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-neutral-100">
-              <DialogClose render={
-                <Button variant="secondary" className="flex-1 h-11 rounded-xl font-semibold bg-zinc-100 hover:bg-zinc-200 border-none text-zinc-700">
-                  취소
-                </Button>
-              } />
-              <Button 
-                onClick={handleMobileUpdate}
-                disabled={isPending}
-                className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold shadow-lg"
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-10 rounded-xl text-destructive border-destructive/20 bg-destructive/5 hover:bg-destructive/10 font-bold text-xs gap-1.5 cursor-pointer"
+                onClick={handleMobileDelete}
+                disabled={isDeleting}
               >
-                {isPending ? '저장 중...' : '저장'}
+                <Trash2 className="w-4 h-4" />
+                커리큘럼 삭제
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          }
+        />
+      )}
     </div>
   );
 }

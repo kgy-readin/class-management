@@ -13,6 +13,7 @@ import { writingStatusApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import StudentCombobox from '../common/StudentCombobox';
+import { AddWritingDialog, DeleteWritingDialog, ClearWritingDialog } from './WritingPopups';
 
 import 'react-day-picker/dist/style.css';
 
@@ -404,119 +405,18 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               <CalendarIcon className="w-4 h-4" />
             </Button>
 
-            <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-              <DialogTrigger render={
-                <Button
-                  variant="outline"
-                  className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-rose-600 hover:bg-rose-50 border-zinc-200 border-solid flex items-center justify-center transition-all"
-                  disabled={clearing}
-                  onClick={() => {
-                    setClearType('period');
-                    setClearDialogOpen(true);
-                  }}
-                  title="글쓰기 데이터 삭제"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              } />
-              <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
-                <div className="p-8 space-y-6">
-                  <div className="text-center space-y-2">
-                    <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                      <Trash2 className="w-[27px] h-[27px] text-destructive" />
-                    </div>
-                    <h3 className="text-lg font-extrabold text-foreground">글쓰기 데이터 삭제</h3>
-                    <p className="text-sm text-zinc-600 font-normal leading-relaxed">데이터를 정리할 방식을 선택하세요.</p>
-                  </div>
-
-                  {/* Clear Type Selection Tabs */}
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
-                    <button
-                      type="button"
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                        clearType === 'period'
-                          ? 'bg-white text-foreground shadow-sm'
-                          : 'text-zinc-500 hover:text-zinc-800'
-                      }`}
-                      onClick={() => setClearType('period')}
-                    >
-                      특정 기간 삭제
-                    </button>
-                    <button
-                      type="button"
-                      className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                        clearType === 'all'
-                          ? 'bg-white text-destructive shadow-sm'
-                          : 'text-zinc-500 hover:text-zinc-800'
-                      }`}
-                      onClick={() => setClearType('all')}
-                    >
-                      전체 리셋
-                    </button>
-                  </div>
-
-                  {/* Date range inputs if 'period' is selected */}
-                  {clearType === 'period' ? (
-                    <div className="space-y-3.5 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
-                      <div className="space-y-1.5 text-left">
-                        <label className="text-xs font-bold text-zinc-500 block">시작일</label>
-                        <input
-                          type="date"
-                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all cursor-pointer"
-                          value={clearStartDate}
-                          onChange={(e) => setClearStartDate(e.target.value)}
-                          onClick={(e) => {
-                            try { e.currentTarget.showPicker(); } catch {}
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1.5 text-left">
-                        <label className="text-xs font-bold text-zinc-500 block">종료일</label>
-                        <input
-                          type="date"
-                          className="w-full bg-white border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal focus:ring-1 ring-primary/20 outline-none transition-all cursor-pointer"
-                          value={clearEndDate}
-                          onChange={(e) => setClearEndDate(e.target.value)}
-                          onClick={(e) => {
-                            try { e.currentTarget.showPicker(); } catch {}
-                          }}
-                        />
-                      </div>
-                      <p className="text-[11px] font-semibold text-destructive text-center leading-relaxed">
-                        ※ 선택한 해당 기간 내 유효한 기록들이 일괄 삭제됩니다.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-destructive/10 rounded-2xl border border-destructive/20 text-center">
-                      <p className="text-xs text-destructive font-semibold leading-relaxed">
-                        경고: 글쓰기현황 시트 내 모든 데이터가 소멸됩니다.<br />
-                        이 작업은 취소할 수 없습니다.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer text-sm"
-                      onClick={() => setClearDialogOpen(false)}
-                      disabled={clearing}
-                    >
-                      취소
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer text-sm"
-                      onClick={handleClearMonth}
-                      disabled={clearing}
-                    >
-                      {clearing ? '삭제 중...' : '삭제'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button
+              variant="outline"
+              className="flex-1 h-10 rounded-xl font-semibold text-xs text-muted-foreground hover:text-rose-600 hover:bg-rose-50 border-zinc-200 border-solid flex items-center justify-center transition-all cursor-pointer"
+              disabled={clearing}
+              onClick={() => {
+                setClearType('period');
+                setClearDialogOpen(true);
+              }}
+              title="글쓰기 데이터 삭제"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
 
           <div className="bg-[#FFFFFF] rounded-[2rem] border-none ring-0 shadow-sm overflow-hidden flex-1 flex flex-col">
@@ -784,108 +684,38 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       </div>
 
       {/* Adding Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white overflow-visible">
-          <div className="space-y-6">
-            <div className="text-left border-b border-solid border-zinc-100 pb-3">
-              <h3 className="text-[19px] font-black text-zinc-800">글쓰기 기록 추가</h3>
-            </div>
-
-            <div className="space-y-4">
-              {/* Date and Student side by side */}
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <input
-                    type="date"
-                    className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-3 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all cursor-pointer h-10"
-                    value={addForm.date}
-                    onChange={(e) => setAddForm(prev => ({ ...prev, date: e.target.value }))}
-                    onClick={(e) => {
-                      try { e.currentTarget.showPicker(); } catch {}
-                    }}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <StudentCombobox
-                    students={sortedStudents}
-                    value={addForm.name}
-                    onChange={(val) => setAddForm(prev => ({ ...prev, name: val }))}
-                    placeholder="학생 선택 또는 직접 입력"
-                    inputClassName="bg-zinc-50 border-neutral-200/80 text-[14px]"
-                  />
-                </div>
-              </div>
-
-              {/* Book Title */}
-              <div className="space-y-1.5">
-                <input
-                  type="text"
-                  placeholder="도서명을 입력하세요"
-                  className="w-full bg-zinc-50 border border-neutral-200/80 rounded-xl px-4 py-2.5 text-[14px] font-normal leading-normal focus:ring-1 ring-primary/20 hover:border-neutral-300 focus:bg-white outline-none transition-all"
-                  value={addForm.bookTitle}
-                  onChange={e => setAddForm(prev => ({ ...prev, bookTitle: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button 
-                type="button" 
-                onClick={() => setAddOpen(false)} 
-                className="flex-1 h-11 rounded-xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-600 font-bold border-none cursor-pointer"
-              >
-                취소
-              </Button>
-              <Button 
-                type="button" 
-                onClick={handleAddStatus} 
-                disabled={submittingAdd}
-                className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
-              >
-                {submittingAdd ? '저장 중...' : '추가'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddWritingDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        students={sortedStudents}
+        addForm={addForm}
+        setAddForm={setAddForm}
+        onConfirm={handleAddStatus}
+        isSubmitting={submittingAdd}
+      />
 
       {/* Deleting Dialog */}
-      <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
-        <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-          <div className="p-8 text-center space-y-6">
-            <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 className="w-[27px] h-[27px] text-destructive" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-extrabold text-foreground">글쓰기 기록 삭제</h3>
-              <p className="text-sm text-zinc-600 font-normal leading-relaxed">
-                <span className="text-destructive font-bold">'{deletingItem?.name}'</span> 학생의 <br />
-                <span className="font-semibold">'{deletingItem?.bookTitle}'</span> 글쓰기 기록을 삭제하시겠습니까?
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <DialogClose render={
-                <Button 
-                  type="button"
-                  className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none"
-                >
-                  취소
-                </Button>
-              } />
-              <Button 
-                type="button"
-                variant="destructive"
-                className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
-                onClick={() => deletingItem && handleDeleteStatus(deletingItem)}
-                disabled={isDeleting}
-              >
-                {isDeleting ? '삭제 중...' : '삭제'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteWritingDialog
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+        deletingItem={deletingItem}
+        onConfirm={() => deletingItem && handleDeleteStatus(deletingItem)}
+        isSubmitting={isDeleting}
+      />
+
+      {/* Clear Dialog */}
+      <ClearWritingDialog
+        open={clearDialogOpen}
+        onOpenChange={setClearDialogOpen}
+        clearType={clearType}
+        setClearType={setClearType}
+        clearStartDate={clearStartDate}
+        setClearStartDate={setClearStartDate}
+        clearEndDate={clearEndDate}
+        setClearEndDate={setClearEndDate}
+        onConfirm={handleClearMonth}
+        isSubmitting={clearing}
+      />
     </div>
   );
 }

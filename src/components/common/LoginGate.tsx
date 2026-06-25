@@ -66,7 +66,7 @@ export default function LoginGate({ onLoginSuccess }: LoginGateProps) {
                   if (error) setError(false);
                 }}
                 placeholder="Password"
-                className={`w-full h-13 pl-[20px] pr-10 rounded-xl border-none bg-zinc-100/70 text-zinc-900 placeholder-zinc-500 caret-zinc-900 text-left text-[13px] font-medium tracking-wide focus:outline-none focus:ring-0 ${
+                className={`w-full h-13 pl-[20px] pr-10 rounded-xl border-none bg-zinc-100/70 text-zinc-900 dark:text-zinc-900 placeholder-zinc-500 caret-zinc-900 text-left text-[13px] font-medium tracking-wide focus:outline-none focus:ring-0 ${
                   error
                     ? 'bg-destructive/5 text-destructive'
                     : ''

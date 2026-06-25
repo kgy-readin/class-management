@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import StudentLogCharts from './StudentLogCharts';
+import { DeleteLogDialog } from './LogPopups';
 import StudentCombobox from '../common/StudentCombobox';
 import { 
   StudentLogEntry, 
@@ -636,42 +637,13 @@ export default function StudentLogStudents({
       </div>
 
       {/* --- CONFIRM DELETE DIALOG --- */}
-      <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
-        <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white animate-in fade-in zoom-in-95 duration-250">
-          <div className="p-8 text-center space-y-6">
-            <div className="w-[54px] h-[54px] bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 className="w-[27px] h-[27px] text-destructive" />
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-lg font-extrabold text-foreground">교무기록 삭제</h3>
-              <p className="text-sm text-zinc-600 font-normal leading-relaxed">
-                <span className="text-destructive font-bold">'{deletingItem?.name}'</span> 학생의 <br />
-                <span className="font-semibold text-zinc-750">'{deletingItem?.category}'</span> 기록을 삭제하시겠습니까?
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button 
-                type="button"
-                className="flex-1 h-12 rounded-2xl bg-zinc-100/80 hover:bg-zinc-200/80 text-zinc-500 font-bold border-none cursor-pointer"
-                onClick={() => setDeletingItem(null)}
-              >
-                취소
-              </Button>
-              <Button 
-                type="button"
-                variant="destructive"
-                className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
-                onClick={() => deletingItem && handleDeleteLog(deletingItem)}
-                disabled={isDeleting}
-              >
-                {isDeleting ? '삭제 중...' : '삭제'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteLogDialog
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+        deletingItem={deletingItem}
+        onConfirm={() => deletingItem && handleDeleteLog(deletingItem)}
+        isSubmitting={isDeleting}
+      />
       
     </div>
   );
