@@ -772,17 +772,16 @@ interface AddCurriculumDialogProps {
 export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookTitles, onSelect }: AddCurriculumDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl bg-white">
+      <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl bg-white p-6">
         <DialogHeader>
-          <DialogTitle className="text-[21px] font-extrabold mt-3 ml-3">{studentName} 학생 도서 추가</DialogTitle>
+          <DialogTitle className="text-[21px] font-extrabold mt-2 ml-1">{studentName} 학생 도서 추가</DialogTitle>
         </DialogHeader>
-        <div className="pt-4">
+        <div className="pt-2">
           <BookSearch 
             books={books} 
             existingBookTitles={existingBookTitles}
             onSelect={(bookTitle) => {
               onSelect(bookTitle);
-              onOpenChange(false);
             }} 
           />
         </div>
