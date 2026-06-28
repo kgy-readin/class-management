@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { StudentLogEntry } from '../../types';
+import { renderBoldBrackets } from '../common/TextHelpers';
 
 interface StudentLogCalendarProps {
   currentMonth: Date;
@@ -175,7 +176,7 @@ export default function StudentLogCalendar({
                               </span>
                             </div>
                             <div className="text-[12px] text-zinc-700 font-normal leading-normal select-none">
-                              {log.content}
+                              {renderBoldBrackets(log.content)}
                             </div>
                           </div>
                         </div>

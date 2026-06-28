@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DeleteLogDialog } from './LogPopups';
 import StudentCombobox from '../common/StudentCombobox';
+import { renderBoldBrackets } from '../common/TextHelpers';
 import { 
   StudentLogEntry, 
   LOG_CATEGORY_COLORS, 
@@ -417,7 +418,7 @@ export default function StudentLogMobileCalendar({
                         />
                       ) : (
                         <p className="whitespace-pre-wrap break-all mt-1">
-                          {log.content}
+                          {renderBoldBrackets(log.content)}
                         </p>
                       )}
                     </div>

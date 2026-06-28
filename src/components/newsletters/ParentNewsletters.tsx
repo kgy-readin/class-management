@@ -161,7 +161,7 @@ export default function CommentParentNewsletters() {
       setEditText(selectedTab.text || '');
     }
     setIsEditing(false);
-  }, [selectedTabId]);
+  }, [selectedTabId, selectedTab]);
 
   const fetchTabsData = async (isBackground = false) => {
     const hasCache = allTabs.length > 0;

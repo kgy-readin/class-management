@@ -116,10 +116,10 @@ export default function App() {
 
   // Helper to define mode categories
   const getModeByTab = (tab: string): 'sub' | 'class' | 'work' => {
-    if (['writing', 'logs'].includes(tab)) {
+    if (['writing', 'logs', 'comments', 'beginners'].includes(tab)) {
       return 'sub';
     }
-    if (['tasks', 'meeting', 'comments', 'beginners', 'familyLetter'].includes(tab)) {
+    if (['tasks', 'meeting', 'familyLetter'].includes(tab)) {
       return 'work';
     }
     return 'class';
@@ -134,21 +134,37 @@ export default function App() {
     
     if (computedMode === 'class') {
       localStorage.setItem('webapp_class_tab', activeTab);
+      localStorage.setItem('webapp_class_path', location.pathname);
     } else if (computedMode === 'sub') {
       localStorage.setItem('webapp_sub_tab', activeTab);
+      localStorage.setItem('webapp_sub_path', location.pathname);
     } else {
       localStorage.setItem('webapp_work_tab', activeTab);
+      localStorage.setItem('webapp_work_path', location.pathname);
     }
-  }, [activeTab]);
+  }, [activeTab, location.pathname]);
 
   // Restore last selected tab if accessing the root URL ('/')
   useEffect(() => {
     if (location.pathname === '/' || location.pathname === '') {
       const savedActiveTab = localStorage.getItem('webapp_active_tab');
       if (savedActiveTab && savedActiveTab !== 'dashboard') {
-        const path = tabToPath[savedActiveTab];
-        if (path) {
-          navigate(path, { replace: true });
+        const savedMode = localStorage.getItem('webapp_app_mode') || 'class';
+        let savedPath = '';
+        if (savedMode === 'class') {
+          savedPath = localStorage.getItem('webapp_class_path') || '';
+        } else if (savedMode === 'sub') {
+          savedPath = localStorage.getItem('webapp_sub_path') || '';
+        } else {
+          savedPath = localStorage.getItem('webapp_work_path') || '';
+        }
+        if (savedPath && savedPath !== '/') {
+          navigate(savedPath, { replace: true });
+        } else {
+          const path = tabToPath[savedActiveTab];
+          if (path) {
+            navigate(path, { replace: true });
+          }
         }
       }
     }
@@ -190,25 +206,25 @@ export default function App() {
   const handleModeChange = (mode: 'sub' | 'class' | 'work') => {
     if (appMode === mode) {
       if (mode === 'class') {
-        selectTab('dashboard');
+        navigate('/');
       } else if (mode === 'sub') {
-        selectTab('logs');
+        navigate('/logs');
       } else {
-        selectTab('tasks');
+        navigate('/tasks');
       }
       setSelectedStudent(null);
       return;
     }
 
-    let targetTab = 'dashboard';
+    let targetPath = '/';
     if (mode === 'class') {
-      targetTab = localStorage.getItem('webapp_class_tab') || 'dashboard';
+      targetPath = localStorage.getItem('webapp_class_path') || '/';
     } else if (mode === 'sub') {
-      targetTab = localStorage.getItem('webapp_sub_tab') || 'logs';
+      targetPath = localStorage.getItem('webapp_sub_path') || '/logs';
     } else {
-      targetTab = localStorage.getItem('webapp_work_tab') || 'tasks';
+      targetPath = localStorage.getItem('webapp_work_path') || '/tasks';
     }
-    selectTab(targetTab);
+    navigate(targetPath);
     setSelectedStudent(null);
   };
 

@@ -699,9 +699,6 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                             className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
                             onClick={() => {
                               setMobileEditItem(item);
-                              setMobileEditIndex(item.index);
-                              setMobileEditTitle(item.bookTitle);
-                              setMobileEditStatus(item.status);
                             }}
                           >
                             <Pencil className="w-[15px] h-[15px]" />

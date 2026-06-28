@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import StudentLogCharts from './StudentLogCharts';
 import { DeleteLogDialog } from './LogPopups';
 import StudentCombobox from '../common/StudentCombobox';
+import { renderBoldBrackets } from '../common/TextHelpers';
 import { 
   StudentLogEntry, 
   LOG_CATEGORY_COLORS, 
@@ -397,8 +398,8 @@ export default function StudentLogStudents({
 
                         {/* Content */}
                         <td className="px-4 pt-[12px] pb-[12px] text-left align-top">
-                          <div className="text-[14px] font-normal text-zinc-800 leading-5 whitespace-pre-wrap break-all" title={log.content}>
-                            {log.content}
+                          <div className="text-[14px] font-normal text-zinc-800 leading-5 whitespace-pre-wrap break-all">
+                            {renderBoldBrackets(log.content)}
                           </div>
                         </td>
 
@@ -572,7 +573,7 @@ export default function StudentLogStudents({
                             onChange={e => setEditForm({ ...editForm, content: e.target.value })}
                           />
                         ) : (
-                          <p className="whitespace-pre-wrap break-all">{log.content}</p>
+                          <p className="whitespace-pre-wrap break-all">{renderBoldBrackets(log.content)}</p>
                         )}
                       </div>
                     </div>
