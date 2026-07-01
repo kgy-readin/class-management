@@ -16,7 +16,9 @@ import {
   GripVertical,
   Filter,
   ScrollText,
-  Save
+  Save,
+  UsersRound,
+  Calendar
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format, isSameDay, isThisWeek, startOfDay, addMonths, addDays, differenceInCalendarDays, startOfWeek, getDay } from 'date-fns';
@@ -42,6 +44,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedWeek, setSelectedWeek] = useState<{ weekNumber: number; dates: Date[] } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   
@@ -81,6 +84,15 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const [showFilters, setShowFilters] = useState(false);
   const [dateFocusedDesktop, setDateFocusedDesktop] = useState(false);
   const [dateFocusedMobile, setDateFocusedMobile] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [taskSearchQuery, setTaskSearchQuery] = useState('');
+
+  useEffect(() => {
+    const pathname = location.pathname;
+    if (pathname.includes('/tasks/filter')) {
+      setIsFilterExpanded(true);
+    }
+  }, [location.pathname]);
 
   const fetchTasks = async () => {
     try {
@@ -109,17 +121,21 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     if (view === 'next') {
       setActiveTab('다음주');
       setSelectedDate(undefined);
+      setSelectedWeek(null);
       setSelectedStudent(null);
       setShowFilters(false);
+      setTaskSearchQuery('');
     } else if (view === 'newsletter') {
       setActiveTab('가정통신문');
       setSelectedDate(undefined);
+      setSelectedWeek(null);
       setSelectedStudent(null);
       setShowFilters(false);
+      setTaskSearchQuery('');
     } else if (view === 'filter') {
       setActiveTab('필터');
       setShowFilters(true);
-      const filterType = parts[2]; // "date" or "students"
+      const filterType = parts[2]; // "date", "week", or "students"
       const filterVal = parts[3];
 
       if (filterType === 'date' && filterVal) {
@@ -127,7 +143,24 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           const parsed = new Date(filterVal);
           if (!isNaN(parsed.getTime())) {
             setSelectedDate(parsed);
+            setSelectedWeek(null);
             setSelectedStudent(null);
+            setTaskSearchQuery('');
+            return;
+          }
+        } catch {}
+      } else if (filterType === 'week' && filterVal) {
+        try {
+          const mondayDate = parseTaskDate(filterVal);
+          if (mondayDate && !isNaN(mondayDate.getTime())) {
+            const dates: Date[] = [];
+            for (let i = 0; i < 7; i++) {
+              dates.push(addDays(mondayDate, i));
+            }
+            setSelectedWeek({ weekNumber: 0, dates });
+            setSelectedDate(undefined);
+            setSelectedStudent(null);
+            setTaskSearchQuery('');
             return;
           }
         } catch {}
@@ -136,6 +169,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         if (found) {
           setSelectedStudent(found.name);
           setSelectedDate(undefined);
+          setSelectedWeek(null);
+          setTaskSearchQuery('');
           return;
         } else {
           const uniqueNames = Array.from(new Set(tasks.map(t => t.name).filter(Boolean)));
@@ -143,18 +178,27 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           if (foundInTasks) {
             setSelectedStudent(foundInTasks);
             setSelectedDate(undefined);
+            setSelectedWeek(null);
+            setTaskSearchQuery('');
             return;
           }
         }
       }
+      if (!taskSearchQuery.trim()) {
+        navigate('/tasks/work', { replace: true });
+        return;
+      }
       setSelectedDate(undefined);
+      setSelectedWeek(null);
       setSelectedStudent(null);
     } else {
       // Default /tasks or /tasks/work
       setActiveTab('업무');
       setSelectedDate(undefined);
+      setSelectedWeek(null);
       setSelectedStudent(null);
       setShowFilters(false);
+      setTaskSearchQuery('');
     }
   }, [location.pathname, students, tasks]);
 
@@ -163,6 +207,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     if (!dateStr) return null;
     try {
       const cleaned = dateStr.replace(/\//g, '-').trim();
+      const parts = cleaned.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const parsed = new Date(year, month, day);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
       const parsed = new Date(cleaned);
       if (!isNaN(parsed.getTime())) return parsed;
       return null;
@@ -229,13 +281,37 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   // Interaction handlers for Mutual Exclusion filtering (중복 필터링 금지)
   const handleDateSelect = (d: Date | undefined) => {
-    setSelectedDate(d);
-    setSelectedStudent(null); // Clear student filter
+    if (d) {
+      if (selectedDate && isSameDay(d, selectedDate)) {
+        navigate('/tasks/filter');
+      } else {
+        navigate(`/tasks/filter/date/${format(d, 'yyyy-MM-dd')}`);
+      }
+    } else {
+      navigate('/tasks/filter');
+    }
+  };
+
+  const handleWeekNumberClick = (weekNumber: number, dates: Date[], e: React.MouseEvent) => {
+    if (dates && dates.length > 0) {
+      const monday = startOfWeek(dates[0], { weekStartsOn: 1 });
+      const mondayStr = format(monday, 'yyyy-MM-dd');
+      
+      const isAlreadySelected = selectedWeek && isSameDay(selectedWeek.dates[0], monday);
+      if (isAlreadySelected) {
+        navigate('/tasks/filter');
+      } else {
+        navigate(`/tasks/filter/week/${mondayStr}`);
+      }
+    }
   };
 
   const handleStudentSelect = (studentName: string | null) => {
-    setSelectedStudent(studentName);
-    setSelectedDate(undefined); // Clear date filter
+    if (studentName) {
+      navigate(`/tasks/filter/students/${getShortHash(studentName)}`);
+    } else {
+      navigate('/tasks/filter');
+    }
   };
 
   // Ranks for sorting
@@ -398,7 +474,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   // New Dedicated '필터' View Selector - Only displays matching items or starts empty if no filters are selected
   const getFilteredFilterTasks = () => {
-    if (!selectedDate && !selectedStudent) {
+    if (!selectedDate && !selectedStudent && !selectedWeek && !taskSearchQuery.trim()) {
       return [];
     }
 
@@ -406,6 +482,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       let matches = true;
       if (selectedDate) {
         matches = matches && isDateMatchingFilter(task.date);
+      } else if (selectedWeek) {
+        const d = parseTaskDate(task.date);
+        if (!d) {
+          matches = false;
+        } else {
+          const taskDateStr = format(d, 'yyyy-MM-dd');
+          matches = matches && selectedWeek.dates.some(wd => format(wd, 'yyyy-MM-dd') === taskDateStr);
+        }
       }
       if (selectedStudent) {
         matches = matches && task.name === selectedStudent;
@@ -668,10 +752,16 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     }
   };
 
+  const applySearchFilter = (taskList: Task[]) => {
+    if (!taskSearchQuery.trim()) return taskList;
+    const q = taskSearchQuery.toLowerCase();
+    return taskList.filter(t => (t.todo || '').toLowerCase().includes(q));
+  };
+
   const basicTasks = getFilteredBasicTasks();
   const familyTasks = getFilteredFamilyTasks();
   const nextWeekTasks = getFilteredNextWeekTasks();
-  const filterTasks = getFilteredFilterTasks();
+  const filterTasks = applySearchFilter(getFilteredFilterTasks());
 
   const todoGroup = basicTasks.filter(t => t.status === '예정');
   const inProgressGroup = basicTasks.filter(t => t.status === '진행' || t.status === '대기' || t.status === '보류');
@@ -730,15 +820,302 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   return (
     <div className="-mt-1">
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+      <div className="flex flex-col lg:flex-row gap-8">
         
-        {/* Left Side: Notes Panel */}
-        <div className="w-full lg:col-span-1">
-          <NotesPanel />
+        {/* Left Side: Calendar & Notes Panel */}
+        <div className="w-full lg:w-[354px] shrink-0 flex flex-col md:flex-row lg:flex-col gap-6 md:items-stretch lg:self-start">
+          
+          {/* Filtering Section Wrapper */}
+          <div className="hidden md:flex w-full max-w-[354px] lg:w-[354px] flex-col gap-4 overflow-visible md:flex-none" style={{ paddingTop: '12px', paddingBottom: '8px', marginBottom: '-12px' }}>
+            {/* Header / Selector Card */}
+            <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-visible w-full" style={{ height: '64px', overflow: 'visible' }}>
+              <CardContent className="p-3.5 flex items-center justify-between gap-3 h-full overflow-visible">
+                {!isFilterExpanded ? (
+                  <div className="flex items-center gap-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterExpanded(true)}
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-500 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center"
+                      title="필터링 섹션 펼치기"
+                    >
+                      <Filter className="w-4 h-4" />
+                    </button>
+                    <span className="text-[16px] font-semibold text-zinc-800 select-none truncate">
+                      {format(selectedDate || new Date(), 'yyyy년 M월 d일 eeee', { locale: ko })}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 w-full overflow-visible">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFilterExpanded(false);
+                        setTaskSearchQuery('');
+                        navigate('/tasks/work');
+                      }}
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-[#2563eb] hover:bg-blue-100 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center"
+                      title="필터링 섹션 접기"
+                    >
+                      <Filter className="w-4 h-4" />
+                    </button>
+                    <div className="flex-1 relative mx-[2px]">
+                      <input
+                        type="text"
+                        value={taskSearchQuery}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTaskSearchQuery(val);
+                          if (val.trim() !== '') {
+                            if (activeTab !== '필터') {
+                              navigate('/tasks/filter');
+                            }
+                          } else {
+                            if (!selectedDate && !selectedWeek && !selectedStudent) {
+                              navigate('/tasks/work');
+                            }
+                          }
+                        }}
+                        placeholder="작업명 검색"
+                        className="w-full h-9 px-3 rounded-xl border border-solid border-zinc-100 bg-zinc-50 text-[13px] text-zinc-850 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                      {taskSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTaskSearchQuery('');
+                            if (!selectedDate && !selectedWeek && !selectedStudent) {
+                              navigate('/tasks/work');
+                            }
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-650"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Mini Calendar Card (Shown when expanded) */}
+            <AnimatePresence initial={false}>
+              {isFilterExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                  animate={{ 
+                    opacity: 1, 
+                    height: 'auto',
+                    transitionEnd: { overflow: 'visible' }
+                  }}
+                  exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full pt-0 overflow-visible flex flex-col items-center gap-3"
+                  style={{ marginTop: '-4px', paddingBottom: '8px', marginBottom: '-8px' }}
+                >
+                  <Card 
+                    className="rounded-[2rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden w-full max-w-[350px] lg:w-[350px] h-fit flex flex-col mx-auto"
+                    style={{ paddingTop: '12px', paddingBottom: '8px' }}
+                  >
+                    <CardContent className="flex flex-col items-center justify-center min-h-0 w-full pt-1 pb-1 px-4">
+                      <style>{`
+                        .rdp {
+                          --rdp-accent-color: #2563eb;
+                          --rdp-background-color: #eff6ff;
+                          margin-top: -8px;
+                          margin-bottom: -16px;
+                          font-size: 13px;
+                          width: 100%;
+                          display: flex;
+                          flex-direction: column;
+                          align-items: center;
+                          padding-bottom: 4px;
+                        }
+                        .rdp-months { width: 100%; display: flex; justify-content: center; }
+                        .rdp-month { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                        .rdp-caption { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; max-width: 280px !important; margin: 0 auto !important; margin-bottom: 4px !important; padding: 0 !important; }
+                        .rdp-caption_label { font-weight: 600 !important; font-size: 16px !important; transform: none !important; padding: 0 !important; margin-left: 8px !important; }
+                        .rdp-nav { display: flex !important; gap: 8px !important; transform: scale(0.85) !important; transform-origin: right center !important; margin: 0 !important; padding: 0 !important; }
+                        .rdp-nav button, .rdp-nav_button, .rdp-nav .rdp-button { 
+                          color: #a1a1aa !important; 
+                          width: 20px !important; 
+                          height: 20px !important; 
+                          min-width: 20px !important; 
+                          min-height: 20px !important; 
+                          padding: 0 !important; 
+                          display: flex !important; 
+                          align-items: center !important; 
+                          justify-content: center !important; 
+                        }
+                        .rdp-nav button:hover, .rdp-nav_button:hover, .rdp-nav .rdp-button:hover { color: #71717a !important; background-color: #f4f4f5 !important; }
+                        .rdp-nav button:last-child, .rdp-nav_button_next { margin-right: 16px !important; }
+                        .rdp-nav svg, .rdp-nav_icon, .rdp-nav path { color: inherit !important; fill: currentColor !important; }
+                        .rdp-nav svg[fill="none"] path, .rdp-nav_icon[fill="none"] path { fill: none !important; stroke: currentColor !important; }
+                        .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white !important; border-radius: 9999px !important; }
+                        .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 9999px !important; }
+                        
+                        .rdp-weekday {
+                          font-size: 12px !important;
+                          font-weight: 600 !important;
+                          color: #a1a1aa !important;
+                          padding: 8px 0px !important;
+                          text-align: center !important;
+                          vertical-align: middle !important;
+                          line-height: 1.2 !important;
+                        }
+                        
+                        .rdp-week_number_header {
+                          font-size: 11px !important;
+                          font-weight: 600 !important;
+                          color: #a1a1aa !important;
+                          padding: 8px 0px !important;
+                          text-align: center !important;
+                          vertical-align: middle !important;
+                          line-height: 1.2 !important;
+                        }
+
+                        .rdp-table { width: 100% !important; border-collapse: collapse !important; max-width: 280px !important; margin: 0 auto !important; }
+                        .rdp-cell { padding: 0px; vertical-align: middle; text-align: center; }
+                        .rdp-button { width: 31px; height: 31px; display: flex; align-items: center; justify-content: center; position: relative; margin: 0 auto; font-size: 12px; }
+
+                        /* Outside days styling - soft light gray */
+                        .rdp-outside {
+                          color: #d1d5db !important;
+                          opacity: 0.6;
+                        }
+
+                        /* Continuous highlighting for the selected week bar */
+                        td.rdp-day_selected-week { background: linear-gradient(to bottom, transparent 5%, #eff6ff 5%, #eff6ff 95%, transparent 95%) !important; }
+                        td.rdp-day_selected-week_dummy { display: none; }
+                        
+                        /* Round the Monday edge of the bar */
+                        td.rdp-day_selected-week:first-of-type {
+                          border-top-left-radius: 9999px !important;
+                          border-bottom-left-radius: 9999px !important;
+                        }
+                        
+                        /* Round the Sunday edge of the bar */
+                        td.rdp-day_selected-week:last-of-type {
+                          border-top-right-radius: 9999px !important;
+                          border-bottom-right-radius: 9999px !important;
+                        }
+
+                        /* Clear backgrounds and styles for buttons in the selected week bar */
+                        td.rdp-day_selected-week .rdp-day_button:not(.rdp-selected),
+                        td.rdp-day_selected-week .rdp-button:not(.rdp-selected) {
+                          background-color: transparent !important;
+                          border-radius: 0px !important;
+                          color: #2563eb !important;
+                          font-weight: 600 !important;
+                        }
+                      `}</style>
+                      <DayPicker
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        showWeekNumber={true}
+                        showOutsideDays={true}
+                        month={currentMonth}
+                        onMonthChange={setCurrentMonth}
+                        locale={ko}
+                        weekStartsOn={1}
+                        className="mx-auto"
+                        modifiers={{
+                          selectedWeek: (date) => {
+                            if (!selectedWeek) return false;
+                            const dateStr = format(date, 'yyyy-MM-dd');
+                            return selectedWeek.dates.some(wd => format(wd, 'yyyy-MM-dd') === dateStr);
+                          }
+                        }}
+                        modifiersClassNames={{
+                          selectedWeek: 'rdp-day_selected-week',
+                        }}
+                        components={{
+                          WeekNumberHeader: (props) => {
+                            const { className, ...rest } = props;
+                            return (
+                              <th 
+                                {...rest} 
+                                className={`rdp-week_number_header font-semibold text-zinc-400 text-[11px] select-none text-center ${className || ''}`}
+                              >
+                                W
+                              </th>
+                            );
+                          },
+                          WeekNumber: (props) => {
+                            const { week, ...thProps } = props;
+                            const isWeekSelected = selectedWeek && selectedWeek.dates.some(d => {
+                              const dStr = format(d, 'yyyy-MM-dd');
+                              return week.days.some((wd: any) => format(wd.date, 'yyyy-MM-dd') === dStr);
+                            });
+
+                            const handleClick = (e: React.MouseEvent) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const dates = week.days.map((d: any) => d.date);
+                              handleWeekNumberClick(week.weekNumber, dates, e);
+                            };
+
+                            return (
+                              <th 
+                                {...thProps}
+                                className={`${thProps.className || ''} select-none`}
+                                style={{ padding: '0px', verticalAlign: 'middle', textAlign: 'center' }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={handleClick}
+                                  className={`w-7 h-7 flex items-center justify-center mx-auto text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+                                    isWeekSelected 
+                                      ? 'bg-transparent text-[#2563eb] font-semibold' 
+                                      : 'text-zinc-500 hover:text-[#2563eb] hover:bg-[#eff6ff]'
+                                  }`}
+                                >
+                                  {thProps.children}
+                                </button>
+                              </th>
+                            );
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Separated Student Selection Block (학생 선택 블럭) */}
+                  <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-hidden w-full max-w-[350px] lg:w-[350px] h-fit flex flex-col mx-auto py-0">
+                    <CardContent 
+                      className="px-4 py-0 flex items-center justify-between gap-3 w-full"
+                      style={{ marginLeft: '0px', marginTop: '16px', marginBottom: '16px' }}
+                    >
+                      <span className="text-[16px] ml-2 font-semibold text-zinc-700 select-none shrink-0">학생 선택</span>
+                      <StudentCombobox
+                        students={students}
+                        value={selectedStudent || ''}
+                        onChange={(val) => {
+                          if (val) {
+                            navigate(`/tasks/filter/students/${getShortHash(val)}`);
+                          } else {
+                            navigate('/tasks/filter');
+                          }
+                        }}
+                        placeholder="전체 학생"
+                        className="!w-[150px] shrink-0"
+                        inputClassName="bg-zinc-50 border-solid border-zinc-100 text-[13.5px] font-semibold h-10 rounded-xl !ml-[-80px] !w-[228px]"
+                      />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="w-full md:flex-1 lg:w-full h-auto flex flex-col">
+            <NotesPanel />
+          </div>
         </div>
 
         {/* Right Area - Wider and clean */}
-        <div className="w-full lg:col-span-2 flex flex-col gap-4">
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           <div className="flex flex-col gap-6">
             
@@ -746,13 +1123,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
             <div className="w-full">
               <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none">
                 
-                {/* Header Section with Tab Toggle Switch and Filter Tools */}
+                {/* Header Section with Tab Toggle Switch */}
                 <div className="flex flex-col gap-2 pb-3 border-b border-border/40">
-                  {/* First Row: Tab Toggles & Filter toggle button on the exact same line */}
                   <div className="flex items-center justify-between gap-2 w-full">
-                    
                     {/* Tab Switcher (Horizontal Text Toggle Design) - Displays only the 3 core views */}
-                    <div className="flex bg-neutral-100 p-0.5 rounded-xl shrink-0 w-fit overflow-x-auto no-scrollbar">
+                    <div className="flex bg-neutral-100 p-0.5 rounded-xl shrink-0 w-fit overflow-x-auto no-scrollbar relative">
                       {(['업무', '다음주', '가정통신문'] as const).map((tab) => (
                         <button
                           key={tab}
@@ -766,111 +1141,44 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             }
                             setInlineAddGroup(null); // Close any active inline add form when switching tabs
                           }}
-                          className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 text-[13px] font-medium rounded-lg text-center transition-all cursor-pointer whitespace-nowrap ${
-                            activeTab === tab
-                              ? 'bg-white text-zinc-800 shadow-sm'
-                              : 'text-zinc-550 hover:text-zinc-800'
-                          }`}
+                          className="flex-1 sm:flex-initial px-4 py-1.5 text-[13px] font-medium rounded-lg text-center transition-all cursor-pointer whitespace-nowrap relative"
+                          style={{ WebkitTapHighlightColor: 'transparent' }}
                         >
-                          {tab}
+                          {activeTab === tab && (
+                            <motion.span
+                              layoutId="activeTaskTab"
+                              className="absolute inset-0 bg-white rounded-lg shadow-sm"
+                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <span className={`relative z-10 ${
+                            activeTab === tab ? 'text-zinc-800' : 'text-zinc-550 hover:text-zinc-800'
+                          }`}>
+                            {tab}
+                          </span>
                         </button>
                       ))}
                     </div>
 
-                    {/* Filter controls and button wrapper (Desktop layout places dropdowns left of the filter button) */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      
-                      {/* DESKTOP/LANDSCAPE SELECTORS (Shown only at breakpoint 'sm' and above on the same level line) */}
-                      {showFilters && (
-                        <div className="hidden sm:flex items-center gap-1.5 animate-in fade-in slide-in-from-right-1 duration-150">
-                          {/* Student Filter Combobox */}
-                          <StudentCombobox
-                            students={students}
-                            value={selectedStudent || ''}
-                            onChange={(val) => {
-                              if (val) {
-                                navigate(`/tasks/filter/students/${getShortHash(val)}`);
-                              } else {
-                                navigate('/tasks/filter');
-                              }
-                            }}
-                            placeholder="학생명"
-                            className="!w-[108px] font-sans"
-                            inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
-                              selectedStudent ? 'text-neutral-600' : '!text-zinc-500 placeholder:!text-zinc-500'
-                            }`}
-                          />
-
-                          {/* Date filter picker */}
-                          <input 
-                            type={selectedDate || dateFocusedDesktop ? "date" : "text"}
-                            value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                            onFocus={(e) => {
-                              setDateFocusedDesktop(true);
-                              const target = e.currentTarget;
-                              setTimeout(() => {
-                                try {
-                                  target.showPicker();
-                                } catch (err) {}
-                              }, 30);
-                            }}
-                            onBlur={() => setDateFocusedDesktop(false)}
-                            onClick={(e) => {
-                              try {
-                                e.currentTarget.showPicker();
-                              } catch (err) {}
-                            }}
-                            placeholder="마감일"
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                navigate(`/tasks/filter/date/${e.target.value}`);
-                              } else {
-                                navigate('/tasks/filter');
-                              }
-                            }}
-                            className={`fixed-date-input h-7 w-[108px] min-w-[108px] max-w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
-                              selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
-                            }`}
-                          />
-
-                          {/* Filter Reset Button */}
-                          {(selectedDate || selectedStudent) && (
-                            <button 
-                              onClick={() => {
-                                navigate('/tasks/filter');
-                              }}
-                              className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
-                              title="필터 초기화"
-                            >
-                              <X className="w-3 h-3 text-neutral-400" />
-                              <span>초기화</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Filter Button (Visually persistent, aligned right, same height/line) */}
+                    {/* Mobile-only Filter Toggle Button */}
+                    <div className="flex md:hidden items-center gap-1.5 shrink-0">
                       <div className="relative shrink-0">
                         <button
                           onClick={() => {
-                            if (activeTab === '필터') {
-                              navigate('/tasks/work');
-                            } else {
-                              navigate('/tasks/filter');
-                            }
+                            setShowFilters(!showFilters);
                           }}
-                          className={`h-7 w-7 flex items-center justify-center rounded-full transition-all cursor-pointer ${
-                            activeTab === '필터'
+                          className={`h-8 w-8 flex items-center justify-center rounded-full transition-all cursor-pointer scale-[0.8] origin-center ${
+                            showFilters
                               ? 'bg-zinc-700 text-white shadow-sm hover:bg-zinc-800' 
-                              : (selectedDate || selectedStudent)
+                              : (selectedDate || selectedStudent || selectedWeek)
                                 ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
                                 : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600'
                           }`}
                           title="필터 열기"
                         >
-                          <Filter className="w-3.5 h-3.5" />
+                          <Filter className="w-4 h-4" />
                         </button>
-                        {activeTab !== '필터' && (selectedDate || selectedStudent) && (
+                        {(selectedDate || selectedStudent || selectedWeek) && (
                           <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
@@ -878,78 +1186,67 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         )}
                       </div>
                     </div>
-
                   </div>
 
-                  {/* MOBILE-ONLY SECOND ROW DROPDOWN (ONLY shown on small screens 'max-sm', aligned right right-below the line) */}
+                  {/* Mobile-only Dropdown Filters (Due Date + Student Select) */}
                   {showFilters && (
-                    <div className="flex sm:hidden items-center justify-end gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150 w-full mt-1">
-                      {/* Student Filter Combobox */}
-                      <StudentCombobox
-                        students={students}
-                        value={selectedStudent || ''}
-                        onChange={(val) => {
-                          if (val) {
-                            navigate(`/tasks/filter/students/${getShortHash(val)}`);
-                          } else {
-                            navigate('/tasks/filter');
-                          }
-                        }}
-                        placeholder="학생명"
-                        className="!w-[108px] font-sans"
-                        inputClassName={`bg-neutral-50/50 text-[11px] font-medium !h-7 !rounded-lg border-neutral-200 ${
-                          selectedStudent ? 'text-neutral-600' : '!text-zinc-500 placeholder:!text-zinc-500'
-                        }`}
-                      />
+                    <div className="flex md:hidden flex-row gap-2 p-2.5 bg-zinc-50/50 rounded-2xl border border-solid border-zinc-100 mt-2 animate-in fade-in slide-in-from-top-1 duration-150 items-center justify-between w-full overflow-hidden">
+                      {/* Due date picker with fixed width & custom placeholder text */}
+                      <div className="relative w-[115px] landscape:w-[230px] shrink-0 h-[34px] transition-all">
+                        <input
+                          type="date"
+                          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val) {
+                              navigate(`/tasks/filter/date/${val}`);
+                            } else {
+                              navigate('/tasks/filter');
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-between px-2.5 rounded-xl border border-solid border-zinc-200 bg-white text-zinc-700 pointer-events-none z-10 text-[11.5px] font-semibold h-full">
+                          <span className={selectedDate ? 'text-zinc-700' : 'text-zinc-400'}>
+                            {selectedDate ? format(selectedDate, 'M월 d일', { locale: ko }) : '마감일 선택'}
+                          </span>
+                          <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                        </div>
+                      </div>
 
-                      {/* Date filter picker */}
-                      <input 
-                        type={selectedDate || dateFocusedMobile ? "date" : "text"}
-                        value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                        onFocus={(e) => {
-                          setDateFocusedMobile(true);
-                          const target = e.currentTarget;
-                          setTimeout(() => {
-                            try {
-                              target.showPicker();
-                            } catch (err) {}
-                          }, 30);
-                        }}
-                        onBlur={() => setDateFocusedMobile(false)}
-                        onClick={(e) => {
-                          try {
-                            e.currentTarget.showPicker();
-                          } catch (err) {}
-                        }}
-                        placeholder="마감일"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            navigate(`/tasks/filter/date/${e.target.value}`);
-                          } else {
-                            navigate('/tasks/filter');
-                          }
-                        }}
-                        className={`fixed-date-input h-7 w-[108px] min-w-[108px] max-w-[108px] px-1.5 text-[11px] font-sans border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-lg bg-neutral-50/50 cursor-pointer font-medium shrink-0 ${
-                          selectedDate ? 'text-zinc-650 font-semibold' : 'text-zinc-500 placeholder:text-zinc-500'
-                        }`}
-                      />
+                      {/* Student selection dropdown taking the remaining horizontal space */}
+                      <div className="flex-1 min-w-0 h-[34px]">
+                        <StudentCombobox
+                          students={students}
+                          value={selectedStudent || ''}
+                          onChange={(val) => {
+                            if (val) {
+                              navigate(`/tasks/filter/students/${getShortHash(val)}`);
+                            } else {
+                              navigate('/tasks/filter');
+                            }
+                          }}
+                          placeholder="학생 선택"
+                          className="w-full h-full"
+                          inputClassName="bg-white border-solid border-zinc-200 text-[12px] font-semibold h-[34px] rounded-xl w-full"
+                        />
+                      </div>
 
                       {/* Filter Reset Button */}
-                      {(selectedDate || selectedStudent) && (
+                      {(selectedDate || selectedStudent || selectedWeek) && (
                         <button 
                           onClick={() => {
-                            navigate('/tasks/filter');
+                            navigate('/tasks/work');
+                            setShowFilters(false);
                           }}
-                          className="h-7 px-2 text-[10.5px] border border-neutral-200 hover:border-blue-400 text-neutral-500 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg font-bold flex items-center gap-0.5 bg-white transition-all shadow-none shrink-0"
+                          className="h-[34px] w-[34px] border border-solid border-zinc-200 hover:border-blue-400 text-zinc-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-bold flex items-center justify-center bg-white transition-all shadow-none shrink-0"
                           title="필터 초기화"
                         >
-                          <X className="w-3 h-3 text-neutral-400" />
-                          <span>초기화</span>
+                          <X className="w-3.5 h-3.5 text-zinc-400" />
                         </button>
                       )}
                     </div>
                   )}
-
                 </div>
 
                 {/* Tab content area */}
@@ -1123,7 +1420,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
                   {activeTab === '필터' && (
                     <div className="space-y-4">
-                      {!selectedStudent && !selectedDate ? (
+                      {!selectedStudent && !selectedDate && !selectedWeek && !taskSearchQuery.trim() ? (
                         <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
                           <Filter className="w-10 h-10 text-zinc-300" />
                           <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>

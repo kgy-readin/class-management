@@ -342,19 +342,40 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="w-full lg:w-80 shrink-0 flex flex-col sm:flex-row lg:flex-col gap-4">
-        <Card className="rounded-[2.5rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto">
-          <CardContent className="p-0 flex flex-col items-center justify-center min-h-[310px] w-full">
+        <Card 
+          className="rounded-[2rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto -ml-[2px]"
+          style={{ paddingTop: '12px', paddingBottom: '8px' }}
+        >
+          <CardContent className="pt-1 pb-1 px-4 flex flex-col items-center justify-center min-h-[290px] w-full">
             <style>{`
-              .rdp { --rdp-accent-color: #2563eb; --rdp-background-color: #eff6ff; margin: 0; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 12px; }
-              .rdp-months { width: 100%; display: flex; justify-content: center; padding: 0.3rem 1rem 0.3rem 1rem; }
-              .rdp-caption_label { font-weight: 600; transform: translate(12px, -4px); }
-              .rdp-nav { transform: translateX(-12px) scale(0.8); }
+              .rdp { --rdp-accent-color: #2563eb; --rdp-background-color: #eff6ff; margin-top: -8px; margin-bottom: -16px; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 4px; }
+              .rdp-months { width: 100%; display: flex; justify-content: center; }
+              .rdp-month { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+              .rdp-caption { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; max-width: 252px !important; margin: 0 auto !important; margin-bottom: 4px !important; padding: 0 !important; }
+              .rdp-caption_label { font-weight: 600 !important; font-size: 16px !important; transform: none !important; padding: 0 !important; margin: 0 !important; }
+              .rdp-nav { display: flex !important; gap: 8px !important; transform: scale(0.85) !important; transform-origin: right center !important; margin: 0 !important; padding: 0 !important; }
+              .rdp-nav button, .rdp-nav_button, .rdp-nav .rdp-button { 
+                color: #a1a1aa !important; 
+                width: 20px !important; 
+                height: 20px !important; 
+                min-width: 20px !important; 
+                min-height: 20px !important; 
+                padding: 0 !important; 
+                display: flex !important; 
+                align-items: center !important; 
+                justify-content: center !important; 
+              }
+              .rdp-nav button:hover, .rdp-nav_button:hover, .rdp-nav .rdp-button:hover { color: #71717a !important; background-color: #f4f4f5 !important; }
+              .rdp-nav button:last-child, .rdp-nav_button_next { margin-right: 12px !important; }
+              .rdp-nav svg, .rdp-nav_icon, .rdp-nav path { color: inherit !important; fill: currentColor !important; }
+              .rdp-nav svg[fill="none"] path, .rdp-nav_icon[fill="none"] path { fill: none !important; stroke: currentColor !important; }
               .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white !important; border-radius: 9999px !important; }
               .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 9999px !important; }
-              .rdp-head_cell { font-size: 11px; font-weight: 600; color: var(--muted-foreground); padding-bottom: 8px; }
-              .rdp-table { width: 100%; border-collapse: collapse; max-width: 280px; }
-              .rdp-cell { padding: 1px; }
-              .rdp-button { width: 32px; height: 32px; display: flex; items-center: center; justify-content: center; position: relative; }
+              .rdp-head_cell, .rdp-weekday { font-size: 12px !important; font-weight: 600 !important; color: #71717a !important; padding-bottom: 8px !important; text-align: center !important; }
+              .rdp-week_number_header { font-size: 11px !important; font-weight: 600; color: #71717a !important; text-align: center !important; }
+              .rdp-table { width: 100% !important; border-collapse: collapse !important; max-width: 252px !important; margin: 0 auto !important; }
+              .rdp-cell { padding: 1px; text-align: center; vertical-align: middle; }
+              .rdp-button { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; position: relative; margin: 0 auto; }
 
               /* Custom modifiers styling for student-specific view */
               .rdp-day_completed:not([disabled]):not(.rdp-day_selected) {

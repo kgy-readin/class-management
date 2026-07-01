@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, X } from 'lucide-react';
 
 interface Student {
@@ -28,6 +29,8 @@ export default function StudentCombobox({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
 
   // Sync state with parent value
   useEffect(() => {
@@ -44,10 +47,46 @@ export default function StudentCombobox({
     name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const updateCoords = () => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  // Measure position when isOpen changes or window resizes/scrolls
+  useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      // Listen to scroll and resize events globally to update coordinates
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+    }
+  }, [searchTerm, isOpen]);
+
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        // Also check if they clicked on the portal dropdown to avoid immediate closing
+        const portalDropdown = document.getElementById('student-combobox-portal-dropdown');
+        if (portalDropdown && portalDropdown.contains(event.target as Node)) {
+          return;
+        }
         setIsOpen(false);
         // If search term is finished but not empty, bubble it as custom typed text
         if (searchTerm !== value) {
@@ -98,6 +137,7 @@ export default function StudentCombobox({
     <div ref={containerRef} className={`relative inline-block w-full text-left font-sans ${className}`}>
       <div className="relative flex items-center">
         <input
+          ref={inputRef}
           type="text"
           value={searchTerm}
           onChange={(e) => handleInputChange(e.target.value)}
@@ -129,8 +169,18 @@ export default function StudentCombobox({
         </div>
       </div>
 
-      {isOpen && (
-        <div className="absolute z-[9999] mt-1 w-full rounded-xl bg-white border border-neutral-100 shadow-xl overflow-hidden animate-in fade-in duration-100 slide-in-from-top-1">
+      {isOpen && coords && createPortal(
+        <div 
+          id="student-combobox-portal-dropdown"
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            width: `${coords.width}px`,
+            zIndex: 99999,
+          }}
+          className="mt-1 rounded-xl bg-white border border-neutral-100 shadow-xl overflow-hidden animate-in fade-in duration-100 slide-in-from-top-1"
+        >
           <ul className="max-h-48 overflow-y-auto divide-y divide-solid divide-neutral-50/50">
             {filteredStudents.length === 0 ? (
               <li className="px-4 py-2.5 text-xs font-semibold text-zinc-450 italic text-center bg-white select-none">
@@ -150,7 +200,8 @@ export default function StudentCombobox({
               ))
             )}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

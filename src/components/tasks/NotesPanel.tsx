@@ -6,7 +6,8 @@ import {
   Pencil, 
   Check, 
   X,
-  FileText
+  FileText,
+  NotebookPen
 } from 'lucide-react';
 import { noteApi } from '@/src/services/api';
 
@@ -119,11 +120,11 @@ export default function NotesPanel() {
 
   return (
     <div className="w-full h-full flex flex-col gap-4">
-      <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex-1 flex flex-col min-h-[245px] lg:min-h-0 max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
+      <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex-1 flex flex-col min-h-[245px] lg:min-h-0 md:max-lg:min-h-0 md:max-lg:max-h-none md:max-lg:h-full max-md:h-auto max-md:min-h-0 max-md:max-h-none">
         
         {/* Header section with Notes title and edit button */}
         <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3 select-none">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-zinc-650">메모</h3>
             {loading && (
               <span className="text-[10px] text-zinc-400 animate-pulse font-sans">불러오는 중...</span>
@@ -131,7 +132,7 @@ export default function NotesPanel() {
           </div>
           
           {isEditing ? (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 relative -top-[1.5px]">
               <button
                 onClick={handleCancel}
                 disabled={loading}
@@ -152,7 +153,7 @@ export default function NotesPanel() {
           ) : (
             <button
                onClick={() => setIsEditing(true)}
-               className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
+               className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer relative -top-[1.5px]"
                title="메모 전체 편집"
              >
                <Pencil className="w-3.5 h-3.5" />
@@ -176,7 +177,7 @@ export default function NotesPanel() {
          ) : (
            /* Normal List View */
            <div className="flex-1 flex flex-col min-h-0 bg-white">
-             <div className="flex-1 space-y-2.5 max-h-[210px] lg:max-h-none overflow-y-auto custom-scrollbar pr-1">
+             <div className="flex-1 space-y-2.5 max-h-[210px] max-md:max-h-none lg:max-h-none overflow-y-auto custom-scrollbar pr-1" style={{ paddingBottom: '4px' }}>
                {notes.length === 0 ? (
                  <div className="py-16 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 select-none">
                    <FileText className="w-8 h-8 text-zinc-300" />
@@ -189,7 +190,7 @@ export default function NotesPanel() {
                    </button>
                  </div>
                ) : (
-                 <div className="space-y-2 font-normal pb-4 animate-in fade-in duration-200">
+                 <div className="space-y-2 font-normal pb-0 animate-in fade-in duration-200" style={{ paddingBottom: '0px' }}>
                    {notes.map((line, idx) => {
                      const isBullet = line.level > 0;
                      
