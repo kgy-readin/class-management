@@ -50,7 +50,7 @@ export function AddMeetingDialog({
           <X className="w-4 h-4" />
         </Button>
         <div className="text-left border-b border-solid border-zinc-100 pb-3">
-          <h3 className="text-[19px] font-black text-zinc-800">
+          <h3 className="text-[19px] font-bold text-zinc-800">
             회의록 작성
           </h3>
         </div>
@@ -129,7 +129,7 @@ export function AddMeetingDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
             >
               {isSubmitting ? '등록 중...' : '등록'}
             </Button>
@@ -166,7 +166,7 @@ export function DeleteMeetingDialog({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-lg font-extrabold text-foreground">회의록 삭제</h3>
+            <h3 className="text-lg font-bold text-foreground">회의록 삭제</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
               <span className="text-red-500 font-bold">'{title}'</span> 회의록을 <br />
               <span className="font-semibold text-zinc-750">영구 삭제하시겠습니까?</span>
@@ -184,7 +184,7 @@ export function DeleteMeetingDialog({
             <Button 
               type="button"
               variant="destructive"
-              className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-red-500/15 cursor-pointer"
+              className="flex-1 h-12 rounded-2xl font-bold shadow-lg shadow-red-500/15 cursor-pointer"
               onClick={onConfirm}
             >
               삭제

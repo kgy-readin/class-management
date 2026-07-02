@@ -5,17 +5,15 @@ import { Button } from '@/components/ui/button';
 import { WritingStatus, getTagColor, Student, getShortHash } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
-import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil, Plus } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, isSameDay, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { writingStatusApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import StudentCombobox from '../common/StudentCombobox';
 import { AddWritingDialog, DeleteWritingDialog, ClearWritingDialog } from './WritingPopups';
-
-import 'react-day-picker/dist/style.css';
+import { isKoreanHoliday } from '../logs/holidayUtils';
 
 const MONTHS_ENG = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -339,76 +337,114 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     }
   };
 
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start on Monday
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
+
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="w-full lg:w-80 shrink-0 flex flex-col sm:flex-row lg:flex-col gap-4">
-        <Card 
-          className="rounded-[2rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 sm:h-[330px] lg:h-auto -ml-[2px]"
-          style={{ paddingTop: '12px', paddingBottom: '8px' }}
-        >
-          <CardContent className="pt-1 pb-1 px-4 flex flex-col items-center justify-center min-h-[290px] w-full">
-            <style>{`
-              .rdp { --rdp-accent-color: #2563eb; --rdp-background-color: #eff6ff; margin-top: -8px; margin-bottom: -16px; font-size: 13px; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 4px; }
-              .rdp-months { width: 100%; display: flex; justify-content: center; }
-              .rdp-month { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-              .rdp-caption { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; max-width: 252px !important; margin: 0 auto !important; margin-bottom: 4px !important; padding: 0 !important; }
-              .rdp-caption_label { font-weight: 600 !important; font-size: 16px !important; transform: none !important; padding: 0 !important; margin: 0 !important; }
-              .rdp-nav { display: flex !important; gap: 8px !important; transform: scale(0.85) !important; transform-origin: right center !important; margin: 0 !important; padding: 0 !important; }
-              .rdp-nav button, .rdp-nav_button, .rdp-nav .rdp-button { 
-                color: #a1a1aa !important; 
-                width: 20px !important; 
-                height: 20px !important; 
-                min-width: 20px !important; 
-                min-height: 20px !important; 
-                padding: 0 !important; 
-                display: flex !important; 
-                align-items: center !important; 
-                justify-content: center !important; 
-              }
-              .rdp-nav button:hover, .rdp-nav_button:hover, .rdp-nav .rdp-button:hover { color: #71717a !important; background-color: #f4f4f5 !important; }
-              .rdp-nav button:last-child, .rdp-nav_button_next { margin-right: 12px !important; }
-              .rdp-nav svg, .rdp-nav_icon, .rdp-nav path { color: inherit !important; fill: currentColor !important; }
-              .rdp-nav svg[fill="none"] path, .rdp-nav_icon[fill="none"] path { fill: none !important; stroke: currentColor !important; }
-              .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white !important; border-radius: 9999px !important; }
-              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 9999px !important; }
-              .rdp-head_cell, .rdp-weekday { font-size: 12px !important; font-weight: 600 !important; color: #71717a !important; padding-bottom: 8px !important; text-align: center !important; }
-              .rdp-week_number_header { font-size: 11px !important; font-weight: 600; color: #71717a !important; text-align: center !important; }
-              .rdp-table { width: 100% !important; border-collapse: collapse !important; max-width: 252px !important; margin: 0 auto !important; }
-              .rdp-cell { padding: 1px; text-align: center; vertical-align: middle; }
-              .rdp-button { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; position: relative; margin: 0 auto; }
+        <Card className="rounded-[2rem] border-none ring-0 shadow-sm overflow-hidden bg-white sm:flex-[4] lg:flex-none sm:min-w-[320px] lg:min-w-0 h-fit">
+          <CardContent className="p-5" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+            
+            {/* Calendar Header */}
+            <div className="relative flex items-center justify-center h-10 mb-4 w-full">
+              <div className="flex items-center gap-[4px]">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                  onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+                >
+                  <ChevronLeft className="w-4 h-4 text-zinc-650" />
+                </Button>
+                <span className="text-[15.5px] font-semibold text-zinc-800 select-none text-center min-w-[90px]">
+                  {format(currentMonth, 'yyyy년 M월', { locale: ko })}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                  onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                >
+                  <ChevronRight className="w-4 h-4 text-zinc-650" />
+                </Button>
+              </div>
+            </div>
 
-              /* Custom modifiers styling for student-specific view */
-              .rdp-day_completed:not([disabled]):not(.rdp-day_selected) {
-                background-color: #dbeafe !important; /* bg-blue-100 */
-                color: #2563eb !important; /* text-blue-600 */
-                border-radius: 9999px !important;
-                font-weight: 700 !important;
-              }
-              .rdp-day_ongoing:not([disabled]):not(.rdp-day_selected) {
-                background-color: #fef3c7 !important; /* bg-amber-100 */
-                color: #d97706 !important; /* text-amber-700 */
-                border-radius: 9999px !important;
-                font-weight: 700 !important;
-              }
-            `}</style>
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              month={currentMonth}
-              onMonthChange={setCurrentMonth}
-              locale={ko}
-              weekStartsOn={1}
-              className="mx-auto"
-              modifiers={{
-                completed: isCompletedDay,
-                ongoing: isOngoingDay,
-              }}
-              modifiersClassNames={{
-                completed: 'rdp-day_completed',
-                ongoing: 'rdp-day_ongoing',
-              }}
-            />
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7 gap-1 text-center mb-2 font-normal">
+              {['월', '화', '수', '목', '금', '토', '일'].map((dayName, index) => (
+                <div 
+                  key={dayName} 
+                  className={`text-[13px] font-medium py-1 select-none ${
+                    index === 6 ? 'text-red-500' : 'text-zinc-650'
+                  }`}
+                >
+                  {dayName}
+                </div>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {daysInRange.map((day) => {
+                const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isTodayDate = isSameDay(day, new Date());
+                const isSunday = day.getDay() === 0;
+
+                const isCompleted = isCompletedDay(day);
+                const isOngoing = isOngoingDay(day);
+
+                // Determine base text and circle classes
+                let circleClass = "w-8 h-8 rounded-full flex items-center justify-center transition-all relative ";
+                let textClass = "text-[14px] select-none ";
+
+                if (isSelected) {
+                  circleClass += "bg-primary text-white font-bold shadow-sm shadow-primary/25";
+                } else if (isCompleted) {
+                  circleClass += "bg-blue-100 text-blue-600 font-bold hover:bg-blue-200/70";
+                } else if (isOngoing) {
+                  circleClass += "bg-amber-100 text-amber-700 font-bold hover:bg-amber-200/70";
+                } else {
+                  circleClass += isCurrentMonth ? "hover:bg-zinc-100" : "";
+                  if (isCurrentMonth) {
+                    textClass += (isSunday || isKoreanHoliday(day)) ? "text-red-500" : "text-zinc-850";
+                  } else {
+                    textClass += "text-zinc-350";
+                  }
+                }
+
+                return (
+                  <div
+                    key={day.toISOString()}
+                    onClick={() => {
+                      if (isSelected) {
+                        handleDateSelect(undefined);
+                      } else {
+                        handleDateSelect(day);
+                      }
+                    }}
+                    className={`py-1 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-all select-none relative ${
+                      isCurrentMonth ? "" : "opacity-40"
+                    }`}
+                  >
+                    <div className={circleClass}>
+                      <span className={textClass}>
+                        {format(day, 'd')}
+                      </span>
+                      {isTodayDate && (
+                        <span className={`absolute bottom-[2px] left-0 right-0 h-[2.5px] rounded-full mx-auto w-2.5 ${isSelected ? 'bg-white' : 'bg-primary'}`} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
           </CardContent>
         </Card>
 
@@ -502,7 +538,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               <thead className="bg-zinc-50/70">
                 <tr className="bg-zinc-50/70 border-b border-solid border-zinc-100">
                   <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">날짜</th>
-                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
+                  <th className="w-[13%] px-5 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
                   <th className="w-[48%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">도서명</th>
                   <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
                   <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
@@ -539,7 +575,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                             <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'MM.dd')}</span>
                           )}
                         </td>
-                        <td className="px-6 py-2.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
+                        <td className="px-5 py-2.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
                         <td className="px-6 py-2.5">
                           {isEditing ? (
                             <input 

@@ -187,7 +187,7 @@ export const renderWithHighlightedBullet = (text: string, baseKey: number | stri
   segments.forEach((seg, index) => {
     if (seg === '●' || seg === '■') {
       elements.push(
-        <span key={`bullet-${baseKey}-${index}`} className="text-blue-700/80 font-bold">
+        <span key={`bullet-${baseKey}-${index}`} className="text-blue-700/90 font-bold">
           {seg}
         </span>
       );
@@ -241,7 +241,7 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (closingIndex !== -1) {
         const content = text.slice(currentIndex + 1, closingIndex);
         parts.push(
-          <span key={currentIndex} className="italic text-blue-700/80">
+          <span key={currentIndex} className="italic text-blue-700/90">
             {parseInlineStyles(content)}
           </span>
         );
@@ -278,13 +278,13 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
             return <hr key={idx} className="my-4 border-t border-neutral-200/80" />;
           case 'h1':
             return (
-              <h1 key={idx} style={{ fontSize: 'calc(1em + 3px)', marginTop: idx === 0 ? '0' : '1.0em' }} className="font-bold text-blue-700/80 mb-2 block">
+              <h1 key={idx} style={{ fontSize: 'calc(1em + 3px)', marginTop: idx === 0 ? '0' : '1.0em' }} className="font-bold text-blue-700/90 mb-2 block">
                 {parseInlineStyles(block.text || '')}
               </h1>
             );
           case 'h2':
             return (
-              <h2 key={idx} style={{ fontSize: 'calc(1em + 1.5px)', marginTop: idx === 0 ? '0' : '0.8em' }} className="font-bold text-blue-700/80 mb-1.5 block">
+              <h2 key={idx} style={{ fontSize: 'calc(1em + 1.5px)', marginTop: idx === 0 ? '0' : '0.8em' }} className="font-bold text-blue-700/90 mb-1.5 block">
                 {parseInlineStyles(block.text || '')}
               </h2>
             );

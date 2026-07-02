@@ -60,8 +60,8 @@ export const MESSAGES = {
   notes: {
     loadError: (msg: string) => `메모 데이터를 불러오는데 실패했습니다: ${msg}`,
     saveSuccess: '메모가 성공적으로 저장되었습니다.',
-    saveError: (msg: string) => `네트워크 저장 중 오류가 발생했습니다: ${msg}. 작성한 메모는 브라우저 내에 안전하게 보존되었습니다.`,
-    cancelInfo: '편집이 취소되었습니다. 메모가 마지막 저장된 상태로 되돌아 갑니다.',
+    saveError: (msg: string) => `네트워크 저장 중 오류가 발생했습니다: ${msg}. 작성한 메모는 브라우저 내에 보존됩니다.`,
+    cancelInfo: '편집이 취소되었습니다.',
   },
 
   // 6. Meeting Note (회의록) Page

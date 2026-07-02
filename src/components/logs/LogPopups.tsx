@@ -45,7 +45,7 @@ export function AddLogDialog({
         <div className="space-y-6">
           {/* Popover Title */}
           <div className="text-left border-b border-solid border-zinc-100 pb-3">
-            <h3 className="text-[19px] font-black text-zinc-800">교무기록 추가</h3>
+            <h3 className="text-[19px] font-bold text-zinc-800">교무기록 추가</h3>
           </div>
 
           <div className="space-y-5">
@@ -119,7 +119,7 @@ export function AddLogDialog({
             <Button 
               type="button" 
               onClick={onConfirm} 
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? '저장 중...' : '저장'}
@@ -162,7 +162,7 @@ export function DeleteLogDialog({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-lg font-extrabold text-foreground">교무기록 삭제</h3>
+            <h3 className="text-lg font-bold text-foreground">교무기록 삭제</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
               <span className="text-destructive font-bold">'{deletingItem.name}'</span> 학생의 <br />
               <span className="font-semibold text-zinc-750">'{deletingItem.category}'</span> 기록을 삭제하시겠습니까?
@@ -180,7 +180,7 @@ export function DeleteLogDialog({
             <Button 
               type="button"
               variant="destructive"
-              className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
+              className="flex-1 h-12 rounded-2xl font-bold shadow-lg shadow-destructive/20 cursor-pointer"
               onClick={onConfirm}
               disabled={isSubmitting}
             >

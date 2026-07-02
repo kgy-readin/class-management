@@ -6,6 +6,7 @@ import { AddLogDialog } from './LogPopups';
 import StudentLogCalendar from './StudentLogCalendar';
 import StudentLogStudents from './StudentLogStudents';
 import StudentLogMobileCalendar from './StudentLogMobileCalendar';
+import StudentLogMonthlyDetail from './StudentLogMonthlyDetail';
 import StudentCombobox from '../common/StudentCombobox';
 import { isKoreanHoliday } from './holidayUtils';
 import { 
@@ -41,7 +42,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
 
   const [logs, setLogs] = useState<StudentLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'monthly' | 'student'>('monthly');
+  const [viewMode, setViewMode] = useState<'monthly' | 'student' | 'monthly-detail'>('monthly');
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -106,7 +107,7 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
       } else {
         setSelectedStudent('');
       }
-    } else if (parts[1] === 'date') {
+    } else if (parts[1] === 'date' || parts[1] === 'detail') {
       const dateStr = parts[2];
       if (dateStr) {
         try {
@@ -117,7 +118,12 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
           }
         } catch (e) {}
       }
-      setViewMode('monthly');
+      const checkMobile = window.innerWidth < 768;
+      if (parts[1] === 'detail') {
+        setViewMode('monthly-detail');
+      } else {
+        setViewMode(checkMobile ? 'monthly' : 'monthly-detail');
+      }
     } else if (parts[1] === 'monthly') {
       setViewMode('monthly');
     } else {
@@ -126,9 +132,11 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
     }
   }, [location.pathname, students]);
 
-  const handleSetViewMode = (mode: 'monthly' | 'student') => {
+  const handleSetViewMode = (mode: 'monthly' | 'student' | 'monthly-detail') => {
     if (mode === 'monthly') {
       navigate('/logs/monthly');
+    } else if (mode === 'monthly-detail') {
+      navigate(`/logs/detail/${format(selectedDate || new Date(), 'yyyy-MM-dd')}`);
     } else {
       if (selectedStudent) {
         navigate(`/logs/students/${getShortHash(selectedStudent)}`);
@@ -211,8 +219,23 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
         />
       )}
 
+      {/* --- MONTHLY DETAIL VIEW --- */}
+      {viewMode === 'monthly-detail' && !isMobile && (
+        <StudentLogMonthlyDetail
+          logs={logs}
+          fetchLogs={fetchLogs}
+          currentMonth={currentMonth}
+          setCurrentMonth={setCurrentMonth}
+          setViewMode={handleSetViewMode}
+          handleOpenAddDialog={handleOpenAddDialog}
+          sortedStudents={sortedStudents}
+          selectedDate={selectedDate}
+          setSelectedDate={handleSetSelectedDate}
+        />
+      )}
+
       {/* --- MOBILE MONTHLY VIEW --- */}
-      {viewMode === 'monthly' && isMobile && (
+      {(viewMode === 'monthly' || viewMode === 'monthly-detail') && isMobile && (
         <StudentLogMobileCalendar
           logs={logs}
           fetchLogs={fetchLogs}

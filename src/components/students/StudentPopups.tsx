@@ -32,7 +32,7 @@ export function BulkDismissDialog({ open, onOpenChange, onConfirm, isSubmitting 
             <Trash2 className="w-[27px] h-[27px] text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-extrabold text-foreground">일괄 하원</h3>
+            <h3 className="text-lg font-bold text-foreground">일괄 하원</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
               정말로 모든 등원 중인 학생들을<br />
               일괄 하원 처리하시겠습니까?
@@ -46,7 +46,7 @@ export function BulkDismissDialog({ open, onOpenChange, onConfirm, isSubmitting 
             } />
             <Button 
               variant="destructive"
-              className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
+              className="flex-1 h-12 rounded-2xl font-bold shadow-lg shadow-destructive/20 cursor-pointer"
               onClick={onConfirm}
               disabled={isSubmitting}
             >
@@ -111,7 +111,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
       <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white">
         <div className="space-y-5">
           <div className="text-left border-b border-solid border-zinc-100 pb-3">
-            <h3 className="text-[19px] font-black text-zinc-800">새로운 학생 등록</h3>
+            <h3 className="text-[19px] font-bold text-zinc-800">새로운 학생 등록</h3>
           </div>
 
           <div className="space-y-4 pt-2">
@@ -227,7 +227,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
             <Button 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
             >
               {isSubmitting ? '등록 중...' : '학생 추가'}
             </Button>
@@ -258,7 +258,7 @@ export function DeleteStudentDialog({ open, onOpenChange, studentName, onConfirm
             <Trash2 className="w-[27px] h-[27px] text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-extrabold text-foreground">{studentName} 학생 삭제</h3>
+            <h3 className="text-lg font-bold text-foreground">{studentName} 학생 삭제</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
               정말로 이 학생을 삭제하시겠습니까?<br />
               <span className="text-destructive font-semibold">학생 정보와 모든 커리큘럼 기록이 영구 삭제됩니다.</span>
@@ -272,7 +272,7 @@ export function DeleteStudentDialog({ open, onOpenChange, studentName, onConfirm
             } />
             <Button 
               variant="destructive"
-              className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20 cursor-pointer"
+              className="flex-1 h-12 rounded-2xl font-bold shadow-lg shadow-destructive/20 cursor-pointer"
               onClick={onConfirm}
               disabled={isSubmitting}
             >
@@ -334,7 +334,7 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
       <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
         <div className="w-full p-5 min-h-0 min-[370px]:p-6 sm:p-10 flex flex-col items-center text-center space-y-5 sm:space-y-7">
           <div className="space-y-2">
-            <h3 className="text-xl min-[370px]:text-[22px] font-extrabold text-foreground tracking-tight">{studentName} 학생 등원</h3>
+            <h3 className="text-xl min-[370px]:text-[22px] font-bold text-foreground tracking-tight">{studentName} 학생 등원</h3>
           </div>
           
           <div className="w-full space-y-4 min-[370px]:space-y-5 px-1 text-left">
@@ -369,7 +369,7 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
                       setAddedMinutes(0);
                       setDismissalTime(arrivalTime);
                     }}
-                    className="text-[9px] min-[370px]:text-[10px] text-destructive hover:underline font-extrabold cursor-pointer mt-0.5"
+                    className="text-[9px] min-[370px]:text-[10px] text-destructive hover:underline font-bold cursor-pointer mt-0.5"
                   >
                     +{addedMinutes}분 초기화
                   </button>
@@ -385,7 +385,7 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
                 type="time" 
                 value={dismissalTime}
                 onChange={(e) => setDismissalTime(e.target.value)}
-                className="w-full max-w-[190px] min-[370px]:max-w-[216px] rounded-2xl h-10 min-[370px]:h-11 border-primary/20 bg-primary/5 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-black text-base min-[370px]:text-lg tracking-wider text-primary transition-all"
+                className="w-full max-w-[190px] min-[370px]:max-w-[216px] rounded-2xl h-10 min-[370px]:h-11 border-primary/20 bg-primary/5 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-base min-[370px]:text-lg tracking-wider text-primary transition-all"
               />
             </div>
           </div>
@@ -481,7 +481,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white">
         <div className="space-y-5">
           <div className="text-left border-b border-solid border-zinc-100 pb-3">
-            <h3 className="text-[19px] font-black text-zinc-800">{student?.name} 학생 정보 수정</h3>
+            <h3 className="text-[19px] font-bold text-zinc-800">{student?.name} 학생 정보 수정</h3>
           </div>
 
           <div className="space-y-4 pt-2">
@@ -624,7 +624,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
             >
               {isSaving ? '저장 중...' : '저장'}
             </Button>
@@ -689,7 +689,7 @@ export function MobileEditCurriculumDialog({
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-[380px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white">
         <div className="space-y-5">
           <div className="text-left border-b border-solid border-zinc-100 pb-3">
-            <h3 className="text-[19px] font-black text-zinc-800">도서 기록 수정</h3>
+            <h3 className="text-[19px] font-bold text-zinc-800">도서 기록 수정</h3>
           </div>
 
           <div className="space-y-4 pt-2">
@@ -746,7 +746,7 @@ export function MobileEditCurriculumDialog({
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
             >
               {isSaving ? '저장 중...' : '저장'}
             </Button>
@@ -765,21 +765,21 @@ interface AddCurriculumDialogProps {
   onOpenChange: (open: boolean) => void;
   studentName: string;
   books: any[];
-  existingBookTitles: string[];
+  existingBookIds: string[];
   onSelect: (bookTitle: string) => void;
 }
 
-export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookTitles, onSelect }: AddCurriculumDialogProps) {
+export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookIds, onSelect }: AddCurriculumDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl bg-white p-6">
         <DialogHeader>
-          <DialogTitle className="text-[21px] font-extrabold mt-2 ml-1">{studentName} 학생 도서 추가</DialogTitle>
+          <DialogTitle className="text-[21px] font-bold mt-2 ml-1">{studentName} 학생 도서 추가</DialogTitle>
         </DialogHeader>
         <div className="pt-2">
           <BookSearch 
             books={books} 
-            existingBookTitles={existingBookTitles}
+            existingBookIds={existingBookIds}
             onSelect={(bookTitle) => {
               onSelect(bookTitle);
             }} 
@@ -810,7 +810,7 @@ export function LevelUpDialog({ open, onOpenChange, studentName, onConfirm, isSu
             <ArrowUpCircle className="w-[27px] h-[27px] text-primary" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-extrabold text-foreground">{studentName} 학생 레벨업</h3>
+            <h3 className="text-lg font-bold text-foreground">{studentName} 학생 레벨업</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
               {studentName} 학생을 레벨업 하시겠습니까?<br />
               <span className="text-destructive font-semibold">레벨업 시 모든 커리큘럼 데이터가 삭제됩니다.</span>
@@ -826,7 +826,7 @@ export function LevelUpDialog({ open, onOpenChange, studentName, onConfirm, isSu
               </Button>
             } />
             <Button 
-              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-extrabold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
               onClick={onConfirm}
               disabled={isSubmitting}
             >

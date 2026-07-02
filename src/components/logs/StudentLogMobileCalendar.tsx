@@ -161,7 +161,7 @@ export default function StudentLogMobileCalendar({
       
       {/* 1. Mini Month Calendar Card */}
       <Card className="rounded-[2rem] border-none ring-0 shadow-sm overflow-hidden bg-white">
-        <CardContent className="p-5" style={{ paddingTop: '16px', paddingBottom: '16px' }}>
+        <CardContent className="p-5" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
           
           {/* Header */}
           <div className="relative flex items-center justify-center h-10 mb-4 w-full">

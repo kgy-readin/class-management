@@ -8,7 +8,7 @@ import { formatLevel } from '@/lib/utils';
 
 interface BookSearchProps {
   books: Book[];
-  existingBookTitles: string[];
+  existingBookIds: string[];
   onSelect: (title: string) => void;
 }
 
@@ -119,7 +119,7 @@ function MultiSelectPopover({ label, options, selectedValues, onChange, placehol
   );
 }
 
-export default function BookSearch({ books, existingBookTitles, onSelect }: BookSearchProps) {
+export default function BookSearch({ books, existingBookIds, onSelect }: BookSearchProps) {
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [difficultyFilters, setDifficultyFilters] = useState<string[]>([]);
@@ -291,7 +291,7 @@ export default function BookSearch({ books, existingBookTitles, onSelect }: Book
         <div className="p-2 space-y-1">
           {filteredBooks.length > 0 ? (
             filteredBooks.map((book, idx) => {
-              const isExisting = existingBookTitles.includes(book.title);
+              const isExisting = existingBookIds.includes(book.id);
               return (
                 <button
                   key={`${book.id}-${book.title}-${idx}`}

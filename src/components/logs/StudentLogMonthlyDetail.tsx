@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import StudentLogCharts from './StudentLogCharts';
 import { DeleteLogDialog } from './LogPopups';
 import StudentCombobox from '../common/StudentCombobox';
 import { renderBoldBrackets } from '../common/TextHelpers';
@@ -21,24 +19,39 @@ import {
   Plus, 
   ChevronLeft, 
   ChevronRight, 
-  UsersRound, 
-  Pencil,
-  Calendar,
+  User, 
   CalendarCheck,
+  Calendar,
+  Pencil,
   Save,
   X
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  isSameMonth, 
+  isSameDay, 
+  addMonths, 
+  subMonths,
+  parseISO
+} from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { isKoreanHoliday } from './holidayUtils';
 
-interface StudentLogStudentsProps {
-  sortedStudents: Student[];
-  selectedStudent: string;
-  setSelectedStudent: (name: string) => void;
+interface StudentLogMonthlyDetailProps {
   logs: StudentLogEntry[];
   fetchLogs: () => Promise<void>;
-  isMobile: boolean;
+  currentMonth: Date;
+  setCurrentMonth: (date: Date | ((prev: Date) => Date)) => void;
   setViewMode: (mode: 'monthly' | 'student' | 'monthly-detail') => void;
   handleOpenAddDialog: (initialDate?: Date) => void;
+  sortedStudents: Student[];
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
 }
 
 const CATEGORIES = [
@@ -48,15 +61,15 @@ const CATEGORIES = [
 ];
 
 const CAT_HEX_COLORS: Record<string, string> = {
-  '특이사항': 'rgba(161, 161, 170, 0.7)',   // zinc-400/70
-  '지도방향': 'rgba(161, 161, 170, 0.7)',   // zinc-400/70
-  '성장긍정': 'rgba(16, 185, 129, 0.9)',    // emerald-500/90
-  '쓰기부진': 'rgba(251, 191, 36, 0.9)',    // amber-400/90
-  '읽기부진': 'rgba(251, 191, 36, 0.9)',    // same as amber-400/90
-  '학업부진': 'rgba(249, 115, 22, 0.9)',     // orange-500/90
-  '문제행동': 'rgba(239, 68, 68, 0.9)',     // red-500/90
-  '가정소통': 'rgba(59, 130, 246, 0.9)',    // blue-500/90
-  '운영방침': 'rgba(139, 92, 246, 0.9)'     // violet-500/90
+  '특이사항': 'rgba(161, 161, 170, 0.7)',   // zinc-400
+  '지도방향': 'rgba(161, 161, 170, 0.7)',   // zinc-400
+  '성장긍정': 'rgba(16, 185, 129, 0.9)',    // emerald-500
+  '쓰기부진': 'rgba(251, 191, 36, 0.9)',    // amber-400
+  '읽기부진': 'rgba(251, 191, 36, 0.9)',    // same as amber-400
+  '학업부진': 'rgba(249, 115, 22, 0.9)',     // orange-500
+  '문제행동': 'rgba(239, 68, 68, 0.9)',     // red-500
+  '가정소통': 'rgba(59, 130, 246, 0.9)',    // blue-500
+  '운영방침': 'rgba(139, 92, 246, 0.9)'     // violet-500
 };
 
 const getCategoryTagStyle = (category: string): string => {
@@ -64,38 +77,44 @@ const getCategoryTagStyle = (category: string): string => {
   return getTagColor(colorName);
 };
 
-export default function StudentLogStudents({
-  sortedStudents,
-  selectedStudent,
-  setSelectedStudent,
+export default function StudentLogMonthlyDetail({
   logs,
   fetchLogs,
-  isMobile,
+  currentMonth,
+  setCurrentMonth,
   setViewMode,
   handleOpenAddDialog,
-}: StudentLogStudentsProps) {
+  sortedStudents,
+  selectedDate,
+  setSelectedDate,
+}: StudentLogMonthlyDetailProps) {
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
   // Edit Log State
   const [editingLog, setEditingLog] = useState<StudentLogEntry | null>(null);
-  const [editForm, setEditForm] = useState<{ date: string; category: string; content: string } | null>(null);
+  const [editForm, setEditForm] = useState<{ date: string; category: string; content: string; name: string } | null>(null);
   const [submittingEdit, setSubmittingEdit] = useState(false);
 
   // Delete Confirm Dialog
   const [deletingItem, setDeletingItem] = useState<StudentLogEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // --- Process data for STUDENT VIEW ---
-  const currentStudentLogs = logs.filter(log => log.name === selectedStudent);
-  
-  // Sort student logs by Date descending for list display
-  const studentLogsSorted = [...currentStudentLogs].sort((a, b) => b.date.localeCompare(a.date));
-  
-  // Total pages
-  const totalPages = Math.ceil(studentLogsSorted.length / itemsPerPage) || 1;
-  const pageLogs = studentLogsSorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // Month navigation calculation
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start on Monday
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
+
+  // Get logs for the clicked date
+  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+  const selectedDateLogs = logs.filter(log => String(log.date).split('T')[0] === selectedDateStr);
+
+  // Pagination calculation
+  const totalPages = Math.ceil(selectedDateLogs.length / itemsPerPage) || 1;
+  const pageLogs = selectedDateLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -123,12 +142,16 @@ export default function StudentLogStudents({
       toast.error(MESSAGES.studentLog.enterContent);
       return;
     }
-    
+    if (!editForm.name) {
+      toast.error(MESSAGES.studentLog.selectStudent);
+      return;
+    }
+
     setSubmittingEdit(true);
     try {
       await studentLogApi.update(editingLog, {
         date: editForm.date,
-        name: editingLog.name,
+        name: editForm.name,
         category: editForm.category,
         content: editForm.content.trim()
       });
@@ -143,43 +166,6 @@ export default function StudentLogStudents({
     }
   };
 
-  // Recharts: Category counts
-  const categoryCounts: Record<string, number> = {};
-  currentStudentLogs.forEach(log => {
-    categoryCounts[log.category] = (categoryCounts[log.category] || 0) + 1;
-  });
-  const pieData = Object.keys(categoryCounts).map(cat => ({
-    name: cat,
-    value: categoryCounts[cat]
-  }));
-
-  // Recharts: Trend data only for months with records, sorted chronologically
-  const trendData: { name: string; '기록 수': number }[] = [];
-  const monthGroups: Record<string, { label: string; count: number }> = {};
-  
-  currentStudentLogs.forEach(log => {
-    try {
-      const logDate = parseISO(log.date);
-      const key = format(logDate, 'yyyy-MM');
-      const label = format(logDate, 'M월');
-      if (!monthGroups[key]) {
-        monthGroups[key] = { label, count: 0 };
-      }
-      monthGroups[key].count += 1;
-    } catch {
-      // Ignore
-    }
-  });
-
-  const sortedMonthKeys = Object.keys(monthGroups).sort();
-  sortedMonthKeys.forEach(key => {
-    trendData.push({
-      name: monthGroups[key].label,
-      '기록 수': monthGroups[key].count
-    });
-  });
-
-  // Page numbers for pagination
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
     if (totalPages <= 7) {
@@ -199,40 +185,112 @@ export default function StudentLogStudents({
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       
-      {/* Left Column: Selector & Analytics Charts (Hidden totally on Mobile except for top selector) */}
-      <div className="w-full lg:w-[26%] xl:w-[28%] shrink-0 flex flex-col gap-4">
-        
-        {/* Student Selector Card */}
-        <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-visible" style={{ height: '80px', paddingTop: '0px', paddingBottom: '0px', overflow: 'visible' }}>
-          <CardContent className="p-5 flex items-center justify-between gap-4 overflow-visible" style={{ paddingTop: '10px', paddingBottom: '10px', paddingRight: '20px', paddingLeft: '20px', height: '80px', overflow: 'visible' }}>
-            <div className="flex items-center gap-2">
-              <UsersRound className="w-5 h-5 text-zinc-500" />
-              <label className="text-[15px] font-semibold text-zinc-800 tracking-wider shrink-0 select-none">학생 선택</label>
+      {/* Left Column: Mini Calendar (Identical to Mobile Mini Calendar, responsive size) */}
+      <div className="w-full lg:w-[26%] xl:w-[28%] lg:min-w-[328px] shrink-0 flex flex-col gap-4">
+        <Card className="rounded-[2rem] border-none ring-0 shadow-sm overflow-hidden bg-white">
+          <CardContent className="p-5" style={{ paddingTop: '12px', paddingBottom: '8px' }}>
+            
+            {/* Header */}
+            <div className="relative flex items-center justify-center h-10 mb-4 w-full">
+              <div className="flex items-center gap-[4px]">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                  onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+                >
+                  <ChevronLeft className="w-4 h-4 text-zinc-650" />
+                </Button>
+                <span className="text-[15.5px] font-semibold text-zinc-800 select-none text-center">
+                  {format(currentMonth, 'yyyy년 M월', { locale: ko })}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                  onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                >
+                  <ChevronRight className="w-4 h-4 text-zinc-650" />
+                </Button>
+              </div>
             </div>
-            <StudentCombobox
-              students={sortedStudents}
-              value={selectedStudent}
-              onChange={(val) => {
-                setSelectedStudent(val);
-                setCurrentPage(1);
-              }}
-              placeholder="선택"
-              className="!w-[180px]"
-              inputClassName="bg-zinc-50 border-solid border-zinc-100 text-[14px] font-semibold !h-[44px]"
-            />
+
+            {/* Week headers */}
+            <div className="grid grid-cols-7 gap-1 text-center mb-2 font-normal">
+              {['월', '화', '수', '목', '금', '토', '일'].map((dayName, index) => (
+                <div 
+                  key={dayName} 
+                  className={`text-[14px] py-1 select-none ${
+                    index === 6 ? 'text-red-500' : 'text-zinc-650'
+                  }`}
+                >
+                  {dayName}
+                </div>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {daysInRange.map((day) => {
+                const dateStr = format(day, 'yyyy-MM-dd');
+                const dayLogs = logs.filter(log => String(log.date).split('T')[0] === dateStr);
+                
+                const isSelected = isSameDay(day, selectedDate);
+                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isTodayDate = isSameDay(day, new Date());
+                const isSunday = day.getDay() === 0;
+
+                return (
+                  <div
+                    key={day.toISOString()}
+                    onClick={() => {
+                      setSelectedDate(day);
+                      setCurrentPage(1);
+                    }}
+                    className={`py-1.5 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-all select-none relative ${
+                      isSelected
+                        ? 'bg-zinc-100/70 font-bold'
+                        : isCurrentMonth
+                          ? 'hover:bg-zinc-50'
+                          : 'opacity-40'
+                    } ${
+                      isCurrentMonth
+                        ? (isSunday || isKoreanHoliday(day)) ? 'text-red-500' : 'text-zinc-900'
+                        : 'text-zinc-350'
+                    }`}
+                  >
+                    <div className="relative flex flex-col items-center h-5 justify-center">
+                      <span className="text-[15px] leading-tight select-none">
+                        {format(day, 'd')}
+                      </span>
+                      {isTodayDate && (
+                        <span className="absolute bottom-[-2px] left-0 right-0 h-[2.5px] bg-current rounded-full" />
+                      )}
+                    </div>
+                    
+                    {/* Faint small dots representing categories below number (max 4) */}
+                    <div className="flex gap-[1.5px] justify-center mt-1 h-1.5 w-full overflow-hidden px-1">
+                      {dayLogs.slice(0, 4).map((log, idx) => {
+                        const color = CAT_HEX_COLORS[log.category] || 'rgba(161, 161, 170, 0.7)';
+                        return (
+                          <span 
+                            key={idx} 
+                            className="w-[4.8px] h-[4.8px] rounded-full shrink-0" 
+                            style={{ backgroundColor: color }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
           </CardContent>
         </Card>
-
-        {/* Charts: Hidden on mobile and tablet portrait, shown on tablet landscape/desktop */}
-        <StudentLogCharts 
-          pieData={pieData} 
-          trendData={trendData} 
-          CAT_HEX_COLORS={CAT_HEX_COLORS} 
-          selectedStudent={selectedStudent}
-        />
       </div>
 
-      {/* Right Column: Recent Records Table */}
+      {/* Right Column: Detailed Records Table for Selected Date */}
       <div className="flex-1 min-w-0">
         <div className="bg-white rounded-[2.5rem] shadow-sm overflow-hidden" style={{ minHeight: '350px', paddingBottom: '12px' }}>
           
@@ -241,18 +299,18 @@ export default function StudentLogStudents({
             <div className="flex items-center gap-3">
               <div>
                 <h2 className="text-[17px] md:text-lg font-semibold text-zinc-800 tracking-tight">
-                  최근 기록
+                  {format(selectedDate, 'M월 d일 교무기록')}
                 </h2>
               </div>
             </div>
 
-            {/* Buttons (Desktop layout vs Mobile) */}
+            {/* Buttons (Desktop layout with view options) */}
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
                 variant="outline"
-                className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all"
-                onClick={() => handleOpenAddDialog()}
+                className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer"
+                onClick={() => handleOpenAddDialog(selectedDate)}
                 title="추가"
               >
                 <Plus className="w-5 h-5" />
@@ -262,10 +320,12 @@ export default function StudentLogStudents({
                 size="icon"
                 variant="outline"
                 className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer"
-                onClick={() => setViewMode('monthly-detail')}
-                title="월별상세로 보기"
+                onClick={() => {
+                  setViewMode('student');
+                }}
+                title="학생뷰로 보기"
               >
-                <CalendarCheck className="w-5 h-5" />
+                <User className="w-5 h-5" />
               </Button>
 
               <Button
@@ -281,28 +341,18 @@ export default function StudentLogStudents({
           </div>
 
           {/* Records List/Table */}
-          {/* Desktop version: Hidden on mobile */}
-          <div className="hidden md:block overflow-x-auto min-h-[350px] m-0 p-0" style={{ paddingTop: '0px', marginLeft: '0px', marginRight: '0px', marginTop: '0px' }}>
-            <table className="w-full text-left border-collapse table-fixed m-0 p-0" style={{ marginTop: '0px', paddingTop: '0px' }}>
+          <div className="overflow-x-auto min-h-[350px] m-0 p-0" style={{ paddingTop: '0px' }}>
+            <table className="w-full text-left border-collapse table-fixed m-0 p-0">
               <thead className="bg-zinc-50/70">
                 <tr className="bg-zinc-50/70 border-b border-solid border-zinc-100">
-                  <th className="w-[10%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">날짜</th>
+                  <th className="w-[12%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">이름</th>
                   <th className="w-[13%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">태그</th>
-                  <th className="w-[62%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">내용</th>
+                  <th className="w-[60%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">내용</th>
                   <th className="w-[15%] px-4 py-3 text-[14px] font-semibold text-zinc-650 uppercase tracking-wider text-center align-middle">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-solid divide-zinc-100 bg-white">
-                {!selectedStudent ? (
-                  <tr>
-                    <td colSpan={4} className="px-8 py-20 text-center">
-                      <div className="flex flex-col items-center gap-2 text-zinc-500">
-                        <UsersRound className="w-10 h-10 opacity-30 text-zinc-400" />
-                        <p className="text-[16px] font-medium text-zinc-500">학생을 선택해 주세요.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : pageLogs.length === 0 ? (
+                {pageLogs.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-2 text-zinc-500">
@@ -314,24 +364,18 @@ export default function StudentLogStudents({
                 ) : (
                   pageLogs.map((log, idx) => {
                     const isEditing = editingLog === log;
-                    
-                    let dateFormatted = '';
-                    try {
-                      dateFormatted = format(parseISO(log.date), 'MM.dd');
-                    } catch {
-                      dateFormatted = log.date;
-                    }
 
                     if (isEditing && editForm) {
                       return (
                         <tr key={`${log.name}-${idx}`} className="bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
-                          {/* Date Edit */}
+                          {/* Student Name Edit */}
                           <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
-                            <input
-                              type="date"
-                              className="w-full h-8 px-1.5 border border-zinc-200 rounded text-[14px] font-normal text-zinc-800 bg-white focus:border-primary focus:outline-none"
-                              value={editForm.date}
-                              onChange={e => setEditForm({ ...editForm, date: e.target.value })}
+                            <StudentCombobox
+                              students={sortedStudents}
+                              value={editForm.name}
+                              onChange={(val) => setEditForm({ ...editForm, name: val })}
+                              placeholder="학생 선택"
+                              inputClassName="bg-white border-solid border-zinc-200 text-xs !h-8 py-0 px-2 !rounded font-medium w-full"
                             />
                           </td>
 
@@ -358,7 +402,7 @@ export default function StudentLogStudents({
                             />
                           </td>
 
-                          {/* Control Actions during Edit */}
+                          {/* Actions during Edit */}
                           <td className="px-3 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top overflow-visible">
                             <div className="flex items-center justify-center gap-1.5">
                               <Button
@@ -393,12 +437,12 @@ export default function StudentLogStudents({
                     return (
                       <tr key={`${log.name}-${idx}`} className="hover:bg-zinc-50/20 transition-colors group">
                         
-                        {/* Date */}
+                        {/* Student Name */}
                         <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
-                          <span className="text-[14px] font-normal text-zinc-805 leading-5">{dateFormatted}</span>
+                          <span className="text-[14px] font-semibold text-zinc-800 leading-5">{log.name}</span>
                         </td>
 
-                        {/* Category */}
+                        {/* Category Tag */}
                         <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
                           <div className="flex justify-center items-center w-full">
                             <div className={`inline-flex items-center justify-center h-[21px] px-2.5 text-[11.5px] font-semibold rounded-full select-none text-center min-w-[72px] ${getCategoryTagStyle(log.category)}`}>
@@ -407,14 +451,14 @@ export default function StudentLogStudents({
                           </div>
                         </td>
 
-                        {/* Content */}
+                        {/* Content text */}
                         <td className="px-4 pt-[12px] pb-[12px] text-left align-top">
                           <div className="text-[14px] font-normal text-zinc-800 leading-5 whitespace-pre-wrap break-all">
                             {renderBoldBrackets(log.content)}
                           </div>
                         </td>
 
-                        {/* Control Actions */}
+                        {/* Manage Actions */}
                         <td className="px-4 pt-[12px] pb-[12px] whitespace-nowrap text-center align-top">
                           <div className="flex items-center justify-center gap-1">
                             <Button
@@ -426,7 +470,8 @@ export default function StudentLogStudents({
                                 setEditForm({
                                   date: log.date.split('T')[0],
                                   category: log.category,
-                                  content: log.content
+                                  content: log.content,
+                                  name: log.name
                                 });
                               }}
                               title="수정"
@@ -452,153 +497,9 @@ export default function StudentLogStudents({
             </table>
           </div>
 
-          {/* Mobile version: Hidden on desktop (Timeline Layout) */}
-          <div className="md:hidden divide-y divide-solid divide-zinc-100 bg-white p-5">
-            {!selectedStudent ? (
-              <div className="py-12 text-center">
-                <div className="flex flex-col items-center gap-2 text-zinc-500">
-                  <UsersRound className="w-8 h-8 opacity-30 text-zinc-400" />
-                  <p className="text-[13px] font-medium text-zinc-500">학생을 선택해 주세요.</p>
-                </div>
-              </div>
-            ) : pageLogs.length === 0 ? (
-              <div className="py-12 text-center">
-                <div className="flex flex-col items-center gap-2 text-zinc-500">
-                  <CalendarDays className="w-8 h-8 opacity-20" />
-                  <p className="text-[12px] font-medium text-zinc-500">기록된 내용이 없습니다.</p>
-                </div>
-              </div>
-            ) : (
-              pageLogs.map((log, idx) => {
-                const isEditing = editingLog === log;
-                const badgeStyle = getCategoryTagStyle(log.category);
-                
-                let dateFormatted = '';
-                try {
-                  dateFormatted = format(parseISO(log.date), 'M월 d일');
-                } catch {
-                  dateFormatted = log.date;
-                }
-
-                return (
-                  <div key={`${log.name}-${idx}`} className="py-4 flex flex-col gap-2 relative last:pb-0 first:pt-0">
-                    {/* Card Content container */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {isEditing && editForm ? (
-                            <input
-                              type="date"
-                              className="text-[13px] h-7 bg-white border border-zinc-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 ring-primary/20"
-                              value={editForm.date}
-                              onChange={e => setEditForm({ ...editForm, date: e.target.value })}
-                            />
-                          ) : (
-                            <span className="text-[13px] font-medium text-zinc-800">{dateFormatted}</span>
-                          )}
-                          
-                          {isEditing && editForm ? (
-                            <select
-                              className="text-[13px] h-7 bg-white border border-zinc-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 ring-primary/20"
-                              value={editForm.category}
-                              onChange={e => setEditForm({ ...editForm, category: e.target.value })}
-                            >
-                              {CATEGORIES.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className={`inline-flex items-center justify-center h-5 px-2.5 rounded-full text-[11.5px] font-semibold select-none text-center ${badgeStyle}`}>
-                              {log.category}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Actions on Mobile */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          {isEditing ? (
-                            <>
-                              <Button 
-                                size="icon" 
-                                variant="ghost"
-                                disabled={submittingEdit}
-                                onClick={handleUpdateLog}
-                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                                title="저장"
-                              >
-                                <Save className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                disabled={submittingEdit}
-                                onClick={() => {
-                                  setEditingLog(null);
-                                  setEditForm(null);
-                                }}
-                                className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg cursor-pointer"
-                                title="취소"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="h-7 w-7 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg cursor-pointer"
-                                onClick={() => {
-                                  setEditingLog(log);
-                                  setEditForm({
-                                    date: log.date.split('T')[0],
-                                    category: log.category,
-                                    content: log.content
-                                  });
-                                }}
-                                title="수정"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-zinc-400 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                                onClick={() => setDeletingItem(log)}
-                                title="삭제"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Content text strictly 13px and beautiful, breaking word wrapping nicely */}
-                      <div className="text-[13px] font-medium text-zinc-800 leading-relaxed pr-2">
-                        {isEditing && editForm ? (
-                          <textarea
-                            rows={2}
-                            className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-y"
-                            value={editForm.content}
-                            onChange={e => setEditForm({ ...editForm, content: e.target.value })}
-                          />
-                        ) : (
-                          <p className="whitespace-pre-wrap break-all">{renderBoldBrackets(log.content)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Beautiful custom-made Pagination bar */}
+          {/* Pagination bar */}
           {totalPages > 1 && (
             <div className="px-8 py-5 border-t border-zinc-100 bg-white flex items-center justify-center gap-1.5 select-none">
-              
-              {/* Prev page */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -609,7 +510,6 @@ export default function StudentLogStudents({
                 <ChevronLeft className="w-4 h-4" />
               </Button>
 
-              {/* Interconnected page numbers */}
               {getPageNumbers().map((pageNum, idx) => {
                 const isEllipsis = pageNum === '...';
                 const isActive = pageNum === currentPage;
@@ -633,7 +533,6 @@ export default function StudentLogStudents({
                 );
               })}
 
-              {/* Next page */}
               <Button
                 variant="ghost"
                 size="icon"

@@ -722,7 +722,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         onOpenChange={setIsAddBookOpen}
         studentName={studentName}
         books={data.books}
-        existingBookTitles={optimisticCurriculum.map(c => c.bookTitle)}
+        existingBookIds={optimisticCurriculum.map(c => c.bookId)}
         onSelect={(bookTitle) => handleAddCurriculum(bookTitle)}
       />
 

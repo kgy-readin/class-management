@@ -6,30 +6,40 @@ import { Task, Student, getTagColor, getShortHash } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { 
-  Trash2, 
-  Pencil, 
-  Check, 
-  X, 
   Plus, 
   ChevronDown, 
   ChevronRight,
-  GripVertical,
+  ChevronLeft,
   Filter,
-  ScrollText,
-  Save,
   UsersRound,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
-import { format, isSameDay, isThisWeek, startOfDay, addMonths, addDays, differenceInCalendarDays, startOfWeek, getDay } from 'date-fns';
+import { format, isSameDay, isThisWeek, startOfDay, addMonths, addDays, startOfWeek, differenceInCalendarDays, getDay, subMonths, startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval, isSameMonth, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { taskApi } from '@/src/services/api';
 import { motion, AnimatePresence } from 'motion/react';
 import NotesPanel from './NotesPanel';
 import StudentCombobox from '../common/StudentCombobox';
 import { ReserveTaskDialog } from './TaskPopups';
+import { isKoreanHoliday } from '../logs/holidayUtils';
 
-import 'react-day-picker/dist/style.css';
+import TaskRow from './TaskRow';
+import FamilyTaskRow from './FamilyTaskRow';
+import InlineAddForm from './InlineAddForm';
+import MobileFilterBar from './MobileFilterBar';
+import { 
+  parseTaskDate, 
+  isTaskOverdue, 
+  isTaskDateBeforeToday, 
+  isTodayTask, 
+  getFamilyTaskDateClass
+} from './dateUtils';
+import { 
+  getCategoryBadgeClass, 
+  getStatusBadgeClass, 
+  getFamilyClassBadgeClass 
+} from './badgeUtils';
 
 interface TaskManagerProps {
   students: Student[];
@@ -87,10 +97,24 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [taskSearchQuery, setTaskSearchQuery] = useState('');
 
+  // Computed values for custom mini calendar
+  const taskMonthStart = startOfMonth(currentMonth);
+  const taskMonthEnd = endOfMonth(taskMonthStart);
+  const taskStartDate = startOfWeek(taskMonthStart, { weekStartsOn: 1 }); // Start on Monday
+  const taskEndDate = endOfWeek(taskMonthEnd, { weekStartsOn: 1 });
+  const taskDaysInRange = eachDayOfInterval({ start: taskStartDate, end: taskEndDate });
+
+  const taskWeeks: Date[][] = [];
+  for (let i = 0; i < taskDaysInRange.length; i += 7) {
+    taskWeeks.push(taskDaysInRange.slice(i, i + 7));
+  }
+
   useEffect(() => {
     const pathname = location.pathname;
     if (pathname.includes('/tasks/filter')) {
       setIsFilterExpanded(true);
+    } else {
+      setIsFilterExpanded(false);
     }
   }, [location.pathname]);
 
@@ -184,10 +208,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           }
         }
       }
-      if (!taskSearchQuery.trim()) {
-        navigate('/tasks/work', { replace: true });
-        return;
-      }
+
       setSelectedDate(undefined);
       setSelectedWeek(null);
       setSelectedStudent(null);
@@ -202,75 +223,6 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     }
   }, [location.pathname, students, tasks]);
 
-  // Helper to parse date strings
-  const parseTaskDate = (dateStr: string): Date | null => {
-    if (!dateStr) return null;
-    try {
-      const cleaned = dateStr.replace(/\//g, '-').trim();
-      const parts = cleaned.split('-');
-      if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        const parsed = new Date(year, month, day);
-        if (!isNaN(parsed.getTime())) return parsed;
-      }
-      const parsed = new Date(cleaned);
-      if (!isNaN(parsed.getTime())) return parsed;
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Safe checks for overdue task
-  const isTaskOverdue = (taskDateStr: string, status: string): boolean => {
-    if (!taskDateStr) return false;
-    if (status === '완료' || status === '취소') return false;
-    const d = parseTaskDate(taskDateStr);
-    if (!d) return false;
-    const today = startOfDay(new Date());
-    return startOfDay(d) < today;
-  };
-
-  // Strict check if task is before today (strictly, before today for Family View styling)
-  const isTaskDateBeforeToday = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    const d = parseTaskDate(dateStr);
-    if (!d) return false;
-    const today = startOfDay(new Date());
-    return startOfDay(d) < today;
-  };
-
-  // Helper check if task date is today
-  const isTodayTask = (dateStr: string): boolean => {
-    if (!dateStr) return false;
-    const d = parseTaskDate(dateStr);
-    if (!d) return false;
-    return isSameDay(d, new Date());
-  };
-
-  // Family View date text color styling based on overdue days:
-  // 1~30 days overdue -> blue text, 31+ days overdue -> red text, else normal text color
-  const getFamilyTaskDateClass = (dateStr: string): string => {
-    if (!dateStr) return 'text-zinc-750';
-    const d = parseTaskDate(dateStr);
-    if (!d) return 'text-zinc-750';
-    const today = startOfDay(new Date());
-    const taskDate = startOfDay(d);
-    
-    if (taskDate < today) {
-       const diffTime = today.getTime() - taskDate.getTime();
-       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-       if (diffDays >= 1 && diffDays <= 30) {
-         return 'text-blue-600 font-medium';
-       } else if (diffDays >= 31) {
-         return 'text-red-600 font-medium';
-       }
-    }
-    return 'text-zinc-750';
-  };
-
   // Check if dates match selected filter date
   const isDateMatchingFilter = (taskDateStr: string): boolean => {
     if (!selectedDate) return true;
@@ -282,6 +234,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   // Interaction handlers for Mutual Exclusion filtering (중복 필터링 금지)
   const handleDateSelect = (d: Date | undefined) => {
     if (d) {
+      setTaskSearchQuery('');
+      setSelectedStudent(null);
+      setSelectedWeek(null);
       if (selectedDate && isSameDay(d, selectedDate)) {
         navigate('/tasks/filter');
       } else {
@@ -294,6 +249,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   const handleWeekNumberClick = (weekNumber: number, dates: Date[], e: React.MouseEvent) => {
     if (dates && dates.length > 0) {
+      setTaskSearchQuery('');
+      setSelectedStudent(null);
+      setSelectedDate(undefined);
       const monday = startOfWeek(dates[0], { weekStartsOn: 1 });
       const mondayStr = format(monday, 'yyyy-MM-dd');
       
@@ -308,6 +266,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   const handleStudentSelect = (studentName: string | null) => {
     if (studentName) {
+      setTaskSearchQuery('');
+      setSelectedDate(undefined);
+      setSelectedWeek(null);
       navigate(`/tasks/filter/students/${getShortHash(studentName)}`);
     } else {
       navigate('/tasks/filter');
@@ -662,10 +623,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       defaultCategory = '가통';
       defaultFamilyClass = '정기';
     } else if (group === 'nextWeek') {
-      // Find next week's Monday
-      const today = new Date();
-      const nextWeekStart = addDays(startOfWeek(today, { weekStartsOn: 1 }), 7);
-      defaultDate = format(nextWeekStart, 'yyyy-MM-dd');
+      defaultDate = '';
     }
 
     setNewForm({
@@ -820,27 +778,27 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   return (
     <div className="-mt-1">
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         
         {/* Left Side: Calendar & Notes Panel */}
         <div className="w-full lg:w-[354px] shrink-0 flex flex-col md:flex-row lg:flex-col gap-6 md:items-stretch lg:self-start">
           
           {/* Filtering Section Wrapper */}
-          <div className="hidden md:flex w-full max-w-[354px] lg:w-[354px] flex-col gap-4 overflow-visible md:flex-none" style={{ paddingTop: '12px', paddingBottom: '8px', marginBottom: '-12px' }}>
+          <div className="hidden md:flex w-full max-w-[354px] lg:w-[354px] flex-col gap-4 overflow-visible md:flex-none" style={{ paddingTop: '0px', paddingBottom: '8px', marginBottom: '-12px' }}>
             {/* Header / Selector Card */}
             <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-visible w-full" style={{ height: '64px', overflow: 'visible' }}>
               <CardContent className="p-3.5 flex items-center justify-between gap-3 h-full overflow-visible">
                 {!isFilterExpanded ? (
-                  <div className="flex items-center gap-3 w-full">
+                  <div className="flex items-center justify-center w-full relative">
                     <button
                       type="button"
                       onClick={() => setIsFilterExpanded(true)}
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-500 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center"
+                      className="absolute left-0 w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-500 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center z-10"
                       title="필터링 섹션 펼치기"
                     >
                       <Filter className="w-4 h-4" />
                     </button>
-                    <span className="text-[16px] font-semibold text-zinc-800 select-none truncate">
+                    <span className="text-[16px] font-semibold text-zinc-800 select-none truncate text-center px-10">
                       {format(selectedDate || new Date(), 'yyyy년 M월 d일 eeee', { locale: ko })}
                     </span>
                   </div>
@@ -866,12 +824,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           const val = e.target.value;
                           setTaskSearchQuery(val);
                           if (val.trim() !== '') {
+                            setSelectedDate(undefined);
+                            setSelectedWeek(null);
+                            setSelectedStudent(null);
                             if (activeTab !== '필터') {
                               navigate('/tasks/filter');
-                            }
-                          } else {
-                            if (!selectedDate && !selectedWeek && !selectedStudent) {
-                              navigate('/tasks/work');
                             }
                           }
                         }}
@@ -883,9 +840,6 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           type="button"
                           onClick={() => {
                             setTaskSearchQuery('');
-                            if (!selectedDate && !selectedWeek && !selectedStudent) {
-                              navigate('/tasks/work');
-                            }
                           }}
                           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-650"
                         >
@@ -913,171 +867,138 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   className="w-full pt-0 overflow-visible flex flex-col items-center gap-3"
                   style={{ marginTop: '-4px', paddingBottom: '8px', marginBottom: '-8px' }}
                 >
-                  <Card 
-                    className="rounded-[2rem] border-none ring-0 shadow-sm bg-[#FFFFFF] overflow-hidden w-full max-w-[350px] lg:w-[350px] h-fit flex flex-col mx-auto"
-                    style={{ paddingTop: '12px', paddingBottom: '8px' }}
-                  >
-                    <CardContent className="flex flex-col items-center justify-center min-h-0 w-full pt-1 pb-1 px-4">
-                      <style>{`
-                        .rdp {
-                          --rdp-accent-color: #2563eb;
-                          --rdp-background-color: #eff6ff;
-                          margin-top: -8px;
-                          margin-bottom: -16px;
-                          font-size: 13px;
-                          width: 100%;
-                          display: flex;
-                          flex-direction: column;
-                          align-items: center;
-                          padding-bottom: 4px;
-                        }
-                        .rdp-months { width: 100%; display: flex; justify-content: center; }
-                        .rdp-month { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                        .rdp-caption { display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; max-width: 280px !important; margin: 0 auto !important; margin-bottom: 4px !important; padding: 0 !important; }
-                        .rdp-caption_label { font-weight: 600 !important; font-size: 16px !important; transform: none !important; padding: 0 !important; margin-left: 8px !important; }
-                        .rdp-nav { display: flex !important; gap: 8px !important; transform: scale(0.85) !important; transform-origin: right center !important; margin: 0 !important; padding: 0 !important; }
-                        .rdp-nav button, .rdp-nav_button, .rdp-nav .rdp-button { 
-                          color: #a1a1aa !important; 
-                          width: 20px !important; 
-                          height: 20px !important; 
-                          min-width: 20px !important; 
-                          min-height: 20px !important; 
-                          padding: 0 !important; 
-                          display: flex !important; 
-                          align-items: center !important; 
-                          justify-content: center !important; 
-                        }
-                        .rdp-nav button:hover, .rdp-nav_button:hover, .rdp-nav .rdp-button:hover { color: #71717a !important; background-color: #f4f4f5 !important; }
-                        .rdp-nav button:last-child, .rdp-nav_button_next { margin-right: 16px !important; }
-                        .rdp-nav svg, .rdp-nav_icon, .rdp-nav path { color: inherit !important; fill: currentColor !important; }
-                        .rdp-nav svg[fill="none"] path, .rdp-nav_icon[fill="none"] path { fill: none !important; stroke: currentColor !important; }
-                        .rdp-day_selected:not([disabled]), .rdp-day_selected:focus:not([disabled]), .rdp-day_selected:hover:not([disabled]) { background-color: #2563eb !important; color: white !important; border-radius: 9999px !important; }
-                        .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #eff6ff; border-radius: 9999px !important; }
-                        
-                        .rdp-weekday {
-                          font-size: 12px !important;
-                          font-weight: 600 !important;
-                          color: #a1a1aa !important;
-                          padding: 8px 0px !important;
-                          text-align: center !important;
-                          vertical-align: middle !important;
-                          line-height: 1.2 !important;
-                        }
-                        
-                        .rdp-week_number_header {
-                          font-size: 11px !important;
-                          font-weight: 600 !important;
-                          color: #a1a1aa !important;
-                          padding: 8px 0px !important;
-                          text-align: center !important;
-                          vertical-align: middle !important;
-                          line-height: 1.2 !important;
-                        }
+                  <Card className="rounded-[2rem] border-none ring-0 shadow-sm bg-white overflow-hidden w-full max-w-[350px] lg:w-[350px] h-fit flex flex-col mx-auto">
+                    <CardContent className="p-5" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+                      
+                      {/* Calendar Header */}
+                      <div className="relative flex items-center justify-center h-10 mb-4 w-full">
+                        <div className="flex items-center gap-[4px]">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                            onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
+                          >
+                            <ChevronLeft className="w-4 h-4 text-zinc-650" />
+                          </Button>
+                          <span className="text-[15.5px] font-semibold text-zinc-800 select-none text-center min-w-[90px]">
+                            {format(currentMonth, 'yyyy년 M월', { locale: ko })}
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="rounded-full w-8 h-8 hover:bg-zinc-100 cursor-pointer"
+                            onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                          >
+                            <ChevronRight className="w-4 h-4 text-zinc-650" />
+                          </Button>
+                        </div>
+                      </div>
 
-                        .rdp-table { width: 100% !important; border-collapse: collapse !important; max-width: 280px !important; margin: 0 auto !important; }
-                        .rdp-cell { padding: 0px; vertical-align: middle; text-align: center; }
-                        .rdp-button { width: 31px; height: 31px; display: flex; align-items: center; justify-content: center; position: relative; margin: 0 auto; font-size: 12px; }
+                      {/* Week headers */}
+                      <div className="flex gap-1 text-center mb-2 font-normal items-center w-full">
+                        <div className="w-[28px] shrink-0 text-[11px] font-semibold text-zinc-400 select-none text-center">W</div>
+                        <div className="flex-1 grid grid-cols-7 text-center">
+                          {['월', '화', '수', '목', '금', '토', '일'].map((dayName, index) => (
+                            <div 
+                              key={dayName} 
+                              className={`text-[13px] font-medium py-1 select-none ${
+                                index === 6 ? 'text-red-500' : 'text-zinc-650'
+                              }`}
+                            >
+                              {dayName}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
-                        /* Outside days styling - soft light gray */
-                        .rdp-outside {
-                          color: #d1d5db !important;
-                          opacity: 0.6;
-                        }
+                      {/* Weeks/Days Grid */}
+                      <div className="flex flex-col gap-1">
+                        {taskWeeks.map((weekDays, weekIdx) => {
+                          const monday = weekDays[0];
+                          const weekNum = getWeek(monday, { weekStartsOn: 1 });
+                          
+                          const isWeekSelected = selectedWeek && selectedWeek.dates.some(d => {
+                            return isSameDay(d, monday);
+                          });
 
-                        /* Continuous highlighting for the selected week bar */
-                        td.rdp-day_selected-week { background: linear-gradient(to bottom, transparent 5%, #eff6ff 5%, #eff6ff 95%, transparent 95%) !important; }
-                        td.rdp-day_selected-week_dummy { display: none; }
-                        
-                        /* Round the Monday edge of the bar */
-                        td.rdp-day_selected-week:first-of-type {
-                          border-top-left-radius: 9999px !important;
-                          border-bottom-left-radius: 9999px !important;
-                        }
-                        
-                        /* Round the Sunday edge of the bar */
-                        td.rdp-day_selected-week:last-of-type {
-                          border-top-right-radius: 9999px !important;
-                          border-bottom-right-radius: 9999px !important;
-                        }
-
-                        /* Clear backgrounds and styles for buttons in the selected week bar */
-                        td.rdp-day_selected-week .rdp-day_button:not(.rdp-selected),
-                        td.rdp-day_selected-week .rdp-button:not(.rdp-selected) {
-                          background-color: transparent !important;
-                          border-radius: 0px !important;
-                          color: #2563eb !important;
-                          font-weight: 600 !important;
-                        }
-                      `}</style>
-                      <DayPicker
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={handleDateSelect}
-                        showWeekNumber={true}
-                        showOutsideDays={true}
-                        month={currentMonth}
-                        onMonthChange={setCurrentMonth}
-                        locale={ko}
-                        weekStartsOn={1}
-                        className="mx-auto"
-                        modifiers={{
-                          selectedWeek: (date) => {
-                            if (!selectedWeek) return false;
-                            const dateStr = format(date, 'yyyy-MM-dd');
-                            return selectedWeek.dates.some(wd => format(wd, 'yyyy-MM-dd') === dateStr);
-                          }
-                        }}
-                        modifiersClassNames={{
-                          selectedWeek: 'rdp-day_selected-week',
-                        }}
-                        components={{
-                          WeekNumberHeader: (props) => {
-                            const { className, ...rest } = props;
-                            return (
-                              <th 
-                                {...rest} 
-                                className={`rdp-week_number_header font-semibold text-zinc-400 text-[11px] select-none text-center ${className || ''}`}
-                              >
-                                W
-                              </th>
-                            );
-                          },
-                          WeekNumber: (props) => {
-                            const { week, ...thProps } = props;
-                            const isWeekSelected = selectedWeek && selectedWeek.dates.some(d => {
-                              const dStr = format(d, 'yyyy-MM-dd');
-                              return week.days.some((wd: any) => format(wd.date, 'yyyy-MM-dd') === dStr);
-                            });
-
-                            const handleClick = (e: React.MouseEvent) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const dates = week.days.map((d: any) => d.date);
-                              handleWeekNumberClick(week.weekNumber, dates, e);
-                            };
-
-                            return (
-                              <th 
-                                {...thProps}
-                                className={`${thProps.className || ''} select-none`}
-                                style={{ padding: '0px', verticalAlign: 'middle', textAlign: 'center' }}
-                              >
+                          return (
+                            <div key={weekIdx} className="flex gap-1 items-center w-full">
+                              
+                              {/* Week Selector Button */}
+                              <div className="w-[28px] shrink-0 flex items-center justify-center">
                                 <button
                                   type="button"
-                                  onClick={handleClick}
-                                  className={`w-7 h-7 flex items-center justify-center mx-auto text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    handleWeekNumberClick(weekNum, weekDays, e);
+                                  }}
+                                  className={`w-6 h-6 flex items-center justify-center text-[11px] font-semibold rounded-full transition-all cursor-pointer ${
                                     isWeekSelected 
-                                      ? 'bg-transparent text-[#2563eb] font-semibold' 
-                                      : 'text-zinc-500 hover:text-[#2563eb] hover:bg-[#eff6ff]'
+                                      ? 'bg-primary/10 text-primary font-bold' 
+                                      : 'text-zinc-400 hover:text-primary hover:bg-zinc-100'
                                   }`}
                                 >
-                                  {thProps.children}
+                                  {weekNum}
                                 </button>
-                              </th>
-                            );
-                          }
-                        }}
-                      />
+                              </div>
+
+                              {/* 7 Days of the Week */}
+                              <div className={`flex-1 grid grid-cols-7 items-center ${isWeekSelected ? 'bg-blue-50/80 rounded-full py-[1px]' : ''}`}>
+                                {weekDays.map((day) => {
+                                  const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+                                  const isCurrentMonth = isSameMonth(day, currentMonth);
+                                  const isTodayDate = isSameDay(day, new Date());
+                                  const isSunday = day.getDay() === 0;
+
+                                  let circleClass = "w-8 h-8 rounded-full flex items-center justify-center transition-all relative mx-auto ";
+                                  let textClass = "text-[13.5px] select-none ";
+
+                                  if (isSelected) {
+                                    circleClass += "bg-primary text-white font-bold shadow-sm shadow-primary/25";
+                                  } else if (isWeekSelected) {
+                                    circleClass += "text-blue-600 font-semibold hover:bg-blue-100/70";
+                                  } else {
+                                    circleClass += isCurrentMonth ? "hover:bg-zinc-100" : "";
+                                    if (isCurrentMonth) {
+                                      textClass += (isSunday || isKoreanHoliday(day)) ? "text-red-500" : "text-zinc-850";
+                                    } else {
+                                      textClass += "text-zinc-350";
+                                    }
+                                  }
+
+                                  return (
+                                    <div
+                                      key={day.toISOString()}
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          handleDateSelect(undefined);
+                                        } else {
+                                          handleDateSelect(day);
+                                        }
+                                      }}
+                                      className={`py-0.5 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-all select-none relative ${
+                                        isCurrentMonth ? "" : "opacity-40"
+                                      }`}
+                                    >
+                                      <div className={circleClass}>
+                                        <span className={textClass}>
+                                          {format(day, 'd')}
+                                        </span>
+                                        {isTodayDate && (
+                                          <span className={`absolute bottom-[2px] left-0 right-0 h-[2.5px] rounded-full mx-auto w-2.5 ${isSelected ? 'bg-white' : 'bg-primary'}`} />
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                      </div>
+
                     </CardContent>
                   </Card>
 
@@ -1091,13 +1012,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       <StudentCombobox
                         students={students}
                         value={selectedStudent || ''}
-                        onChange={(val) => {
-                          if (val) {
-                            navigate(`/tasks/filter/students/${getShortHash(val)}`);
-                          } else {
-                            navigate('/tasks/filter');
-                          }
-                        }}
+                        onChange={handleStudentSelect}
                         placeholder="전체 학생"
                         className="!w-[150px] shrink-0"
                         inputClassName="bg-zinc-50 border-solid border-zinc-100 text-[13.5px] font-semibold h-10 rounded-xl !ml-[-80px] !w-[228px]"
@@ -1112,6 +1027,19 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
           <div className="w-full md:flex-1 lg:w-full h-auto flex flex-col">
             <NotesPanel />
           </div>
+
+          <MobileFilterBar
+            taskSearchQuery={taskSearchQuery}
+            setTaskSearchQuery={setTaskSearchQuery}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            selectedStudent={selectedStudent}
+            setSelectedStudent={setSelectedStudent}
+            selectedWeek={selectedWeek}
+            setSelectedWeek={setSelectedWeek}
+            activeTab={activeTab}
+            students={students}
+          />
         </div>
 
         {/* Right Area - Wider and clean */}
@@ -1160,93 +1088,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       ))}
                     </div>
 
-                    {/* Mobile-only Filter Toggle Button */}
-                    <div className="flex md:hidden items-center gap-1.5 shrink-0">
-                      <div className="relative shrink-0">
-                        <button
-                          onClick={() => {
-                            setShowFilters(!showFilters);
-                          }}
-                          className={`h-8 w-8 flex items-center justify-center rounded-full transition-all cursor-pointer scale-[0.8] origin-center ${
-                            showFilters
-                              ? 'bg-zinc-700 text-white shadow-sm hover:bg-zinc-800' 
-                              : (selectedDate || selectedStudent || selectedWeek)
-                                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600'
-                          }`}
-                          title="필터 열기"
-                        >
-                          <Filter className="w-4 h-4" />
-                        </button>
-                        {(selectedDate || selectedStudent || selectedWeek) && (
-                          <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
+
                   </div>
-
-                  {/* Mobile-only Dropdown Filters (Due Date + Student Select) */}
-                  {showFilters && (
-                    <div className="flex md:hidden flex-row gap-2 p-2.5 bg-zinc-50/50 rounded-2xl border border-solid border-zinc-100 mt-2 animate-in fade-in slide-in-from-top-1 duration-150 items-center justify-between w-full overflow-hidden">
-                      {/* Due date picker with fixed width & custom placeholder text */}
-                      <div className="relative w-[115px] landscape:w-[230px] shrink-0 h-[34px] transition-all">
-                        <input
-                          type="date"
-                          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val) {
-                              navigate(`/tasks/filter/date/${val}`);
-                            } else {
-                              navigate('/tasks/filter');
-                            }
-                          }}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-between px-2.5 rounded-xl border border-solid border-zinc-200 bg-white text-zinc-700 pointer-events-none z-10 text-[11.5px] font-semibold h-full">
-                          <span className={selectedDate ? 'text-zinc-700' : 'text-zinc-400'}>
-                            {selectedDate ? format(selectedDate, 'M월 d일', { locale: ko }) : '마감일 선택'}
-                          </span>
-                          <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                        </div>
-                      </div>
-
-                      {/* Student selection dropdown taking the remaining horizontal space */}
-                      <div className="flex-1 min-w-0 h-[34px]">
-                        <StudentCombobox
-                          students={students}
-                          value={selectedStudent || ''}
-                          onChange={(val) => {
-                            if (val) {
-                              navigate(`/tasks/filter/students/${getShortHash(val)}`);
-                            } else {
-                              navigate('/tasks/filter');
-                            }
-                          }}
-                          placeholder="학생 선택"
-                          className="w-full h-full"
-                          inputClassName="bg-white border-solid border-zinc-200 text-[12px] font-semibold h-[34px] rounded-xl w-full"
-                        />
-                      </div>
-
-                      {/* Filter Reset Button */}
-                      {(selectedDate || selectedStudent || selectedWeek) && (
-                        <button 
-                          onClick={() => {
-                            navigate('/tasks/work');
-                            setShowFilters(false);
-                          }}
-                          className="h-[34px] w-[34px] border border-solid border-zinc-200 hover:border-blue-400 text-zinc-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-bold flex items-center justify-center bg-white transition-all shadow-none shrink-0"
-                          title="필터 초기화"
-                        >
-                          <X className="w-3.5 h-3.5 text-zinc-400" />
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* Tab content area */}
@@ -1283,10 +1126,36 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                   등록되었거나 해당되는 예정된 일이 없습니다.
                                 </div>
                               ) : (
-                                todoGroup.map(task => renderTaskRow(task))
+                                todoGroup.map(task => (
+                                  <TaskRow
+                                    key={task.sheetRowIndex}
+                                    task={task}
+                                    editingRowIndex={editingRowIndex}
+                                    submitting={submitting}
+                                    editForm={editForm}
+                                    setEditForm={setEditForm}
+                                    students={students}
+                                    handleStartEdit={handleStartEdit}
+                                    handleSaveEdit={handleSaveEdit}
+                                    handleDeleteTask={handleDeleteTask}
+                                    handleQuickComplete={handleQuickComplete}
+                                    setReservingTask={setReservingTask}
+                                    setEditingRowIndex={setEditingRowIndex}
+                                  />
+                                ))
                               )}
 
-                              {inlineAddGroup === 'todo' ? renderInlineAddForm('todo') : (
+                              {inlineAddGroup === 'todo' ? (
+                                <InlineAddForm
+                                  group="todo"
+                                  newForm={newForm}
+                                  setNewForm={setNewForm}
+                                  students={students}
+                                  submitting={submitting}
+                                  handleCreateTask={handleCreateTask}
+                                  setInlineAddGroup={setInlineAddGroup}
+                                />
+                              ) : (
                                 <button 
                                   onClick={() => handleOpenInlineAdd('todo')}
                                   className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
@@ -1329,7 +1198,23 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                   진행 중인 업무가 없습니다.
                                 </div>
                               ) : (
-                                inProgressGroup.map(task => renderTaskRow(task))
+                                inProgressGroup.map(task => (
+                                  <TaskRow
+                                    key={task.sheetRowIndex}
+                                    task={task}
+                                    editingRowIndex={editingRowIndex}
+                                    submitting={submitting}
+                                    editForm={editForm}
+                                    setEditForm={setEditForm}
+                                    students={students}
+                                    handleStartEdit={handleStartEdit}
+                                    handleSaveEdit={handleSaveEdit}
+                                    handleDeleteTask={handleDeleteTask}
+                                    handleQuickComplete={handleQuickComplete}
+                                    setReservingTask={setReservingTask}
+                                    setEditingRowIndex={setEditingRowIndex}
+                                  />
+                                ))
                               )}
                             </motion.div>
                           )}
@@ -1365,7 +1250,23 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                   완료되었거나 취소된 업무가 없습니다.
                                 </div>
                               ) : (
-                                completedGroup.map(task => renderTaskRow(task))
+                                completedGroup.map(task => (
+                                  <TaskRow
+                                    key={task.sheetRowIndex}
+                                    task={task}
+                                    editingRowIndex={editingRowIndex}
+                                    submitting={submitting}
+                                    editForm={editForm}
+                                    setEditForm={setEditForm}
+                                    students={students}
+                                    handleStartEdit={handleStartEdit}
+                                    handleSaveEdit={handleSaveEdit}
+                                    handleDeleteTask={handleDeleteTask}
+                                    handleQuickComplete={handleQuickComplete}
+                                    setReservingTask={setReservingTask}
+                                    setEditingRowIndex={setEditingRowIndex}
+                                  />
+                                ))
                               )}
                             </motion.div>
                           )}
@@ -1381,10 +1282,36 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           등록되었거나 해당되는 다음주 할일이 없습니다.
                         </div>
                       ) : (
-                        nextWeekTasks.map(task => renderTaskRow(task))
+                        nextWeekTasks.map(task => (
+                          <TaskRow
+                            key={task.sheetRowIndex}
+                            task={task}
+                            editingRowIndex={editingRowIndex}
+                            submitting={submitting}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            students={students}
+                            handleStartEdit={handleStartEdit}
+                            handleSaveEdit={handleSaveEdit}
+                            handleDeleteTask={handleDeleteTask}
+                            handleQuickComplete={handleQuickComplete}
+                            setReservingTask={setReservingTask}
+                            setEditingRowIndex={setEditingRowIndex}
+                          />
+                        ))
                       )}
 
-                      {inlineAddGroup === 'nextWeek' ? renderInlineAddForm('nextWeek') : (
+                      {inlineAddGroup === 'nextWeek' ? (
+                        <InlineAddForm
+                          group="nextWeek"
+                          newForm={newForm}
+                          setNewForm={setNewForm}
+                          students={students}
+                          submitting={submitting}
+                          handleCreateTask={handleCreateTask}
+                          setInlineAddGroup={setInlineAddGroup}
+                        />
+                      ) : (
                         <button 
                           onClick={() => handleOpenInlineAdd('nextWeek')}
                           className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
@@ -1403,10 +1330,36 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           해당되는 가정통신문 업무가 없습니다.
                         </div>
                       ) : (
-                        familyTasks.map(task => renderFamilyTaskRow(task))
+                        familyTasks.map(task => (
+                          <FamilyTaskRow
+                            key={task.sheetRowIndex}
+                            task={task}
+                            editingRowIndex={editingRowIndex}
+                            submitting={submitting}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            students={students}
+                            handleStartEdit={handleStartEdit}
+                            handleSaveEdit={handleSaveEdit}
+                            handleDeleteTask={handleDeleteTask}
+                            handleQuickComplete={handleQuickComplete}
+                            setReservingTask={setReservingTask}
+                            setEditingRowIndex={setEditingRowIndex}
+                          />
+                        ))
                       )}
 
-                      {inlineAddGroup === 'familyView' ? renderInlineAddForm('familyView') : (
+                      {inlineAddGroup === 'familyView' ? (
+                        <InlineAddForm
+                          group="familyView"
+                          newForm={newForm}
+                          setNewForm={setNewForm}
+                          students={students}
+                          submitting={submitting}
+                          handleCreateTask={handleCreateTask}
+                          setInlineAddGroup={setInlineAddGroup}
+                        />
+                      ) : (
                         <button 
                           onClick={() => handleOpenInlineAdd('familyView')}
                           className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
@@ -1431,7 +1384,23 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         </div>
                       ) : (
                         <div className="space-y-1.5">
-                          {filterTasks.map(task => renderTaskRow(task))}
+                          {filterTasks.map(task => (
+                            <TaskRow
+                              key={task.sheetRowIndex}
+                              task={task}
+                              editingRowIndex={editingRowIndex}
+                              submitting={submitting}
+                              editForm={editForm}
+                              setEditForm={setEditForm}
+                              students={students}
+                              handleStartEdit={handleStartEdit}
+                              handleSaveEdit={handleSaveEdit}
+                              handleDeleteTask={handleDeleteTask}
+                              handleQuickComplete={handleQuickComplete}
+                              setReservingTask={setReservingTask}
+                              setEditingRowIndex={setEditingRowIndex}
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1459,661 +1428,4 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
     </div>
   );
-
-  // RENDERS REGULAR LIST ROW
-  function renderTaskRow(task: Task) {
-    const isEditing = editingRowIndex === task.sheetRowIndex;
-    const isOverdue = isTaskOverdue(task.date, task.status);
-
-    if (isEditing) {
-      return (
-        <div 
-          key={task.sheetRowIndex} 
-          className="pl-2 pr-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 border-b border-zinc-200/50 flex flex-col gap-2 rounded-lg transition-colors font-sans"
-        >
-          {/* Row 1: Looks identical to static viewer row */}
-          <div className="flex-1 flex flex-wrap items-center gap-1.5">
-            {/* Category selection - styled like the dynamic category badge */}
-            <select
-              value={editForm.category}
-              onChange={(e) => {
-                const cat = e.target.value;
-                setEditForm(prev => ({
-                  ...prev,
-                  category: cat,
-                  familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
-                }));
-              }}
-              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getCategoryBadgeClass(editForm.category)}`}
-            >
-              <option value="기타">기타</option>
-              <option value="긴급">긴급</option>
-              <option value="중요">중요</option>
-              <option value="가통">가통</option>
-              <option value="알림장">알림장</option>
-              <option value="결과물">결과물</option>
-              <option value="보고">보고</option>
-              <option value="반복">반복</option>
-            </select>
-
-            {/* Todo field - seamless input */}
-            <input
-              type="text"
-              placeholder="할 일 수정"
-              value={editForm.todo}
-              onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-zinc-800 font-normal rounded font-sans"
-            />
-
-            {/* Date Picker Input - seamless input */}
-            <input
-              type="date"
-              value={editForm.date}
-              onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-zinc-650'}`}
-            />
-
-            {/* Status Choice - styled like the dynamic status badge */}
-            <select
-              value={editForm.status}
-              onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
-            >
-              <option value="예정">예정</option>
-              <option value="진행">진행</option>
-              <option value="대기">대기</option>
-              <option value="보류">보류</option>
-              <option value="완료">완료</option>
-              <option value="취소">취소</option>
-            </select>
-          </div>
-
-          {/* Memo Input directly under category-todo line but above the dotted line */}
-          <div className="w-full">
-            <input
-              type="text"
-              placeholder="메모 입력"
-              value={editForm.memo}
-              onChange={(e) => setEditForm(prev => ({ ...prev, memo: e.target.value }))}
-              className="h-7 w-full px-2 border border-zinc-250 focus:border-primary focus:outline-none bg-white text-xs text-zinc-500 rounded font-sans"
-            />
-          </div>
-
-          {/* Row 2: Secondary info (Left) and Buttons (Right) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
-            {/* Left aligned: Undisplayed details without prefix text labels */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans animate-none">
-              <StudentCombobox
-                students={students}
-                value={editForm.name || ''}
-                onChange={(val) => setEditForm(prev => ({ ...prev, name: val }))}
-                placeholder="학생명 입력"
-                className="!w-28 font-sans"
-                inputClassName="bg-white text-zinc-850 text-xs !h-6 !rounded"
-              />
-
-              {editForm.category === '가통' && (
-                <select
-                  value={editForm.familyClass}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                  className={`h-6 px-1.5 border border-zinc-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getFamilyClassBadgeClass(editForm.familyClass)}`}
-                >
-                  <option value="정기">정기</option>
-                  <option value="첫날">첫날</option>
-                  <option value="한달">한달</option>
-                  <option value="중등">중등</option>
-                </select>
-              )}
-            </div>
-
-            {/* Right aligned: Control buttons */}
-            <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 pr-1">
-              {/* 예약 Button (Left of 완료) */}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={submitting}
-                onClick={() => {
-                  const studentName = editForm.name || task.name || '';
-                  if (!studentName.trim()) {
-                    toast.error(MESSAGES.tasks.enterName);
-                    return;
-                  }
-                  setReservingTask({ ...task, name: studentName });
-                }}
-                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
-                title="가정통신문 예약하기"
-              >
-                예약
-              </Button>
-
-              {/* 완료 button shortcut in flat blue */}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={submitting}
-                onClick={() => handleQuickComplete(task.sheetRowIndex!)}
-                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
-                title="오늘 완료 처리 후 바로 저장"
-              >
-                완료
-              </Button>
-
-              <div className="flex items-center gap-0.5 pl-1.5 border-l border-zinc-200">
-                {/* Save (Check) */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleSaveEdit(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-                  title="저장"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                </Button>
-
-                {/* Delete Task */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleDeleteTask(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
-                  title="이 업무 삭제"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-
-                {/* Cancel Edit */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => setEditingRowIndex(null)}
-                  className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg"
-                  title="취소"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div 
-        key={task.sheetRowIndex} 
-        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/70 border-b border-zinc-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
-      >
-        {/* Mobile View Container */}
-        <div className="w-full sm:hidden flex items-start gap-1.5">
-          {/* Badge on left */}
-          <div className="shrink-0 pt-0.5">
-            <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getCategoryBadgeClass(task.category)}`}>
-              {task.category || '기타'}
-            </span>
-          </div>
-
-          {/* Right Column: Title + Metadata + Edit Button */}
-          <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
-            <div className="flex items-start justify-between gap-1.5">
-              <span className="font-medium text-zinc-750 text-[14.5px] break-all">
-                {task.todo}
-              </span>
-              <div className="shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleStartEdit(task)}
-                  className="h-6 w-6 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
-                  title="수정하기"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Metadata perfectly aligned with task.todo first letter */}
-            <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
-              {task.memo && task.memo.trim() !== '' && (
-                <span className="font-normal text-zinc-500 max-w-[200px] truncate" title={task.memo}>
-                  {task.memo}
-                </span>
-              )}
-              {task.date && (
-                <span className={`font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
-                  {formatRelativeTaskDate(task.date)}
-                </span>
-              )}
-              <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-                {task.status || '예정'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop View Container */}
-        <div className="hidden sm:flex w-full items-center justify-between gap-2">
-          <div className="flex-1 flex items-center gap-1.5 min-w-0">
-            <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getCategoryBadgeClass(task.category)} mr-1 shrink-0`}>
-              {task.category || '기타'}
-            </span>
-            <span className="font-medium text-zinc-750 text-[14.5px] break-all truncate">
-              {task.todo}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 shrink-0 select-none">
-            {task.memo && task.memo.trim() !== '' && (
-              <span className="text-[13px] font-normal text-zinc-500 max-w-[200px] truncate" title={task.memo}>
-                {task.memo}
-              </span>
-            )}
-            {task.date && (
-              <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
-                {formatRelativeTaskDate(task.date)}
-              </span>
-            )}
-            <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-              {task.status || '예정'}
-            </span>
-
-            <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity pl-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                disabled={submitting}
-                onClick={() => handleStartEdit(task)}
-                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded flex items-center justify-center cursor-pointer"
-                title="수정하기"
-              >
-                <Pencil className="w-2.5 h-2.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // RENDERS FAMILY COOPERATION ROW (Single Horizontal Line matching renderTaskRow)
-  function renderFamilyTaskRow(task: Task) {
-    const isEditing = editingRowIndex === task.sheetRowIndex;
-    const isOverdue = isTaskDateBeforeToday(task.date);
-
-    if (isEditing) {
-      return (
-        <div 
-          key={task.sheetRowIndex} 
-          className="px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 border-b border-zinc-200/50 flex flex-col gap-2 rounded-lg transition-colors"
-        >
-          {/* Row 1: Looks identical to static viewer row (No student name, contains familyClass badge, todo, memo, date, status) */}
-          <div className="flex-1 flex flex-wrap items-center gap-1.5">
-            {/* familyClass select classification - styled like dynamic familyClass badge */}
-            <select
-               value={editForm.familyClass}
-               onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-               className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getFamilyClassBadgeClass(editForm.familyClass)}`}
-            >
-              <option value="정기">정기</option>
-              <option value="첫날">첫날</option>
-              <option value="한달">한달</option>
-              <option value="중등">중등</option>
-            </select>
-
-            {/* Todo field - seamless input */}
-            <input
-              type="text"
-              placeholder="할 일 수정"
-              value={editForm.todo}
-              onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-zinc-800 font-normal rounded"
-            />
-
-            {/* Date Picker Input - seamless input */}
-            <input
-              type="date"
-              value={editForm.date}
-              onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${getFamilyTaskDateClass(editForm.date)}`}
-            />
-
-            {/* Status Choice - styled like the dynamic status badge */}
-            <select
-              value={editForm.status}
-              onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
-            >
-              <option value="예정">예정</option>
-              <option value="진행">진행</option>
-              <option value="대기">대기</option>
-              <option value="보류">보류</option>
-              <option value="완료">완료</option>
-              <option value="취소">취소</option>
-            </select>
-          </div>
-
-          {/* Row 2: Secondary info (Left) and Buttons (Right) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1.5 border-t border-dotted border-zinc-200 mt-0.5">
-            {/* Left aligned: Student Name input (hidden in the static read-only view) with category select mapping */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-sans">
-              <StudentCombobox
-                students={students}
-                value={editForm.name || ''}
-                onChange={(val) => setEditForm(prev => ({ ...prev, name: val }))}
-                placeholder="학생명 입력"
-                className="!w-28 font-sans"
-                inputClassName="bg-white text-zinc-850 text-xs !h-6 !rounded"
-              />
-
-              {/* Editable Category Class mapping hidden inside family View */}
-              <select
-                value={editForm.category}
-                onChange={(e) => {
-                  const cat = e.target.value;
-                  setEditForm(prev => ({
-                    ...prev,
-                    category: cat,
-                    familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
-                  }));
-                }}
-                className={`h-6 px-1.5 border border-zinc-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
-              >
-                <option value="가통">가통</option>
-                <option value="기타">기타</option>
-                <option value="긴급">긴급</option>
-                <option value="중요">중요</option>
-                <option value="알림장">알림장</option>
-                <option value="결과물">결과물</option>
-                <option value="보고">보고</option>
-                <option value="반복">반복</option>
-              </select>
-            </div>
-
-            {/* Right aligned: Control buttons */}
-            <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 pr-1">
-              {/* 예약 Button (Left of 완료) */}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={submitting}
-                onClick={() => {
-                  const studentName = editForm.name || task.name || '';
-                  if (!studentName.trim()) {
-                    toast.error(MESSAGES.tasks.enterName);
-                    return;
-                  }
-                  setReservingTask({ ...task, name: studentName });
-                }}
-                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
-                title="가정통신문 예약하기"
-              >
-                예약
-              </Button>
-
-              {/* 완료 button shortcut styled in flat blue */}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={submitting}
-                onClick={() => handleQuickComplete(task.sheetRowIndex!)}
-                className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors"
-                title="오늘 완료 처리 후 바로 저장"
-              >
-                완료
-              </Button>
-
-              <div className="flex items-center gap-0.5 pl-1.5 border-l border-zinc-200">
-                {/* Save (Check) */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleSaveEdit(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
-                  title="저장"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                </Button>
-
-                {/* Delete Task */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleDeleteTask(task.sheetRowIndex!)}
-                  className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
-                  title="이 업무 삭제"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-
-                {/* Cancel Edit */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => setEditingRowIndex(null)}
-                  className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg"
-                  title="취소"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div 
-        key={task.sheetRowIndex} 
-        className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/75 border-b border-zinc-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
-      >
-        {/* Mobile View Container */}
-        <div className="w-full sm:hidden flex items-start gap-1.5">
-          {/* Badge on left */}
-          {task.familyClass && (
-            <div className="shrink-0 pt-0.5">
-              <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)}`}>
-                {task.familyClass}
-              </span>
-            </div>
-          )}
-
-          {/* Right Column: Title + Metadata + Edit Button */}
-          <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
-            <div className="flex items-start justify-between gap-1.5">
-              <span className="font-medium text-zinc-750 text-[14.5px] break-all">
-                {task.todo}
-              </span>
-              <div className="shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={submitting}
-                  onClick={() => handleStartEdit(task)}
-                  className="h-6 w-6 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
-                  title="수정하기"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Metadata perfectly aligned with task.todo first letter */}
-            <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
-              {task.date && (
-                <span className={`font-normal ${getFamilyTaskDateClass(task.date)}`}>
-                  {formatTaskDateDisplay(task.date)}
-                </span>
-              )}
-              <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-                {task.status || '예정'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop View Container */}
-        <div className="hidden sm:flex w-full items-center justify-between gap-2">
-          <div className="flex-1 flex items-center gap-1.5 min-w-0">
-            {task.familyClass && (
-              <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)} mr-1.5 shrink-0`}>
-                {task.familyClass}
-              </span>
-            )}
-            <span className="font-medium text-zinc-750 text-[14.5px] break-all truncate">
-              {task.todo}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 shrink-0 select-none">
-            {task.date && (
-              <span className={`text-[13px] font-normal ${getFamilyTaskDateClass(task.date)}`}>
-                {formatTaskDateDisplay(task.date)}
-              </span>
-            )}
-            <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-              {task.status || '예정'}
-            </span>
-
-            <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity pl-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                disabled={submitting}
-                onClick={() => handleStartEdit(task)}
-                className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded flex items-center justify-center cursor-pointer"
-                title="수정하기"
-              >
-                <Pencil className="w-2.5 h-2.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // INLINE ADDITION FORM - Allows full entry including student name and details on creation
-  function renderInlineAddForm(group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek') {
-    return (
-      <div className="p-3 bg-zinc-50 rounded-xl border border-solid border-zinc-200 flex flex-col gap-2 text-[13px] animate-in slide-in-from-top-1 fade-in duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-          
-          {/* Category Selection */}
-          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
-            <select
-              value={newForm.category}
-              onChange={(e) => {
-                const cat = e.target.value;
-                setNewForm(prev => ({
-                  ...prev,
-                  category: cat,
-                  familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
-                }));
-              }}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-normal text-zinc-750 focus:outline-none"
-            >
-              <option value="기타">기타</option>
-              <option value="긴급">긴급</option>
-              <option value="중요">중요</option>
-              <option value="가통">가통</option>
-              <option value="알림장">알림장</option>
-              <option value="결과물">결과물</option>
-              <option value="보고">보고</option>
-              <option value="반복">반복</option>
-            </select>
-          </div>
-
-          {/* FamilyClass selection picker if category === '가통' */}
-          {newForm.category === '가통' && (
-            <div className="sm:col-span-3">
-              <select
-                value={newForm.familyClass}
-                onChange={(e) => setNewForm(prev => ({ ...prev, familyClass: e.target.value }))}
-                className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-yellow-800 font-normal focus:outline-none"
-              >
-                <option value="정기">정기</option>
-                <option value="첫날">첫날</option>
-                <option value="한달">한달</option>
-                <option value="중등">중등</option>
-              </select>
-            </div>
-          )}
-
-          {/* Student Name */}
-          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
-            <StudentCombobox
-              students={students}
-              value={newForm.name || ''}
-              onChange={(val) => setNewForm(prev => ({ ...prev, name: val }))}
-              placeholder="학생명 (선택)"
-              inputClassName="bg-white text-zinc-850 text-[13px] font-normal border border-zinc-200 !h-8 !rounded-lg"
-            />
-          </div>
-
-          {/* Date Picker */}
-          <div className={newForm.category === '가통' ? 'sm:col-span-3' : 'sm:col-span-4'}>
-            <input
-              type="date"
-              value={newForm.date}
-              onChange={(e) => setNewForm(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-650 focus:outline-none"
-            />
-          </div>
-
-          {/* Next Row: Todo and Memo */}
-          <div className="sm:col-span-8">
-            <input
-              type="text"
-              placeholder="무엇을 해야 하나요?"
-              value={newForm.todo}
-              onChange={(e) => setNewForm(prev => ({ ...prev, todo: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] font-medium text-zinc-800 focus:outline-none"
-            />
-          </div>
-
-          <div className="sm:col-span-4">
-            <input
-              type="text"
-              placeholder="메모 (옵션)"
-              value={newForm.memo}
-              onChange={(e) => setNewForm(prev => ({ ...prev, memo: e.target.value }))}
-              className="w-full h-8 px-2 border border-zinc-200 rounded-lg bg-white text-[13px] text-zinc-500 focus:outline-none"
-            />
-          </div>
-
-        </div>
-
-        <div className="flex items-center justify-end gap-1.5">
-          <Button
-            size="sm"
-            disabled={submitting}
-            onClick={handleCreateTask}
-            className="h-7 rounded-lg px-3 text-xs bg-primary text-white hover:bg-primary/95 font-semibold animate-none"
-          >
-            {submitting ? '저장...' : '확인'}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={submitting}
-            onClick={() => {
-              setNewForm(prev => ({ ...prev, todo: '', memo: '' }));
-              setInlineAddGroup(null);
-            }}
-            className="h-7 rounded-lg px-3 text-xs hover:bg-zinc-100 font-semibold text-zinc-500"
-          >
-            취소
-          </Button>
-        </div>
-      </div>
-    );
-  }
 }

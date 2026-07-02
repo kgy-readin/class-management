@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, CalendarCheck } from 'lucide-react';
 import { 
   format, 
   startOfMonth, 
@@ -20,7 +20,7 @@ import { renderBoldBrackets } from '../common/TextHelpers';
 interface StudentLogCalendarProps {
   currentMonth: Date;
   setCurrentMonth: (date: Date | ((prev: Date) => Date)) => void;
-  setViewMode: (mode: 'monthly' | 'student') => void;
+  setViewMode: (mode: 'monthly' | 'student' | 'monthly-detail') => void;
   setCurrentPage: (page: number) => void;
   logs: StudentLogEntry[];
   handleCellClick: (day: Date) => void;
@@ -73,7 +73,18 @@ export default function StudentLogCalendar({
             </Button>
           </div>
 
-          <div className="absolute right-0">
+          <div className="absolute right-0 flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all"
+              onClick={() => {
+                setViewMode('monthly-detail');
+              }}
+              title="월별상세로 보기"
+            >
+              <CalendarCheck className="w-5 h-5" />
+            </Button>
             <Button
               size="icon"
               variant="outline"
