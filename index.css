@@ -1,0 +1,283 @@
+@import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/static/complete/WantedSans.min.css");
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
+    font-weight: 200;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Suit';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Wanted Sans', 'Suit', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(0.99 0 0); /* fafafa equivalent */
+    --foreground: oklch(0.2 0.02 260); /* Dark indigo text */
+    --card: oklch(1 0 0); /* Pure white card */
+    --card-foreground: oklch(0.2 0.02 260);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.2 0.02 260);
+    --primary: oklch(0.55 0.2 260); /* Vibrant indigo/blue for primary actions */
+    --primary-foreground: oklch(0.99 0.01 260);
+    --secondary: oklch(0.94 0.03 260); /* Soft blue/gray for pill backgrounds */
+    --secondary-foreground: oklch(0.4 0.15 260);
+    --muted: oklch(0.96 0.02 260);
+    --muted-foreground: oklch(0.5 0.05 260);
+    --accent: oklch(0.92 0.06 260);
+    --accent-foreground: oklch(0.4 0.15 260);
+    --destructive: oklch(0.6 0.18 25);
+    --border: oklch(0.94 0.02 260);
+    --input: oklch(0.94 0.02 260);
+    --ring: oklch(0.55 0.2 260);
+    --radius: 1.25rem;
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* Center text inside time inputs across Webkit browsers (Safari/Chrome/iOS/iPadOS) */
+input[type="time"]::-webkit-datetime-edit {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  margin: 0 auto !important;
+}
+
+/* Ensure centering on clock icon or remove any native margins/paddings that push content */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: pointer;
+}
+
+/* Normalize and prevent input[type="date"] from overflowing, stretching, or losing alignment on mobile safari/Webkit */
+input[type="date"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+/* Make clicking anywhere on the native date input trigger the browser's native picker popover */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  height: 100% !important;
+  line-height: inherit !important;
+  text-align: inherit;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* iOS Safari/Webkit specific layout override to completely prevent date inputs from stretching or overflowing on touch viewports */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: inherit !important;
+    justify-content: inherit !important;
+  }
+}
+
+/* Hide inner scrollbars for containers and textareas while maintaining scroll functionality */
+.custom-scrollbar::-webkit-scrollbar,
+.custom-scrollbar *::-webkit-scrollbar,
+[class*="overflow-y-auto"]::-webkit-scrollbar,
+textarea::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.custom-scrollbar,
+.custom-scrollbar *,
+[class*="overflow-y-auto"],
+textarea {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Force specific date inputs to maintain fixed width under any circumstances */
+.fixed-date-input,
+input[type="date"].fixed-date-input,
+input[type="text"].fixed-date-input {
+  width: 108px !important;
+  min-width: 108px !important;
+  max-width: 108px !important;
+  box-sizing: border-box !important;
+}
+
+
+
