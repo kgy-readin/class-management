@@ -271,7 +271,7 @@ export default function StudentLogStudents({
               <Button
                 size="icon"
                 variant="outline"
-                className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer"
+                className="hidden md:inline-flex h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer"
                 onClick={() => setViewMode('monthly')}
                 title="먼슬리뷰 보기"
               >
