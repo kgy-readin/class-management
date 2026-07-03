@@ -161,6 +161,9 @@
     @apply bg-background text-foreground;
     white-space: pre-wrap;
     }
+  header, header * {
+    white-space: normal !important;
+  }
   html {
     @apply font-sans;
     }

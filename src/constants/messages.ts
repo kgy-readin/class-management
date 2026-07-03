@@ -48,18 +48,18 @@ export const MESSAGES = {
     enterName: '학생명을 입력해 주세요.',
     enterBook: '도서명을 입력해 주세요.',
     enterTodo: '할 일 내용을 입력해 주세요.',
-    addSuccess: '신규 업무가 등록되었습니다.',
+    addSuccess: '업무가 등록되었습니다.',
     loadError: (msg: string) => `업무 데이터를 불러오는데 실패했습니다: ${msg}`,
-    editSuccess: '업무가 성공적으로 수정되었습니다.',
+    editSuccess: '업무가 수정되었습니다.',
     deleteSuccess: '업무가 삭제되었습니다.',
     completeSuccess: '완료 처리되었습니다.',
-    reservationSuccess: (name: string, fClass: string) => `${name} 학생 ${fClass} 가정통신문 업무가 예약되었습니다.`,
+    reservationSuccess: (name: string, fClass: string) => `${name} 학생 다음 ${fClass} 가정통신문이 예약되었습니다.`,
   },
 
   // 5. Notes / Memo (메모) Messages
   notes: {
     loadError: (msg: string) => `메모 데이터를 불러오는데 실패했습니다: ${msg}`,
-    saveSuccess: '메모가 성공적으로 저장되었습니다.',
+    saveSuccess: '메모가 저장되었습니다.',
     saveError: (msg: string) => `네트워크 저장 중 오류가 발생했습니다: ${msg}. 작성한 메모는 브라우저 내에 보존됩니다.`,
     cancelInfo: '편집이 취소되었습니다.',
   },
@@ -76,9 +76,9 @@ export const MESSAGES = {
     deleteError: (msg: string) => `회의록 삭제 실패: ${msg}`,
   },
 
-  // 7. Comment Bank (알림장 문구) Page
-  comments: {
-    loadError: (msg: string) => `알림장 문구를 불러오는데 실패했습니다: ${msg}`,
+  // 7. Notice Form (알림장 양식) Page
+  noticeform: {
+    loadError: (msg: string) => `알림장 양식을 불러오는데 실패했습니다: ${msg}`,
     saveSuccess: '수정사항이 저장되었습니다.',
     saveError: (msg: string) => `로컬에 저장되었으나 서버 전송에 실패했습니다: ${msg}`,
   },
@@ -92,11 +92,31 @@ export const MESSAGES = {
     saveError: (msg: string) => `로컬에 저장되었으나 서버 전송에 실패했습니다: ${msg}`,
   },
 
-  // 9. Parent Newsletters (가정통신문) Page
-  newsletters: {
+  // 9. Family Letters (가정통신문) Page
+  familyLetters: {
     loadError: (msg: string) => `가정통신문을 불러오는데 실패했습니다: ${msg}`,
     saveSuccess: '수정사항이 저장되었습니다.',
     saveError: (msg: string) => `로컬에 저장되었으나 서버 전송에 실패했습니다: ${msg}`,
+  },
+
+  // 9.5. Student Management (학생 관리 및 정보 수정) Messages
+  students: {
+    updateSuccess: '${name} 학생 정보가 업데이트되었습니다.',
+    writingAdded: '글쓰기 현황에 추가되었습니다.',
+    curriculumAdded: (isWriting: boolean) => isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.',
+    itemDeleted: '항목이 삭제되었습니다.',
+    editSuccess: (name: string) => `${name} 학생의 정보가 수정되었습니다.`,
+    resultDistributionSuccess: '${name} 학생 결과물 배부 완료 처리 되었습니다.',
+    processingError: (msg: string) => `오류가 발생했습니다: ${msg}`,
+    enterName: '학생 이름을 입력해 주세요.',
+    enterGrade: '학년을 입력해 주세요.',
+    enterLevel: '레벨을 선택해 주세요.',
+    registerSuccess: (name: string) => `${name} 학생이 성공적으로 등록되었습니다.`,
+    deleteSuccess: (name: string) => `${name} 학생 정보와 커리큘럼 데이터가 안전하게 완전히 삭제되었습니다.`,
+    attendanceSuccess: (name: string, isAttending: boolean) => isAttending ? `${name} 학생 등원 처리되었습니다.` : `${name} 학생 하원 처리되었습니다.`,
+    dismissalSuccess: (name: string) => `${name} 학생 하원 처리되었습니다.`,
+    levelUpSuccess: (name: string) => `${name} 학생이 레벨업되었습니다!`,
+    bulkDismissalSuccess: '등원 중 학생이 모두 일괄 하원 처리되었습니다.',
   },
 
   // 10. Service / API Messages

@@ -10,7 +10,7 @@ import {
   ChevronDown, 
   ChevronRight,
   ChevronLeft,
-  Filter,
+  ListFilter,
   UsersRound,
   Calendar,
   X
@@ -140,7 +140,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     if (!pathname.startsWith('/tasks')) return;
 
     const parts = pathname.split('/').filter(Boolean); // ["tasks", ...]
-    const view = parts[1]; // "work", "next", "newsletter", "filter"
+    const view = parts[1]; // "work", "next", "familyletter", "filter"
 
     if (view === 'next') {
       setActiveTab('다음주');
@@ -149,7 +149,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       setSelectedStudent(null);
       setShowFilters(false);
       setTaskSearchQuery('');
-    } else if (view === 'newsletter') {
+    } else if (view === 'familyletter') {
       setActiveTab('가정통신문');
       setSelectedDate(undefined);
       setSelectedWeek(null);
@@ -796,7 +796,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       className="absolute left-0 w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-500 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center z-10"
                       title="필터링 섹션 펼치기"
                     >
-                      <Filter className="w-4 h-4" />
+                      <ListFilter className="w-4 h-4" />
                     </button>
                     <span className="text-[16px] font-semibold text-zinc-800 select-none truncate text-center px-10">
                       {format(selectedDate || new Date(), 'yyyy년 M월 d일 eeee', { locale: ko })}
@@ -814,7 +814,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-[#2563eb] hover:bg-blue-100 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center"
                       title="필터링 섹션 접기"
                     >
-                      <Filter className="w-4 h-4" />
+                      <ListFilter className="w-4 h-4" />
                     </button>
                     <div className="flex-1 relative mx-[2px]">
                       <input
@@ -1065,7 +1065,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             } else if (tab === '다음주') {
                               navigate('/tasks/next');
                             } else if (tab === '가정통신문') {
-                              navigate('/tasks/newsletter');
+                              navigate('/tasks/familyletter');
                             }
                             setInlineAddGroup(null); // Close any active inline add form when switching tabs
                           }}
@@ -1375,7 +1375,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                     <div className="space-y-4">
                       {!selectedStudent && !selectedDate && !selectedWeek && !taskSearchQuery.trim() ? (
                         <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
-                          <Filter className="w-10 h-10 text-zinc-300" />
+                          <ListFilter className="w-10 h-10 text-zinc-300" />
                           <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>
                         </div>
                       ) : filterTasks.length === 0 ? (

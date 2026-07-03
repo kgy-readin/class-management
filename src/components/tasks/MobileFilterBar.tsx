@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Filter, X, Calendar } from 'lucide-react';
+import { ListFilter, X, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Student, getShortHash } from '../../types';
@@ -151,7 +151,7 @@ export default function MobileFilterBar({
             }`}
             title="필터 설정"
           >
-            <Filter className="w-4 h-4" />
+            <ListFilter className="w-4 h-4" />
           </button>
 
           {/* Date display text (Always matches thin bar view) */}

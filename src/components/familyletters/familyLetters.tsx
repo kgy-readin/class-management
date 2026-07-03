@@ -11,32 +11,79 @@ import {
   ChevronDown, 
   Search, 
   RefreshCw,
-  MessageCircleWarning,
+  Archive,
   Check,
   Pencil,
   Save,
   X,
   Copy,
-  User
+  AtSign,
+  Leaf,
+  CalendarFold
 } from 'lucide-react';
-import { noteApi } from '@/src/services/api';
+import { noteApi, RPN_DOCS_ID } from '@/src/services/api';
 import MarkdownRenderer, { DocTab, stripMarkdown } from '../common/MarkdownRenderer';
 import { getShortHash } from '../../types';
 
-const findTabByHash = (tabs: DocTab[], hash: string): DocTab | null => {
+// Leaf SVG Icon (Teal-500)
+const LeafIcon = ({ className }: { className?: string }) => (
+  <Leaf className={className} />
+);
+
+// Number 1 SVG Icon (Blue-500)
+const OneIcon = ({ className }: { className?: string }) => (
+  <CalendarFold className={className} />
+);
+
+// Letter/Envelope SVG Icon (Violet-400)
+const LetterIcon = ({ className }: { className?: string }) => (
+  <AtSign className={className} />
+);
+
+// Helper to determine the category based on the tab title
+const getCategoryType = (title: string): 'leaf' | 'one' | 'letter' | 'default' => {
+  const trimmed = title.trim();
+  if (trimmed.startsWith('[첫날]') || trimmed.startsWith('[첫주]')) {
+    return 'leaf';
+  }
+  if (trimmed.startsWith('[한달]')) {
+    return 'one';
+  }
+  if (/^\d/.test(trimmed)) {
+    return 'letter';
+  }
+  return 'default';
+};
+
+// Decides and returns the beautiful custom SVG icon based on custom prefixes and formats
+const getCustomTabIcon = (title: string, className = "w-4 h-4 shrink-0", isSelected = false, baseColorClass?: string) => {
+  const category = getCategoryType(title);
+  if (category === 'leaf') {
+    return <LeafIcon className={`${className} ${isSelected ? 'text-emerald-600' : 'text-emerald-600/70'}`} />;
+  }
+  if (category === 'one') {
+    return <OneIcon className={`${className} ${isSelected ? 'text-blue-600' : 'text-blue-600/70'}`} />;
+  }
+  if (category === 'letter') {
+    return <LetterIcon className={`${className} ${isSelected ? 'text-violet-600' : 'text-violet-600/70'}`} />;
+  }
+  return <FileText className={`${className} ${isSelected ? (baseColorClass || 'text-blue-600') : 'text-neutral-400'}`} />;
+};
+
+const findFamilyLetterTabByHash = (tabs: DocTab[], hash: string): DocTab | null => {
   for (const tab of tabs) {
     if (getShortHash(tab.id) === hash) {
       return tab;
     }
     if (tab.childTabs && tab.childTabs.length > 0) {
-      const found = findTabByHash(tab.childTabs, hash);
+      const found = findFamilyLetterTabByHash(tab.childTabs, hash);
       if (found) return found;
     }
   }
   return null;
 };
 
-const findParentFolderOfTab = (folders: DocTab[], childId: string): string | null => {
+const findFamilyLetterParentFolder = (folders: DocTab[], childId: string): string | null => {
   for (const folder of folders) {
     if (folder.childTabs && folder.childTabs.some(ch => ch.id === childId)) {
       return folder.id;
@@ -45,12 +92,12 @@ const findParentFolderOfTab = (folders: DocTab[], childId: string): string | nul
   return null;
 };
 
-export default function CommentBank() {
+export default function FamilyLetters() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
-    const cached = localStorage.getItem('webapp_tabs_data_backup');
+    const cached = localStorage.getItem('webapp_family_letters_tabs_backup');
     return cached ? JSON.parse(cached) : [];
   });
   const [loading, setLoading] = useState(false);
@@ -59,30 +106,26 @@ export default function CommentBank() {
   const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Replacement State
-  const [nameInput, setNameInput] = useState('');
-  const [replacementName, setReplacementName] = useState('');
-
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState('');
   const [savingTab, setSavingTab] = useState(false);
 
-  // Extract folder tabs (excluding the first tab '메모')
-  const folders = allTabs.length > 1 ? allTabs.slice(1) : allTabs;
+  // Extract folder tabs (for family letter, all tabs are folders from the start)
+  const folders = allTabs;
 
   // Sync state from URL with auto-expanding folders
   useEffect(() => {
     const pathname = location.pathname;
-    if (!pathname.startsWith('/comments')) return;
+    if (!pathname.startsWith('/familyletters')) return;
 
-    const parts = pathname.split('/').filter(Boolean); // ["comments", "hash"]
+    const parts = pathname.split('/').filter(Boolean); // ["familyletters", "hash"]
     if (parts[1]) {
-      const matched = findTabByHash(allTabs, parts[1]);
+      const matched = findFamilyLetterTabByHash(allTabs, parts[1]);
       if (matched) {
         if (selectedTabId !== matched.id) {
           setSelectedTabId(matched.id);
-          const parentId = findParentFolderOfTab(folders, matched.id);
+          const parentId = findFamilyLetterParentFolder(folders, matched.id);
           if (parentId) {
             setExpandedFolders(prev => ({
               ...prev,
@@ -118,7 +161,7 @@ export default function CommentBank() {
       setEditText(selectedTab.text || '');
     }
     setIsEditing(false);
-  }, [selectedTabId]);
+  }, [selectedTabId, selectedTab]);
 
   const fetchTabsData = async (isBackground = false) => {
     const hasCache = allTabs.length > 0;
@@ -126,20 +169,24 @@ export default function CommentBank() {
       if (!isBackground && !hasCache) {
         setLoading(true);
       }
-      const data = await noteApi.getTabsData();
+      const data = await noteApi.getTabsData(RPPN_DOCS_ID_OR_CORRECT_ID()); // helper in case API reference changed
       if (data && data.length > 0) {
         setAllTabs(data);
-        localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(data));
+        localStorage.setItem('webapp_family_letters_tabs_backup', JSON.stringify(data));
       }
     } catch (error: any) {
-      console.error('Failed to load tabs data:', error);
+      console.error('Failed to load family letter tabs data:', error);
       if (!hasCache) {
-        toast.error(MESSAGES.comments.loadError(error.message));
+        toast.error(MESSAGES.familyLetters.loadError(error.message));
       }
     } finally {
       setLoading(false);
     }
   };
+
+  function RPPN_DOCS_ID_OR_CORRECT_ID() {
+    return RPN_DOCS_ID;
+  }
 
   useEffect(() => {
     fetchTabsData(true); // background sync on mount
@@ -163,22 +210,9 @@ export default function CommentBank() {
     }));
   };
 
-  const handleApplyReplacement = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setReplacementName(nameInput.trim());
-    if (nameInput.trim()) {
-      toast.success(MESSAGES.beginners.replacementSuccess(nameInput.trim()));
-    } else {
-      toast.info(MESSAGES.beginners.replacementReset);
-    }
-  };
-
   const handleCopy = async (id: string, text: string) => {
     try {
-      const substituted = replacementName 
-        ? text.replaceAll('●●', replacementName) 
-        : text;
-      const cleanText = stripMarkdown(substituted);
+      const cleanText = stripMarkdown(text);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(cleanText);
         setCopiedId(id);
@@ -219,16 +253,16 @@ export default function CommentBank() {
     // Optimistically update local state first so user does not lose input
     const updatedTabs = updateTabInTree(allTabs, selectedTabId, editText);
     setAllTabs(updatedTabs);
-    localStorage.setItem('webapp_tabs_data_backup', JSON.stringify(updatedTabs));
+    localStorage.setItem('webapp_family_letters_tabs_backup', JSON.stringify(updatedTabs));
     setIsEditing(false);
 
     try {
       setSavingTab(true);
-      await noteApi.saveTabSpecification(selectedTabId, editText);
-      toast.success(MESSAGES.comments.saveSuccess);
+      await noteApi.saveTabSpecification(selectedTabId, editText, RPN_DOCS_ID);
+      toast.success(MESSAGES.familyLetters.saveSuccess);
     } catch (error: any) {
       console.error('GAS saveTabSpecification Failed:', error);
-      toast.error(MESSAGES.comments.saveError(error.message), {
+      toast.error(MESSAGES.familyLetters.saveError(error.message), {
         duration: 6000
       });
     } finally {
@@ -261,43 +295,7 @@ export default function CommentBank() {
     <div className="w-full h-full max-w-7xl mx-auto flex flex-col gap-1 select-none md:select-text">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[500px]">
         {/* Left Side: Directory Sidebar */}
-        <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex flex-col gap-4 h-[650px] max-lg:h-auto max-lg:min-h-[350px]">
-          
-          {/* Name Input Box (텍스트 대치) */}
-          <div className="bg-zinc-50 border border-solid border-zinc-200 p-3 rounded-2xl flex items-center gap-2.5">
-            <User className="w-5 h-5 text-zinc-500 shrink-0 ml-1" />
-            <form onSubmit={handleApplyReplacement} className="flex-1 flex gap-3">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="텍스트 대치할 학생 이름을 입력..."
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  className="w-full pl-3 pr-8 py-2 border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-[13px] md:text-[14px] rounded-xl bg-white hover:border-zinc-300 transition-all font-medium"
-                />
-                {nameInput && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNameInput('');
-                      setReplacementName('');
-                    }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-zinc-50 hover:bg-zinc-100 border border-solid border-zinc-200/60 hover:border-zinc-300 text-zinc-500 hover:text-zinc-700 font-medium px-4 h-[38px] rounded-xl shadow-sm text-[13px] cursor-pointer shrink-0 transition-all"
-              >
-                대치
-              </Button>
-            </form>
-          </div>
-
+        <div className="bg-white rounded-[2rem] p-5 shadow-sm border-none flex flex-col gap-4 h-[650px] max-lg:h-[300px] max-lg:min-h-[300px] max-lg:max-h-[300px]">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-neutral-400" />
@@ -311,7 +309,7 @@ export default function CommentBank() {
           </div>
 
           {/* Directory Tree */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1 max-lg:max-h-[250px]">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1">
             {filteredFolders.length === 0 ? (
               <div className="py-20 text-center text-[13px] md:text-[15px] text-neutral-400 flex flex-col items-center justify-center gap-2">
                 <FileText className="w-9 h-9 text-neutral-300" />
@@ -360,17 +358,28 @@ export default function CommentBank() {
                       <div className="pl-4 border-l border-neutral-100 ml-4.5 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
                         {folder.childTabs.map((child) => {
                           const isSelected = selectedTabId === child.id;
+                          const category = getCategoryType(child.title);
+                          
+                          let activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
+                          if (category === 'leaf') {
+                            activeClass = 'bg-zinc-50 text-emerald-800/80 font-semibold';
+                          } else if (category === 'one') {
+                            activeClass = 'bg-zinc-50 text-blue-700/80 font-semibold';
+                          } else if (category === 'letter') {
+                            activeClass = 'bg-zinc-50 text-violet-700/80 font-semibold';
+                          }
+
                           return (
                             <div
                               key={child.id}
-                              onClick={() => navigate(`/comments/${getShortHash(child.id)}`)}
-                              className={`flex items-center gap-2.5 p-3 rounded-xl cursor-pointer transition-all text-[13px] md:text-[15px] ${
+                              onClick={() => navigate(`/familyletters/${getShortHash(child.id)}`)}
+                              className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all text-[13px] md:text-[15px] ${
                                 isSelected 
-                                  ? 'bg-zinc-50 text-primary font-semibold' 
-                                  : 'text-zinc-800 hover:bg-[#f6f7f9] hover:text-zinc-900'
+                                  ? activeClass 
+                                  : 'text-zinc-800 hover:bg-[#fcfcfe] hover:text-neutral-800'
                               }`}
                             >
-                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
+                              {getCustomTabIcon(child.title, "w-4 h-4 shrink-0", isSelected)}
                               <span className="truncate">{child.title}</span>
                             </div>
                           );
@@ -391,7 +400,7 @@ export default function CommentBank() {
               {/* Note Header */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
+                  {getCustomTabIcon(selectedTab.title, "w-4.5 h-4.5 shrink-0", true)}
                   <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate">{selectedTab.title}</h2>
                 </div>
                 
@@ -405,7 +414,7 @@ export default function CommentBank() {
                         variant="ghost"
                         onClick={handleSaveEdit}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer animate-in fade-in duration-200"
+                        className="rounded-full w-8 h-8 hover:bg-blue-50 text-blue-600 hover:text-blue-700 cursor-pointer"
                         title="저장"
                       >
                         <Save className="w-4.5 h-4.5" />
@@ -419,7 +428,7 @@ export default function CommentBank() {
                           setEditText(selectedTab.text || '');
                         }}
                         disabled={savingTab}
-                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer animate-in fade-in duration-200"
+                        className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 cursor-pointer"
                         title="취소"
                       >
                         <X className="w-4.5 h-4.5" />
@@ -436,7 +445,7 @@ export default function CommentBank() {
                         disabled={!selectedTab.text}
                         className={`rounded-full w-8 h-8 cursor-pointer transition-all ${
                           copiedId === selectedTab.id 
-                          ? 'bg-teal-500 hover:bg-teal-600 text-white animate-in zoom-in-75 duration-150' 
+                          ? 'bg-teal-500 hover:bg-teal-600 text-white' 
                           : 'hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800'
                         }`}
                         title="복사하기"
@@ -468,7 +477,7 @@ export default function CommentBank() {
                         onClick={() => fetchTabsData(false)}
                         disabled={loading}
                         className="rounded-full w-8 h-8 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 cursor-pointer"
-                        title="구글 독스 동기화"
+                        title="가정통신문 구글 독스 동기화"
                       >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                       </Button>
@@ -490,7 +499,7 @@ export default function CommentBank() {
                 ) : selectedTab.text ? (
                   <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
-                      <MarkdownRenderer text={replacementName ? selectedTab.text.replaceAll('●●', replacementName) : selectedTab.text} />
+                      <MarkdownRenderer text={selectedTab.text} />
                     </div>
                   </div>
                 ) : (
@@ -503,8 +512,8 @@ export default function CommentBank() {
             </div>
           ) : (
             <div className="flex-1 py-40 text-center flex flex-col items-center justify-center gap-2 select-none">
-              <MessageCircleWarning className="w-11 h-11 text-neutral-300" />
-              <span className="text-[16px] font-medium text-[#64666e]">조회할 문서를 선택해 주세요.</span>
+              <Archive className="w-11 h-11 text-neutral-300" strokeWidth={2.4} />
+              <span className="text-[16px] font-medium text-[#64666e]">조회할 가정통신문을 선택해 주세요.</span>
             </div>
           )}
         </div>

@@ -46,7 +46,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
   return (
     <div className="space-y-6">
       <div className="sticky top-[64px] z-30 py-2 -mt-2 bg-background/90 backdrop-blur-md">
-        <div className="relative w-full bg-white border border-zinc-50 rounded-[1.25rem] py-3 px-5 flex items-center justify-center shadow-sm">
+        <div className="relative w-full bg-white rounded-[1.25rem] py-3 px-5 flex items-center justify-center shadow-sm">
           <span className="text-[15px] md:text-[17px] font-medium text-neutral-700 tracking-tight text-center">
             {dateString}
           </span>
@@ -61,7 +61,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {attendingStudents.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-24 text-muted-foreground bg-white rounded-[2.5rem] border border-solid border-zinc-50 shadow-sm">
             <div className="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6">

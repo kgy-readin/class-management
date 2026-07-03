@@ -23,6 +23,7 @@ export interface Student {
   homeworkChecked: boolean;
   homeworkMissedToday: boolean;
   lastResultDate?: string;
+  studentMemo?: string;
 }
 
 export interface Curriculum {

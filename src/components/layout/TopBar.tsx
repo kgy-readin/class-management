@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { 
   BookOpen, 
   UsersRound, 
-  PenTool, 
+  Feather,
   Archive, 
   Menu, 
   LayoutDashboard, 
@@ -15,7 +15,7 @@ import {
   MessagesSquare, 
   BriefcaseBusiness,
   Star,
-  MessageCircleWarning,
+  AtSign,
   Link
 } from 'lucide-react';
 
@@ -27,9 +27,9 @@ const tabToPath: Record<string, string> = {
   tasks: '/tasks',
   logs: '/logs',
   meeting: '/meeting',
-  comments: '/comments',
+  noticeForm: '/noticeform',
   beginners: '/beginners',
-  familyLetter: '/newsletters',
+  familyLetters: '/familyletters',
 };
 
 interface TopBarProps {
@@ -75,7 +75,7 @@ export default function TopBar({
           ''
         );
       }
-      if (tab === 'familyLetter') {
+      if (tab === 'familyLetters') {
         return (
           process.env.QUICK_NEWSLETTERS_LINK || 
           import.meta.env.VITE_QUICK_NEWSLETTERS_LINK || 
@@ -129,9 +129,9 @@ export default function TopBar({
       case 'tasks': return 'Tasks';
       case 'logs': return 'Logs';
       case 'meeting': return 'Meeting';
-      case 'comments': return 'Comments';
+      case 'noticeForm': return 'Notice Form';
       case 'beginners': return 'Beginners';
-      case 'familyLetter': return 'Newsletters';
+      case 'familyLetters': return 'Family Letters';
       default: return 'Dashboard';
     }
   };
@@ -139,17 +139,17 @@ export default function TopBar({
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Students', icon: UsersRound },
-    { id: 'writing', label: 'Writing', icon: PenTool },
+    { id: 'writing', label: 'Writing', icon: Feather },
     { id: 'logs', label: 'Logs', icon: Archive },
     { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
     { id: 'meeting', label: 'Meeting', icon: MessagesSquare },
-    { id: 'comments', label: 'Comments', icon: MessageCircleWarning },
+    { id: 'noticeForm', label: 'Notice Form', icon: AtSign },
     { id: 'beginners', label: 'Beginners', icon: Sparkles },
-    { id: 'familyLetter', label: 'Newsletters', icon: ScrollText },
+    { id: 'familyLetters', label: 'Family Letters', icon: ScrollText },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/75 backdrop-blur-xl border-b border-zinc-200/50">
+    <header className="sticky top-0 z-50 w-full bg-white/75 backdrop-blur-xl shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl relative">
         
         {/* Left side: Menu / Hammer button and floating menu */}
@@ -212,7 +212,7 @@ export default function TopBar({
                         >
                           <Icon 
                             className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-400'}`} 
-                            strokeWidth={item.id === 'familyLetter' ? 2.4 : undefined} 
+                            strokeWidth={item.id === 'familyLetters' ? 2.4 : undefined} 
                           />
                           <span>{item.label}</span>
                         </button>

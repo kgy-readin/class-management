@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { 
   MessagesSquare,
-  MessageSquareQuote,
   Search, 
   RefreshCw,
   Check,
@@ -19,7 +18,8 @@ import {
   Folder,
   FolderOpen,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { meetingNoteApi } from '@/src/services/api';
 import { MeetingNote as MeetingNoteType, getTagColor } from '@/src/types';
@@ -487,7 +487,7 @@ export default function MeetingNote() {
                                   : 'text-zinc-800 hover:bg-[#f6f7f9] hover:text-zinc-900'
                               }`}
                             >
-                              <MessageSquareQuote className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
+                              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
                               <span className="truncate flex-1" title={item.title}>{item.title}</span>
                             </div>
                           );
@@ -543,7 +543,7 @@ export default function MeetingNote() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <MessageSquareQuote className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
+                      <FileText className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
                       <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
                         {selectedItem.title}
                       </h2>
@@ -665,7 +665,7 @@ export default function MeetingNote() {
                   </div>
                 ) : (
                   <div className="flex-1 border border-neutral-100 rounded-2xl p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[16px] text-neutral-400 select-none">
-                    <MessageSquareQuote className="w-9 h-9 text-neutral-300 mb-2" />
+                    <FileText className="w-9 h-9 text-neutral-300 mb-2" />
                     <span>내용이 비어있습니다.</span>
                   </div>
                 )}

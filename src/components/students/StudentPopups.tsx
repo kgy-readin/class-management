@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog } from 'lucide-react';
+import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog, SquareCheckBig, Loader2 } from 'lucide-react';
 import { getWeeksSince } from '@/lib/utils';
 import BookSearch from './BookSearch';
+import { toast } from 'sonner';
+import { studentApi, taskApi } from '@/src/services/api';
+import { MESSAGES } from '@/src/constants/messages';
 
 const getCurrentTimeHHMM = () => {
   const now = new Date();
@@ -437,9 +440,10 @@ interface StudentEditInfoDialogProps {
     lastResultDate: string;
   }) => Promise<void>;
   isSaving: boolean;
+  onRefresh?: () => void;
 }
 
-export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isSaving }: StudentEditInfoDialogProps) {
+export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isSaving, onRefresh }: StudentEditInfoDialogProps) {
   const [grade, setGrade] = useState('');
   const [level, setLevel] = useState('0');
   const [subProgram, setSubProgram] = useState('');
@@ -447,6 +451,9 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
   const [homeworkMissed, setHomeworkMissed] = useState<number>(0);
   const [booksCompleted, setBooksCompleted] = useState<number>(0);
   const [lastResultDate, setLastResultDate] = useState('');
+  const [isProcessingTask, setIsProcessingTask] = useState(false);
+  const [isLevelingUp, setIsLevelingUp] = useState(false);
+  const [isLevelUpConfirmOpen, setIsLevelUpConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (student) {
@@ -463,6 +470,92 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       setLastResultDate(student.lastResultDate || '');
     }
   }, [student, open]);
+
+  const handleTaskCompletion = async () => {
+    if (!student) return;
+    setIsProcessingTask(true);
+    try {
+      // 1. Get today's local date in YYYY-MM-DD
+      const today = new Date();
+      const offset = today.getTimezoneOffset() * 60000;
+      const todayLocalDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
+
+      // 2. Fetch tasks
+      const tasks = await taskApi.get();
+
+      // 3. Find matching task: category === '결과물' && name === student.name && status === '예정'
+      const matchingTask = tasks.find(t => 
+        String(t.category).trim() === '결과물' && 
+        String(t.name).trim() === student.name.trim() && 
+        String(t.status).trim() === '예정'
+      );
+
+      if (matchingTask) {
+        if (!matchingTask.sheetRowIndex) {
+          throw new Error('할일의 행 번호를 찾을 수 없습니다.');
+        }
+        await taskApi.update(matchingTask.sheetRowIndex, {
+          date: todayLocalDate,
+          name: matchingTask.name,
+          category: matchingTask.category,
+          familyClass: matchingTask.familyClass || '',
+          todo: matchingTask.todo,
+          status: '완료',
+          memo: matchingTask.memo || ''
+        });
+      } else {
+        await taskApi.add({
+          date: todayLocalDate,
+          name: student.name,
+          category: '결과물',
+          familyClass: '',
+          todo: `${student.name} 결과물 배부`,
+          status: '완료',
+          memo: ''
+        });
+      }
+
+      // 4. Update student's lastResultDate in database immediately
+      await studentApi.update(student.name, {
+        lastResultDate: todayLocalDate
+      });
+
+      // 5. Update local state
+      setLastResultDate(todayLocalDate);
+
+      // 6. Show success toast notification
+      toast.success(MESSAGES.students.resultDistributionSuccess);
+
+      // 7. Call onRefresh callback if present to synchronize other parts of the dashboard
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error processing result task:', error);
+      toast.error(MESSAGES.students.processingError(error.message));
+    } finally {
+      setIsProcessingTask(false);
+    }
+  };
+
+  const handleLevelUpConfirm = async () => {
+    if (!student) return;
+    setIsLevelingUp(true);
+    try {
+      await studentApi.levelUp(student.name);
+      toast.success(MESSAGES.students.levelUpSuccess(student.name));
+      setLevel(String((parseInt(level) || 0) + 1));
+      setBooksCompleted(0);
+      setIsLevelUpConfirmOpen(false);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLevelingUp(false);
+    }
+  };
 
   const handleSave = () => {
     onSave({
@@ -565,32 +658,52 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="숙제 미수행 횟수"
-                  value={homeworkMissed}
-                  onChange={(e) => setHomeworkMissed(Number(e.target.value) || 0)}
-                  className="rounded-xl h-10 border-neutral-200 text-sm"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                <div className="space-y-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="숙제 미수행 없음"
+                    value={homeworkMissed === 0 ? '' : homeworkMissed}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setHomeworkMissed(val === '' ? 0 : Number(val));
+                    }}
+                    className="rounded-xl h-10 border-neutral-200 text-sm placeholder:text-neutral-400"
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="완독 권수"
-                  value={booksCompleted}
-                  onChange={(e) => setBooksCompleted(Number(e.target.value) || 0)}
-                  className="rounded-xl h-10 border-neutral-200 text-sm"
-                />
+                <div className="space-y-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="완독 권수"
+                    value={booksCompleted}
+                    onChange={(e) => setBooksCompleted(Number(e.target.value) || 0)}
+                    className="rounded-xl h-10 border-neutral-200 text-sm"
+                  />
+                </div>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={isLevelingUp}
+                onClick={() => setIsLevelUpConfirmOpen(true)}
+                className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center"
+                title="레벨업 (커리큘럼 초기화)"
+              >
+                {isLevelingUp ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ArrowUpCircle className="w-5 h-5" />
+                )}
+              </Button>
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Input
                   type="date"
                   value={lastResultDate}
@@ -608,6 +721,22 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                     '-'
                   )}
                 </div>
+                <Button
+                  id="btn-complete-result-task"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={isProcessingTask}
+                  onClick={handleTaskCompletion}
+                  className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-green-600 hover:bg-green-50 transition-all flex items-center justify-center cursor-pointer"
+                  title="결과물 배부 완료 처리"
+                >
+                  {isProcessingTask ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-green-600" />
+                  ) : (
+                    <SquareCheckBig className="w-5 h-5" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -630,6 +759,14 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
             </Button>
           </div>
         </div>
+        <LevelUpDialog
+          open={isLevelUpConfirmOpen}
+          onOpenChange={setIsLevelUpConfirmOpen}
+          studentName={student?.name || ''}
+          currentLevel={level}
+          onConfirm={handleLevelUpConfirm}
+          isSubmitting={isLevelingUp}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -797,11 +934,14 @@ interface LevelUpDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   studentName: string;
+  currentLevel: string | number;
   onConfirm: () => Promise<void>;
   isSubmitting?: boolean;
 }
 
-export function LevelUpDialog({ open, onOpenChange, studentName, onConfirm, isSubmitting }: LevelUpDialogProps) {
+export function LevelUpDialog({ open, onOpenChange, studentName, currentLevel, onConfirm, isSubmitting }: LevelUpDialogProps) {
+  const targetLevel = (parseInt(String(currentLevel)) || 0) + 1;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
@@ -812,7 +952,7 @@ export function LevelUpDialog({ open, onOpenChange, studentName, onConfirm, isSu
           <div className="space-y-2">
             <h3 className="text-lg font-bold text-foreground">{studentName} 학생 레벨업</h3>
             <p className="text-sm text-zinc-600 font-normal leading-relaxed">
-              {studentName} 학생을 레벨업 하시겠습니까?<br />
+              {studentName} 학생을 <span className="text-primary font-bold">{targetLevel}레벨</span>로 레벨업 하시겠습니까?<br />
               <span className="text-destructive font-semibold">레벨업 시 모든 커리큘럼 데이터가 삭제됩니다.</span>
             </p>
           </div>

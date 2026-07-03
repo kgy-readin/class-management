@@ -3,9 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardData, Student } from '../../types';
 import { toast } from 'sonner';
-import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil } from 'lucide-react';
+import { MESSAGES } from '@/src/constants/messages';
+import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil, ListFilter } from 'lucide-react';
 import { formatLevel, getWeeksSince, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, studentApi } from '@/src/services/api';
+import StudentMemoPopover from './StudentMemoPopover';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BulkDismissDialog, 
   AddStudentDialog, 
@@ -23,6 +26,8 @@ interface StudentListProps {
 
 export default function StudentList({ data, onRefresh, onSelectStudent }: StudentListProps) {
   const [search, setSearch] = useState('');
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [showDayFilter, setShowDayFilter] = useState(false);
 
   // States for features
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -68,7 +73,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
         booksCompleted: Number(formData.booksCompleted) || 0,
         lastResultDate: formData.lastResultDate
       });
-      toast.success(`${editingStudent.name} 학생의 정보가 수정되었습니다.`);
+      toast.success(MESSAGES.students.editSuccess(editingStudent.name));
       setIsEditOpen(false);
       setEditingStudent(null);
       onRefresh();
@@ -90,15 +95,15 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     const trimmedName = formData.name.trim();
     const trimmedGrade = formData.grade.trim();
     if (!trimmedName) {
-      toast.error('학생 이름을 입력해 주세요.');
+      toast.error(MESSAGES.students.enterName);
       return;
     }
     if (!trimmedGrade) {
-      toast.error('학년을 입력해 주세요.');
+      toast.error(MESSAGES.students.enterGrade);
       return;
     }
     if (!formData.level) {
-      toast.error('레벨을 선택해 주세요.');
+      toast.error(MESSAGES.students.enterLevel);
       return;
     }
 
@@ -112,7 +117,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
         attendanceDays: formData.attendanceDays.join(', '),
         booksCompleted: formData.booksCompleted || 0
       });
-      toast.success(`${trimmedName} 학생이 성공적으로 등록되었습니다.`);
+      toast.success(MESSAGES.students.registerSuccess(trimmedName));
       setIsAddOpen(false);
       onRefresh();
     } catch (error: any) {
@@ -127,7 +132,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     try {
       setIsDeleting(true);
       await studentApi.delete(deletingStudent.name);
-      toast.success(`${deletingStudent.name} 학생 정보와 커리큘럼 데이터가 안전하게 완전히 삭제되었습니다.`);
+      toast.success(MESSAGES.students.deleteSuccess(deletingStudent.name));
       setDeletingStudent(null);
       onRefresh();
     } catch (error: any) {
@@ -141,7 +146,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     if (!attendanceStudent) return;
     try {
       await attendanceApi.update({ name: attendanceStudent.name, isAttending, dismissalTime });
-      toast.success(isAttending ? `${attendanceStudent.name} 학생 등원 처리되었습니다.` : `${attendanceStudent.name} 학생 하원 처리되었습니다.`);
+      toast.success(MESSAGES.students.attendanceSuccess(attendanceStudent.name, isAttending));
       setAttendanceStudent(null);
       onRefresh();
     } catch (error: any) {
@@ -152,7 +157,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
   const handleSimpleDismiss = async (name: string) => {
     try {
       await attendanceApi.update({ name, isAttending: false, dismissalTime: '' });
-      toast.success(`${name} 학생 하원 처리되었습니다.`);
+      toast.success(MESSAGES.students.dismissalSuccess(name));
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -163,7 +168,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     if (!levelUpStudent) return;
     try {
       await studentApi.levelUp(levelUpStudent.name);
-      toast.success(`${levelUpStudent.name} 학생이 레벨업되었습니다!`);
+      toast.success(MESSAGES.students.levelUpSuccess(levelUpStudent.name));
       setLevelUpStudent(null);
       onRefresh();
     } catch (error: any) {
@@ -175,7 +180,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
     try {
       setIsBulkDismissing(true);
       await attendanceApi.bulkDismiss();
-      toast.success('모든 등원 중인 학생이 일괄 하원 처리되었습니다.');
+      toast.success(MESSAGES.students.bulkDismissalSuccess);
       setIsBulkDismissOpen(false);
       onRefresh();
     } catch (error: any) {
@@ -191,6 +196,14 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
   const filteredStudents = data.students
     .filter(s => {
+      if (selectedDay) {
+        const matchesDay = (s.attendanceDays || '').includes(selectedDay);
+        const isCurrentlyAttending = !!s.isAttending;
+        if (!matchesDay && !isCurrentlyAttending) {
+          return false;
+        }
+      }
+
       const searchLower = search.trim().toLowerCase();
       if (!searchLower) return true;
 
@@ -239,14 +252,67 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
         <div className="flex flex-col gap-2.5">
           {/* 검색바 및 버튼 그룹 (동일 높이, 버튼 그룹 오른쪽 정렬) */}
           <div className="flex items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <Input
-                placeholder="이름, 학년, 레벨, 요일"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 rounded-xl border-neutral-200 text-sm"
-              />
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <Input
+                  placeholder="이름, 학년, 레벨, 요일"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 h-10 rounded-xl border-neutral-200 text-sm"
+                />
+              </div>
+
+              {/* 데스크탑 전용 요일 필터 토글 버튼 */}
+              <Button 
+                type="button"
+                variant="ghost"
+                onClick={() => setShowDayFilter(!showDayFilter)}
+                title="요일 필터"
+                className={`hidden md:flex rounded-xl w-10 h-10 p-0 items-center justify-center transition-all shrink-0 border-none shadow-none ${
+                  showDayFilter 
+                    ? 'bg-primary/10 text-primary hover:bg-primary/20' 
+                    : 'bg-transparent hover:bg-neutral-50'
+                }`}
+              >
+                <ListFilter className="w-4 h-4 text-neutral-600" />
+              </Button>
+
+              {/* 가로로 열리는 요일 필터 슬라이더 */}
+              <AnimatePresence initial={false}>
+                {showDayFilter && (
+                  <motion.div
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    className="hidden md:flex items-center overflow-hidden shrink-0"
+                  >
+                    <div className="flex items-center gap-5 bg-transparent px-4 py-2 h-10 border-none shadow-none">
+                      {['월', '화', '수', '목', '금', '토'].map((day) => {
+                        const isSelected = selectedDay === day;
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => setSelectedDay(isSelected ? null : day)}
+                            className={`text-sm font-semibold transition-all relative py-0.5 px-1 cursor-pointer select-none shrink-0 ${
+                              isSelected 
+                                ? 'text-primary' 
+                                : 'text-neutral-500 hover:text-neutral-800'
+                            }`}
+                          >
+                            {day}
+                            {isSelected && (
+                              <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* 버튼 묶음 (오른쪽 정렬) */}
@@ -398,15 +464,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
                     </Button>
                   )}
                   
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    title="레벨업 (커리큘럼 초기화)"
-                    onClick={() => setLevelUpStudent(student)}
-                    className="rounded-xl w-11 h-11 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
-                  >
-                    <ArrowUpCircle className="w-6 h-6" />
-                  </Button>
+                  <StudentMemoPopover student={student} onRefresh={onRefresh} />
                 </>
               )}
             </div>
@@ -453,6 +511,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
           open={!!levelUpStudent}
           onOpenChange={(open) => !open && setLevelUpStudent(null)}
           studentName={levelUpStudent.name}
+          currentLevel={levelUpStudent.level}
           onConfirm={handleLevelUpConfirm}
         />
       )}
@@ -464,6 +523,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
           student={editingStudent}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
+          onRefresh={onRefresh}
         />
       )}
     </div>

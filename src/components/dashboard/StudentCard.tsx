@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Student, Curriculum } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
-import { LogOut, Save, Star, User, BookA, PlusCircle, Heart, FilePlus, X } from 'lucide-react';
+import { LogOut, Save, Star, User, BookA, FilePlus, X, Smile, Check, Circle, Pencil } from 'lucide-react';
 import { formatTime, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import StudentMemoPopover from '../students/StudentMemoPopover';
+import { AttendanceDialog } from '../students/StudentPopups';
 
 interface StudentCardProps {
   student: Student;
@@ -22,6 +24,19 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   const [writingConfirmItem, setWritingConfirmItem] = useState<Curriculum | null>(null);
   const [isEditingSubProgram, setIsEditingSubProgram] = useState(false);
   const [subProgramValue, setSubProgramValue] = useState(student.subProgram || '');
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [editingCurriculumKeys, setEditingCurriculumKeys] = useState<Record<string, boolean>>({});
+
+  const handleAttendanceConfirm = async (isAttending: boolean, dismissalTime: string) => {
+    try {
+      await attendanceApi.update({ name: student.name, isAttending, dismissalTime });
+      toast.success(MESSAGES.students.attendanceSuccess(student.name, isAttending));
+      setIsAttendanceOpen(false);
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
 
   const handleSubProgramUpdate = async () => {
     setUpdating(`${student.name}-subprogram`);
@@ -79,18 +94,20 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   };
 
   const handleStatusUpdate = async (bookId: string, index: number) => {
-    const status = localStatuses[`${student.name}-${bookId}-${index}`];
-    if (!status?.status) return;
+    const key = `${student.name}-${bookId}-${index}`;
+    const statusVal = localStatuses[key]?.status || progressList.find(item => item.bookId === bookId && item.index === index)?.status;
+    if (!statusVal) return;
     setUpdating(`${student.name}-${bookId}`);
     try {
       await curriculumApi.update({ 
         studentName: student.name, 
         bookId, 
-        status: status.status,
+        status: statusVal,
         originalIndex: index
       });
       toast.success(MESSAGES.dashboard.progressUpdated);
       onRefresh();
+      setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -99,207 +116,222 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   };
 
   return (
-    <Card className="overflow-hidden shadow-none hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-white group flex flex-col">
+    <Card className="relative shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-white group flex flex-col pt-3 pb-2 border-none ring-0">
       <div className="px-6 py-2 w-full mb-[-8px]">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h3 className="text-[19px] font-extrabold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
+            <h3 className="text-[19px] font-bold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
-              <span className="text-sm font-bold text-foreground/60">{formatTime(student.dismissalTime)}</span>
+              <span 
+                onClick={() => setIsAttendanceOpen(true)}
+                className="text-sm font-semibold text-foreground/60 hover:text-primary transition-colors cursor-pointer hover:underline decoration-dotted decoration-primary/50 underline-offset-4"
+                title="하원 예정시간 변경"
+              >
+                {formatTime(student.dismissalTime)}
+              </span>
               {isResultDelayed(student.level, student.lastResultDate) && (
-                <span className="text-sm font-medium text-red-600/90 text-left">결과물 확인</span>
+                <span className="text-sm font-medium text-red-600/90 text-left">결과물</span>
               )}
             </div>
           </div>
-          <div className="flex gap-2 -translate-x-[2px]">
+          <div className="flex gap-2 -translate-x-[2px] items-center">
+            <StudentMemoPopover 
+              student={student} 
+              onRefresh={onRefresh} 
+              onlyIfNotEmpty={true}
+              buttonClassName="h-9 w-9 rounded-full text-zinc-500 bg-white/50 hover:bg-zinc-100/80 transition-all flex items-center justify-center cursor-pointer"
+              iconSizeClass="w-[18px] h-[18px] stroke-[2.2]"
+              className="flex items-center justify-center shrink-0"
+            />
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
+              className="h-9 w-9 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
               onClick={() => onSelectStudent(student.name)}
             >
-              <User className="w-5 h-5" />
+              <User className="w-[18px] h-[18px]" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-10 w-10 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
+              className="h-9 w-9 rounded-full text-foreground bg-white/50 hover:bg-white/80 shadow-sm transition-all border border-zinc-200/80"
               onClick={handleCheckout}
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-[18px] h-[18px]" />
             </Button>
           </div>
         </div>
       </div>
 
-      <CardContent className="pt-4 px-4 pb-3 flex flex-col gap-2.5 flex-1 border-t border-border/30">
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-transparent shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)] h-[44px]">
-          <div className="w-8 h-8 flex items-center justify-center shrink-0">
-            <Star className="w-4 h-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">
-              숙제 미제출: <span className={student.homeworkMissed > 0 ? 'text-destructive' : ''}>{student.homeworkMissed}회</span>
-            </p>
-          </div>
-          <div className="flex gap-1.5 pr-[1.5px]">
-            {student.homeworkChecked ? (
-              student.homeworkMissedToday ? (
-                <div className="h-8 px-4 rounded-full text-[11px] font-extrabold bg-destructive text-white flex items-center justify-center leading-none shadow-sm -translate-x-[2px]">
-                  미수행
-                </div>
+      <CardContent className="pt-2 px-5 pb-2 flex flex-col flex-1 border-t border-zinc-100/70">
+        <div className="flex flex-col divide-y divide-zinc-100/70">
+          {/* Homework row */}
+          <div className="flex items-center gap-3 h-11">
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+              <Smile className="w-[18px] h-[18px] text-primary stroke-[2.5]" />
+            </div>
+            <div className="flex-1 min-w-0">
+               <p className="text-sm font-medium text-foreground">
+                숙제 미수행 <span className={student.homeworkMissed > 0 ? 'text-destructive' : ''}>{student.homeworkMissed}회</span>
+              </p>
+            </div>
+            <div className="flex gap-1 pr-[1.5px] items-center">
+              {student.homeworkChecked ? (
+                student.homeworkMissedToday ? (
+                  <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-destructive text-white border border-destructive select-none shadow-sm -translate-x-[2px]">
+                    안함
+                  </span>
+                ) : (
+                  <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-primary text-white border border-primary select-none shadow-sm -translate-x-[2px]">
+                    완료
+                  </span>
+                )
               ) : (
-                <div className="h-8 px-4 rounded-full text-[11px] font-extrabold bg-primary text-white flex items-center justify-center leading-none shadow-sm -translate-x-[2px]">
-                  검사 완료
-                </div>
-              )
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-8 px-3 rounded-full text-[11px] font-normal bg-white text-primary border-primary/20 hover:bg-primary/5 transition-all flex items-center justify-center leading-none"
-                  onClick={() => handleHomework(true)}
-                  disabled={updating === `${student.name}-homework`}
-                >
-                  수행
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-8 px-3 rounded-full text-[11px] font-normal bg-white text-destructive border-destructive/20 hover:bg-destructive hover:text-white transition-all flex items-center justify-center leading-none"
-                  onClick={() => handleHomework(false)}
-                  disabled={updating === `${student.name}-homework`}
-                >
-                  안함
-                </Button>
-              </>
-            )}
+                <>
+                  <button
+                    onClick={() => handleHomework(true)}
+                    disabled={updating === `${student.name}-homework`}
+                    className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
+                  >
+                    완료
+                  </button>
+                  <button
+                    onClick={() => handleHomework(false)}
+                    disabled={updating === `${student.name}-homework`}
+                    className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-red-50 text-red-700 border border-red-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
+                  >
+                    안함
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-transparent shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)] h-[44px]">
-          <div className="w-8 h-8 flex items-center justify-center shrink-0">
-            <BookA className="w-4 h-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            {isEditingSubProgram ? (
-              <input
-                className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-1 ring-primary/20 outline-none"
-                value={subProgramValue}
-                onChange={(e) => setSubProgramValue(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSubProgramUpdate();
-                  if (e.key === 'Escape') setIsEditingSubProgram(false);
-                }}
-              />
-            ) : (
-              <span className="text-sm font-semibold text-foreground truncate block">
-                {student.subProgram || '서브프로그램 미설정'}
-              </span>
-            )}
-          </div>
-          <div className="flex gap-1 pr-[1.5px]">
-            {isEditingSubProgram ? (
-              <>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
-                  onClick={handleSubProgramUpdate}
-                  disabled={updating === `${student.name}-subprogram`}
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary"
-                  onClick={() => {
-                    setIsEditingSubProgram(false);
-                    setSubProgramValue(student.subProgram || '');
+          {/* Sub-program row */}
+          <div className="flex items-center gap-3 h-11">
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+              <Star className="w-4 h-4 text-primary stroke-[2.5]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              {isEditingSubProgram ? (
+                <input
+                  className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-1 ring-primary/20 outline-none"
+                  value={subProgramValue}
+                  onChange={(e) => setSubProgramValue(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSubProgramUpdate();
+                    if (e.key === 'Escape') setIsEditingSubProgram(false);
                   }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
-                onClick={() => {
-                  setSubProgramValue(student.subProgram || '');
-                  setIsEditingSubProgram(true);
-                }}
-              >
-                <PlusCircle className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {progressList.length > 0 ? (
-          <div className="flex flex-col gap-2.5 mt-0.5">
-            {progressList.map((item, idx) => {
-              const key = `${student.name}-${item.bookId}-${item.index}`;
-              const currentStatus = localStatuses[key] || { status: item.status };
-              const isWriting = item.bookTitle === '글쓰기';
-              const isProgressing = currentStatus.status === '진행';
-
-              return (
-                <div 
-                  key={`${key}-${idx}`} 
-                  className={`flex items-center gap-3 p-2 rounded-2xl border border-transparent h-[44px] ${
-                    isProgressing
-                      ? 'bg-amber-200/13 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.15)]'
-                      : isWriting
-                        ? 'bg-violet-100/40 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.15)]'
-                        : 'bg-secondary/20 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.15)]'
-                  }`}
-                >
+                />
+              ) : (
+                <span className={`text-sm font-medium truncate block ${student.subProgram ? 'text-foreground' : 'text-zinc-400'}`}>
+                  {student.subProgram || '서브 없음'}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1 pr-[1.5px] items-center">
+              {isEditingSubProgram ? (
+                <>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className={`h-8 w-8 rounded-xl shrink-0 ${
+                    className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+                    onClick={handleSubProgramUpdate}
+                    disabled={updating === `${student.name}-subprogram`}
+                  >
+                    <Check className="w-[18px] h-[18px] stroke-[2]" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary"
+                    onClick={() => {
+                      setIsEditingSubProgram(false);
+                      setSubProgramValue(student.subProgram || '');
+                    }}
+                  >
+                    <X className="w-[18px] h-[18px]" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full text-zinc-200 hover:text-primary hover:bg-primary/10"
+                  onClick={() => {
+                    setSubProgramValue(student.subProgram || '');
+                    setIsEditingSubProgram(true);
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Curriculum rows */}
+          {progressList.map((item, idx) => {
+            const key = `${student.name}-${item.bookId}-${item.index}`;
+            const currentStatus = localStatuses[key] || { status: item.status };
+            const isWriting = item.bookTitle === '글쓰기';
+            const isProgressing = currentStatus.status === '진행';
+
+            return (
+              <div 
+                key={`${key}-${idx}`} 
+                className="flex items-center gap-3 h-11"
+              >
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                       updating === key 
                         ? 'animate-pulse' 
-                        : isProgressing
-                          ? 'text-yellow-600 hover:bg-amber-100/55'
+                        : editingCurriculumKeys[key]
+                          ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-semibold border border-emerald-200'
                           : isWriting 
-                            ? 'text-purple-600 hover:bg-purple-100'
-                            : 'text-primary hover:bg-primary/10'
+                            ? 'text-purple-600 hover:bg-purple-50'
+                            : isProgressing
+                              ? 'text-blue-600 hover:bg-blue-50'
+                              : 'text-primary hover:bg-primary/5'
                     }`}
-                    onClick={() => handleStatusUpdate(item.bookId, item.index)}
+                    onClick={() => {
+                      if (!editingCurriculumKeys[key]) {
+                        setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }));
+                      } else {
+                        handleStatusUpdate(item.bookId, item.index);
+                      }
+                    }}
                     disabled={updating === key}
                   >
-                    <Save className="w-4 h-4" />
+                    <Check className="w-4 h-4 stroke-[3]" />
                   </Button>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
-                      <span className={`font-semibold ${
-                        isProgressing
-                          ? 'text-yellow-900/90'
-                          : isWriting 
-                            ? 'text-purple-900' 
-                            : 'text-zinc-900'
-                      }`}>{item.bookTitle}</span>
-                      {!isWriting && (
-                        <span className={`font-medium ml-1.5 ${
-                          isProgressing ? 'text-yellow-600' : 'text-primary'
-                        }`}>{item.bookId}</span>
-                      )}
-                    </p>
-                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">
+                    <span className={`font-medium ${
+                      isWriting 
+                        ? 'text-purple-900 font-medium' 
+                        : 'text-zinc-800'
+                    }`}>{item.bookTitle}</span>
+                    {!isWriting && (
+                      <span className="font-medium ml-1.5 text-primary">{item.bookId}</span>
+                    )}
+                  </p>
+                </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
+                <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
+                  {editingCurriculumKeys[key] ? (
                     <select 
-                      className={`bg-white border-none rounded-full px-2 py-1 text-[11px] font-normal focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
+                      className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
                         isProgressing
-                          ? 'ring-yellow-400 text-yellow-900'
+                          ? 'ring-amber-400 text-amber-900 border-amber-200'
                           : isWriting 
-                            ? 'ring-purple-400 text-purple-900' 
-                            : 'ring-primary/20 text-foreground'
+                            ? 'ring-purple-400 text-purple-900 border-purple-200' 
+                            : 'ring-primary/20 text-foreground border-zinc-200'
                       }`}
                       value={currentStatus.status}
                       onChange={(e) => setLocalStatuses(prev => ({
@@ -309,72 +341,42 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                     >
                       {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    
-                    {!isWriting && (
-                      <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
-                        <DialogTrigger render={
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className={`h-7 w-7 rounded-full ${
-                              isProgressing
-                                ? 'text-yellow-600/60 hover:text-yellow-600 hover:bg-amber-100/50'
-                                : 'text-primary/40 hover:text-primary hover:bg-primary/10'
-                            }`}
-                            onClick={() => setWritingConfirmItem(item)}
-                            disabled={updating === `writing-${student.name}-${item.bookId}`}
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                          </Button>
-                        } />
-                        <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                          <div className="p-8 text-center space-y-6">
-                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                              <FilePlus className="w-8 h-8 text-primary" />
-                            </div>
-                            <div className="space-y-2">
-                              <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
-                              <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
-                                글쓰기 현황을 추가하시겠습니까?
-                              </p>
-                            </div>
-                            <div className="flex gap-3">
-                              <DialogClose render={
-                                <Button 
-                                  variant="secondary" 
-                                  className="flex-1 h-12 rounded-2xl font-bold"
-                                >
-                                  취소
-                                </Button>
-                              } />
-                              <Button 
-                                className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
-                                onClick={() => handleAddToWritingStatus(item)}
-                              >
-                                추가
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    {isWriting && (
-                      <div className="h-7 w-7 flex items-center justify-center text-purple-400/60">
-                        <Heart className="w-4 h-4 fill-purple-400/40" />
-                      </div>
-                    )}
-                  </div>
+                  ) : (
+                    <span 
+                      onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
+                      className={`px-2.5 py-0.5 rounded-full text-[12px] font-medium cursor-pointer select-none transition-all hover:opacity-80 shadow-sm ${
+                        currentStatus.status === '진행'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : currentStatus.status === '통과'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : currentStatus.status === '불통'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                      }`}
+                    >
+                      {currentStatus.status}
+                    </span>
+                  )}
+                  
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-4 border border-solid border-zinc-50 rounded-2xl">
-            <p className="text-xs font-bold text-muted-foreground">커리큘럼을 추가해 주세요.</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {progressList.length === 0 && (
+          <div className="text-center py-4 border border-dashed border-zinc-150 rounded-2xl mt-2">
+            <p className="text-xs font-semibold text-muted-foreground">커리큘럼을 추가해 주세요.</p>
           </div>
         )}
       </CardContent>
+
+      <AttendanceDialog
+        open={isAttendanceOpen}
+        onOpenChange={setIsAttendanceOpen}
+        studentName={student.name}
+        onConfirm={handleAttendanceConfirm}
+      />
     </Card>
   );
 };

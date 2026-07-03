@@ -12,8 +12,8 @@ import { DashboardData, Student, getShortHash } from './types/index';
 import { Settings } from 'lucide-react';
 import TaskManager from './components/tasks/TaskManager';
 import StudentLog from './components/logs/StudentLog';
-import CommentBank from './components/comments/CommentBank';
-import ParentNewsletters from './components/newsletters/ParentNewsletters';
+import NoticeForm from './components/noticeform/noticeForm';
+import FamilyLetters from './components/familyletters/familyLetters';
 import BeginnerFeedback from './components/beginners/BeginnerFeedback';
 import MeetingNote from './components/meeting/MeetingNote';
 import { dataApi } from '@/src/services/api';
@@ -27,9 +27,9 @@ const tabToPath: Record<string, string> = {
   tasks: '/tasks',
   logs: '/logs',
   meeting: '/meeting',
-  comments: '/comments',
+  noticeForm: '/noticeform',
   beginners: '/beginners',
-  familyLetter: '/newsletters',
+  familyLetters: '/familyletters',
 };
 
 const pathToTab: Record<string, string> = {
@@ -39,9 +39,9 @@ const pathToTab: Record<string, string> = {
   '/tasks': 'tasks',
   '/logs': 'logs',
   '/meeting': 'meeting',
-  '/comments': 'comments',
+  '/noticeform': 'noticeForm',
   '/beginners': 'beginners',
-  '/newsletters': 'familyLetter',
+  '/familyletters': 'familyLetters',
 };
 
 const getStudentPath = (name: string, _studentsList?: Student[]): string => {
@@ -94,12 +94,12 @@ export default function App() {
     activeTab = 'writing';
   } else if (path.startsWith('/meeting')) {
     activeTab = 'meeting';
-  } else if (path.startsWith('/comments')) {
-    activeTab = 'comments';
+  } else if (path.startsWith('/noticeform')) {
+    activeTab = 'noticeForm';
   } else if (path.startsWith('/beginners')) {
     activeTab = 'beginners';
-  } else if (path.startsWith('/newsletters')) {
-    activeTab = 'familyLetter';
+  } else if (path.startsWith('/familyletters')) {
+    activeTab = 'familyLetters';
   } else if (path.startsWith('/logs')) {
     activeTab = 'logs';
   } else if (path.startsWith('/tasks')) {
@@ -116,10 +116,10 @@ export default function App() {
 
   // Helper to define mode categories
   const getModeByTab = (tab: string): 'sub' | 'class' | 'work' => {
-    if (['writing', 'logs', 'comments', 'beginners'].includes(tab)) {
+    if (['writing', 'logs', 'noticeForm', 'beginners'].includes(tab)) {
       return 'sub';
     }
-    if (['tasks', 'meeting', 'familyLetter'].includes(tab)) {
+    if (['tasks', 'meeting', 'familyLetters'].includes(tab)) {
       return 'work';
     }
     return 'class';
@@ -399,16 +399,16 @@ export default function App() {
             <MeetingNote />
           </TabsContent>
           
-          <TabsContent value="comments" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <CommentBank />
+          <TabsContent value="noticeForm" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <NoticeForm />
           </TabsContent>
 
           <TabsContent value="beginners" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             <BeginnerFeedback />
           </TabsContent>
 
-          <TabsContent value="familyLetter" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <ParentNewsletters />
+          <TabsContent value="familyLetters" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
+            <FamilyLetters />
           </TabsContent>
         </div>
       </Tabs>

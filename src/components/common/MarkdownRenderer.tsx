@@ -7,7 +7,7 @@ export interface Block {
   children?: Block[];
 }
 
-// DocTab represents general hierarchically structured documents (used across CommentBank, ParentNewsletters, etc.)
+// DocTab represents general hierarchically structured documents (used across NoticeForm, FamilyLetters, etc.)
 export interface DocTab {
   id: string;
   title: string;

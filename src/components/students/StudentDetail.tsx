@@ -7,6 +7,8 @@ import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
+import { MESSAGES } from '@/src/constants/messages';
+import StudentMemoPopover from './StudentMemoPopover';
 import {
   AddCurriculumDialog,
   StudentEditInfoDialog,
@@ -45,12 +47,20 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
 
   useEffect(() => {
-    // Scroll window to bottom when entering the student details
+    // Scroll window to bottom when entering the student details (desktop only)
+    const isMobile = window.innerWidth < 768;
     const timer = setTimeout(() => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth'
-      });
+      if (isMobile) {
+        window.scrollTo({
+          top: 0,
+          behavior: 'instant'
+        });
+      } else {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
     }, 150);
     return () => clearTimeout(timer);
   }, [studentName]);
@@ -113,7 +123,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           bookTitle,
           originalIndex
         });
-        toast.success('정보가 업데이트되었습니다.');
+        toast.success(MESSAGES.students.updateSuccess);
         
         if (setData) {
           setData(prev => {
@@ -174,7 +184,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         bookTitle: item.bookTitle,
         progress: '완료' 
       });
-      toast.success('글쓰기 현황에 추가되었습니다.');
+      toast.success(MESSAGES.students.writingAdded);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -212,7 +222,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       setOptimisticCurriculum({ type: 'add', payload: tempItem });
       try {
         const response = await curriculumApi.add({ studentName, bookTitle, isWriting });
-        toast.success(isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.');
+        toast.success(MESSAGES.students.curriculumAdded(isWriting));
         
         if (setData) {
           setData(prev => {
@@ -244,7 +254,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           bookId: item.bookId, 
           index: item.index 
         });
-        toast.success('항목이 삭제되었습니다.');
+        toast.success(MESSAGES.students.itemDeleted);
         
         if (setData) {
           setData(prev => {
@@ -285,7 +295,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           bookTitle,
           originalIndex
         });
-        toast.success('정보가 업데이트되었습니다.');
+        toast.success(MESSAGES.students.updateSuccess);
         
         if (setData) {
           setData(prev => {
@@ -403,7 +413,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         booksCompleted: Number(formData.booksCompleted) || 0,
         lastResultDate: formData.lastResultDate
       });
-      toast.success(`${student.name} 학생의 정보가 수정되었습니다.`);
+      toast.success(MESSAGES.students.editSuccess(student.name));
       setIsEditOpen(false);
       onRefresh();
     } catch (error: any) {
@@ -423,18 +433,30 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
             <Button variant="ghost" onClick={onBack} size="icon" className="w-[36px] h-[36px] flex items-center justify-center rounded-xl shrink-0">
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <div className="flex items-baseline gap-2 min-w-0 flex-wrap pb-[2px]">
-              <span className="text-[19px] md:text-[21px] font-extrabold text-foreground whitespace-nowrap align-baseline">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap pb-[2px]">
+              <span className="text-[19px] md:text-[21px] font-extrabold text-foreground whitespace-nowrap">
                 {studentName}  학생
               </span>
+
               {/* Mobile/Tablet text in a rounded box */}
-              <span className="xl:hidden text-[13px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-block align-baseline">
+              <span className="xl:hidden text-[13px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-block">
                 {[displayGrade, displayLevel, completedCount, attendance].filter(Boolean).join(' · ')}
               </span>
               {/* Desktop text in a rounded box */}
-              <span className="hidden xl:inline-block text-[15px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-3 py-1 align-baseline">
+              <span className="hidden xl:inline-block text-[15px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-3 py-1">
                 {[displayGrade, displayLevel, completedCount, attendance, subProg].filter(Boolean).join(' · ')}
               </span>
+
+              {student && (
+                <StudentMemoPopover 
+                  student={student} 
+                  onRefresh={onRefresh} 
+                  iconOnly={true}
+                  iconSizeClass="w-4 h-4"
+                  className="flex items-center justify-center shrink-0" 
+                  buttonClassName="text-neutral-500 hover:text-neutral-700 transition-colors cursor-pointer flex items-center justify-center p-1 hover:bg-neutral-50 rounded-lg"
+                />
+              )}
             </div>
           </div>
 
@@ -733,6 +755,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           student={student}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
+          onRefresh={onRefresh}
         />
       )}
 
