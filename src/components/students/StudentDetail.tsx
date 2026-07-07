@@ -123,7 +123,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           bookTitle,
           originalIndex
         });
-        toast.success(MESSAGES.students.updateSuccess);
+        toast.success(MESSAGES.students.updateSuccess(studentName));
         
         if (setData) {
           setData(prev => {
@@ -295,7 +295,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           bookTitle,
           originalIndex
         });
-        toast.success(MESSAGES.students.updateSuccess);
+        toast.success(MESSAGES.students.updateSuccess(studentName));
         
         if (setData) {
           setData(prev => {

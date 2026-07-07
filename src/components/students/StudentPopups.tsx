@@ -524,7 +524,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       setLastResultDate(todayLocalDate);
 
       // 6. Show success toast notification
-      toast.success(MESSAGES.students.resultDistributionSuccess);
+      toast.success(MESSAGES.students.resultDistributionSuccess(student.name));
 
       // 7. Call onRefresh callback if present to synchronize other parts of the dashboard
       if (onRefresh) {

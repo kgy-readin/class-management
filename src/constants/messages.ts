@@ -101,12 +101,12 @@ export const MESSAGES = {
 
   // 9.5. Student Management (학생 관리 및 정보 수정) Messages
   students: {
-    updateSuccess: '${name} 학생 정보가 업데이트되었습니다.',
+    updateSuccess: (name: string) => `${name} 학생 정보가 업데이트되었습니다.`,
     writingAdded: '글쓰기 현황에 추가되었습니다.',
     curriculumAdded: (isWriting: boolean) => isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.',
     itemDeleted: '항목이 삭제되었습니다.',
     editSuccess: (name: string) => `${name} 학생의 정보가 수정되었습니다.`,
-    resultDistributionSuccess: '${name} 학생 결과물 배부 완료 처리 되었습니다.',
+    resultDistributionSuccess: (name: string) => `${name} 학생 결과물 배부 완료 처리 되었습니다.`,
     processingError: (msg: string) => `오류가 발생했습니다: ${msg}`,
     enterName: '학생 이름을 입력해 주세요.',
     enterGrade: '학년을 입력해 주세요.',
