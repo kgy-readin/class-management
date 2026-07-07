@@ -80,7 +80,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   // Adding state directly inline
   const [reservingTask, setReservingTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<'업무' | '다음주' | '가정통신문' | '필터'>('업무');
-  const [inlineAddGroup, setInlineAddGroup] = useState<'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | null>(null);
+  const [inlineAddGroup, setInlineAddGroup] = useState<'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | 'filterView' | null>(null);
   const [newForm, setNewForm] = useState<Omit<Task, 'sheetRowIndex'>>({
     date: format(new Date(), 'yyyy-MM-dd'),
     name: '',
@@ -607,13 +607,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   };
 
   // Toggles inline adding row inside groups
-  const handleOpenInlineAdd = (group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek') => {
+  const handleOpenInlineAdd = (group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | 'filterView') => {
     setInlineAddGroup(group);
     
     let defaultStatus = '예정';
     let defaultCategory = '알림장';
     let defaultFamilyClass = '';
     let defaultDate = format(new Date(), 'yyyy-MM-dd');
+    let defaultName = selectedStudent || '';
     
     if (group === 'inProgress') {
       defaultStatus = '진행';
@@ -622,13 +623,24 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     } else if (group === 'familyView') {
       defaultCategory = '가통';
       defaultFamilyClass = '정기';
+      defaultName = '';
     } else if (group === 'nextWeek') {
       defaultDate = '';
+    } else if (group === 'filterView') {
+      if (selectedDate) {
+        defaultDate = format(selectedDate, 'yyyy-MM-dd');
+      } else if (selectedWeek && selectedWeek.dates.length > 0) {
+        const monday = startOfWeek(selectedWeek.dates[0], { weekStartsOn: 1 });
+        defaultDate = format(monday, 'yyyy-MM-dd');
+      } else if (selectedStudent) {
+        defaultDate = '';
+        defaultName = selectedStudent;
+      }
     }
 
     setNewForm({
       date: defaultDate,
-      name: (group === 'familyView') ? '' : (selectedStudent || ''),
+      name: defaultName,
       category: defaultCategory,
       familyClass: defaultFamilyClass,
       todo: '',
@@ -1088,6 +1100,23 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       ))}
                     </div>
 
+                    {activeTab === '필터' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (inlineAddGroup === 'filterView') {
+                            setInlineAddGroup(null);
+                          } else {
+                            handleOpenInlineAdd('filterView');
+                          }
+                        }}
+                        className="rounded-full w-8 h-8 p-0 flex items-center justify-center border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-750 transition-all shrink-0 cursor-pointer"
+                        title="할일 추가"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    )}
 
                   </div>
                 </div>
@@ -1373,15 +1402,33 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
                   {activeTab === '필터' && (
                     <div className="space-y-4">
+                      {inlineAddGroup === 'filterView' && (
+                        <div className="mb-2">
+                          <InlineAddForm
+                            group="filterView"
+                            newForm={newForm}
+                            setNewForm={setNewForm}
+                            students={students}
+                            submitting={submitting}
+                            handleCreateTask={handleCreateTask}
+                            setInlineAddGroup={setInlineAddGroup}
+                          />
+                        </div>
+                      )}
+
                       {!selectedStudent && !selectedDate && !selectedWeek && !taskSearchQuery.trim() ? (
-                        <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
-                          <ListFilter className="w-10 h-10 text-zinc-300" />
-                          <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>
-                        </div>
+                        inlineAddGroup !== 'filterView' && (
+                          <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
+                            <ListFilter className="w-10 h-10 text-zinc-300" />
+                            <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>
+                          </div>
+                        )
                       ) : filterTasks.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
-                          필터 결과에 해당하는 할 일이 없습니다.
-                        </div>
+                        inlineAddGroup !== 'filterView' && (
+                          <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                            필터 결과에 해당하는 할 일이 없습니다.
+                          </div>
+                        )
                       ) : (
                         <div className="space-y-1.5">
                           {filterTasks.map(task => (

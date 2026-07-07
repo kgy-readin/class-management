@@ -5,13 +5,13 @@ import StudentCombobox from '../common/StudentCombobox';
 import { Calendar, ChevronDown } from 'lucide-react';
 
 interface InlineAddFormProps {
-  group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek';
+  group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | 'filterView';
   newForm: Omit<Task, 'sheetRowIndex'>;
   setNewForm: React.Dispatch<React.SetStateAction<Omit<Task, 'sheetRowIndex'>>>;
   students: Student[];
   submitting: boolean;
   handleCreateTask: () => Promise<void>;
-  setInlineAddGroup: (group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | null) => void;
+  setInlineAddGroup: (group: 'todo' | 'inProgress' | 'completed' | 'familyView' | 'nextWeek' | 'filterView' | null) => void;
 }
 
 export default function InlineAddForm({
