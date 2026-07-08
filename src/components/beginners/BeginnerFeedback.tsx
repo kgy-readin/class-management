@@ -483,17 +483,17 @@ export default function BeginnerFeedback() {
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     disabled={savingItem}
-                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-2xl leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
+                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-sm leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
                     placeholder="내용을 수정해 주세요..."
                   />
                 ) : selectedItem.content ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-2xl p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-sm p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[18px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
                       <MarkdownRenderer text={getRenderText(selectedItem.content)} />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 border border-neutral-100 rounded-2xl p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[18px] text-neutral-400 select-none">
+                  <div className="flex-1 border border-neutral-100 rounded-sm p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[18px] text-neutral-400 select-none">
                     <FileText className="w-9 h-9 text-neutral-300 mb-2" />
                     <span>본문 문구내용이 비어있습니다.</span>
                   </div>

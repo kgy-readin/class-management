@@ -93,7 +93,7 @@ export function AddWritingDialog({
               type="button" 
               onClick={onConfirm} 
               disabled={isSubmitting}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
             >
               {isSubmitting ? '저장 중...' : '추가'}
             </Button>

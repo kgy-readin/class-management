@@ -147,18 +147,36 @@ export const parseLinesToBlocks = (lines: string[]): Block[] => {
     }
 
     // 5. Bullet lists (Level 1, 2, 3)
-    if (line.startsWith('* ')) {
-      blocks.push({ type: 'bullet1', text: line.slice(2) });
+    const bullet1Match = trimmed.match(/^([\*•●])\s+(.*)$/);
+    const bullet2Match = trimmed.match(/^([\-◦○])\s+(.*)$/);
+    const bullet3Match = trimmed.match(/^([\+▪■])\s+(.*)$/);
+
+    if (bullet1Match) {
+      blocks.push({ type: 'bullet1', text: bullet1Match[2] });
+      i++;
+      continue;
+    } else if (trimmed === '*' || trimmed === '•' || trimmed === '●') {
+      blocks.push({ type: 'bullet1', text: '' });
       i++;
       continue;
     }
-    if (line.startsWith('- ')) {
-      blocks.push({ type: 'bullet2', text: line.slice(2) });
+
+    if (bullet2Match) {
+      blocks.push({ type: 'bullet2', text: bullet2Match[2] });
+      i++;
+      continue;
+    } else if (trimmed === '-' || trimmed === '◦' || trimmed === '○') {
+      blocks.push({ type: 'bullet2', text: '' });
       i++;
       continue;
     }
-    if (line.startsWith('+ ')) {
-      blocks.push({ type: 'bullet3', text: line.slice(2) });
+
+    if (bullet3Match) {
+      blocks.push({ type: 'bullet3', text: bullet3Match[2] });
+      i++;
+      continue;
+    } else if (trimmed === '+' || trimmed === '▪' || trimmed === '■') {
+      blocks.push({ type: 'bullet3', text: '' });
       i++;
       continue;
     }
@@ -269,7 +287,7 @@ export const parseInlineStyles = (text: string): ReactNode => {
   return <>{parts}</>;
 };
 
-export const renderBlocks = (blocks: Block[]): ReactNode => {
+export const renderBlocks = (blocks: Block[], isMeeting?: boolean): ReactNode => {
   return (
     <div className="space-y-1">
       {blocks.map((block, idx) => {
@@ -298,32 +316,46 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
           case 'bullet':
             return (
               <div key={idx} className="pl-[5px] flex items-start gap-[10px] leading-[1.8] text-zinc-650">
-                <span style={{ fontSize: '6px' }} className="text-[#1f2937] font-bold select-none mt-[8px] transform translate-y-[0.5px] shrink-0 block leading-none">●</span>
+                <span className="h-[1.8em] flex items-center shrink-0 select-none">
+                  <span style={{ fontSize: '6px', transform: 'translateY(-1px)' }} className="text-[#1f2937] font-bold block leading-none">●</span>
+                </span>
                 <span className="flex-1">{parseInlineStyles(block.text || '')}</span>
               </div>
             );
           case 'bullet2':
             return (
               <div key={idx} className="pl-[17px] flex items-start gap-[10px] leading-[1.8] text-zinc-650">
-                <span style={{ fontSize: '7px' }} className="text-[#4b5563] font-bold select-none mt-[7px] shrink-0 block leading-none">○</span>
+                <span className="h-[1.8em] flex items-center shrink-0 select-none">
+                  <span style={{ fontSize: '7px', transform: 'translateY(-1px)' }} className="text-[#4b5563] font-bold block leading-none">○</span>
+                </span>
                 <span className="flex-1">{parseInlineStyles(block.text || '')}</span>
               </div>
             );
           case 'bullet3':
             return (
               <div key={idx} className="pl-[29px] flex items-start gap-[10px] leading-[1.8] text-zinc-650">
-                <span style={{ fontSize: '7px' }} className="text-[#6b7280] font-normal select-none mt-[8px] shrink-0 block leading-none">■</span>
+                <span className="h-[1.8em] flex items-center shrink-0 select-none">
+                  <span style={{ fontSize: '7px', transform: 'translateY(-1px)' }} className="text-[#6b7280] font-normal block leading-none">■</span>
+                </span>
                 <span className="flex-1">{parseInlineStyles(block.text || '')}</span>
               </div>
             );
           case 'callout':
             return (
               <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-zinc-650 overflow-hidden">
-                {renderBlocks(block.children || [])}
+                {renderBlocks(block.children || [], isMeeting)}
               </div>
             );
           case 'empty':
-            return <div key={idx} className="leading-[1.8] min-h-[1.8em] select-none pointer-events-none">&nbsp;</div>;
+            return (
+              <div 
+                key={idx} 
+                style={isMeeting ? { lineHeight: '0.5em', minHeight: '0.5em' } : undefined}
+                className={isMeeting ? "select-none pointer-events-none" : "leading-[1.8] min-h-[1.8em] select-none pointer-events-none"}
+              >
+                &nbsp;
+              </div>
+            );
           case 'p':
           default:
             return (
@@ -339,10 +371,11 @@ export const renderBlocks = (blocks: Block[]): ReactNode => {
 
 export interface MarkdownRendererProps {
   text: string;
+  isMeeting?: boolean;
 }
 
-export default function MarkdownRenderer({ text }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ text, isMeeting }: MarkdownRendererProps) {
   const lines = text.split('\n');
   const blocks = parseLinesToBlocks(lines);
-  return renderBlocks(blocks);
+  return renderBlocks(blocks, isMeeting);
 }

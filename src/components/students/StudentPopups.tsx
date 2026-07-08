@@ -230,7 +230,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
             <Button 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
             >
               {isSubmitting ? '등록 중...' : '학생 추가'}
             </Button>
@@ -402,7 +402,7 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
               </Button>
             } />
             <Button 
-              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-semibold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-semibold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
               onClick={() => onConfirm(true, dismissalTime)}
             >
               등원
@@ -753,7 +753,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
             >
               {isSaving ? '저장 중...' : '저장'}
             </Button>
@@ -883,7 +883,7 @@ export function MobileEditCurriculumDialog({
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
             >
               {isSaving ? '저장 중...' : '저장'}
             </Button>
@@ -966,7 +966,7 @@ export function LevelUpDialog({ open, onOpenChange, studentName, currentLevel, o
               </Button>
             } />
             <Button 
-              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-blue-100/70 hover:bg-blue-200/70 text-primary font-bold shadow-lg shadow-blue-500/15 border border-solid border-white cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 active:outline-none disabled:opacity-50 disabled:shadow-none disabled:border-none"
               onClick={onConfirm}
               disabled={isSubmitting}
             >
