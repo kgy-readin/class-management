@@ -654,17 +654,17 @@ export default function MeetingNote() {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     disabled={savingItem}
-                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-sm leading-[1.8] text-neutral-700 text-[14px] md:text-[16px] font-sans resize-none"
+                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-md leading-[1.8] text-neutral-700 text-[14px] md:text-[16px] font-sans resize-none"
                     placeholder="회의록 내용을 작성해 보세요..."
                   />
                 ) : selectedItem.content ? (
-                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-sm p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[16px] font-sans selection:bg-primary/10">
+                  <div className="flex-1 overflow-y-auto custom-scrollbar bg-neutral-50/45 border border-neutral-100 rounded-md p-5 leading-[1.8] text-zinc-650 text-[14px] md:text-[16px] font-sans selection:bg-primary/10">
                     <div className="select-text selection:bg-primary/20">
                       <MarkdownRenderer text={selectedItem.content} isMeeting={true} />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 border border-neutral-100 rounded-sm p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[16px] text-neutral-400 select-none">
+                  <div className="flex-1 border border-neutral-100 rounded-md p-5 bg-neutral-50/45 flex flex-col items-center justify-center text-center text-[14px] md:text-[16px] text-neutral-400 select-none">
                     <FileText className="w-9 h-9 text-neutral-300 mb-2" />
                     <span>내용이 비어있습니다.</span>
                   </div>

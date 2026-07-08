@@ -293,7 +293,7 @@ export const renderBlocks = (blocks: Block[], isMeeting?: boolean): ReactNode =>
       {blocks.map((block, idx) => {
         switch (block.type) {
           case 'hr':
-            return <hr key={idx} className="my-4 border-t border-neutral-200/80" />;
+            return <hr key={idx} className="my-2.5 border-t border-neutral-200/80" />;
           case 'h1':
             return (
               <h1 key={idx} style={{ fontSize: 'calc(1em + 3px)', marginTop: idx === 0 ? '0' : '1.0em' }} className="font-bold text-blue-700/90 mb-2 block">
@@ -342,7 +342,7 @@ export const renderBlocks = (blocks: Block[], isMeeting?: boolean): ReactNode =>
             );
           case 'callout':
             return (
-              <div key={idx} className="bg-neutral-100/70 rounded-xl p-4 my-2.5 text-zinc-650 overflow-hidden">
+              <div key={idx} className="bg-neutral-100/70 rounded-md p-4 my-2.5 text-zinc-650 overflow-hidden">
                 {renderBlocks(block.children || [], isMeeting)}
               </div>
             );
