@@ -55,8 +55,22 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [statuses, setStatuses] = useState<WritingStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [statuses, setStatuses] = useState<WritingStatus[]>(() => {
+    try {
+      const cached = localStorage.getItem('cachedWritingStatuses');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cachedWritingStatuses');
+      return !cached;
+    } catch {
+      return true;
+    }
+  });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -169,19 +183,27 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     }
   };
 
-  const fetchWritingStatus = async () => {
+  const fetchWritingStatus = async (isBackground = false) => {
+    const hasCache = statuses.length > 0;
     try {
+      if (!isBackground && !hasCache) {
+        setLoading(true);
+      }
       const result = await writingStatusApi.get();
       setStatuses(result);
+      localStorage.setItem('cachedWritingStatuses', JSON.stringify(result));
     } catch (error: any) {
-      toast.error(error.message);
+      console.warn('Failed to load writing statuses:', error);
+      if (!hasCache) {
+        toast.error(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchWritingStatus();
+    fetchWritingStatus(true);
   }, []);
 
   // Sync state from URL

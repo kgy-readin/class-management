@@ -50,8 +50,22 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    try {
+      const cached = localStorage.getItem('cachedTasks');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cachedTasks');
+      return !cached;
+    } catch {
+      return true;
+    }
+  });
   const [submitting, setSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedWeek, setSelectedWeek] = useState<{ weekNumber: number; dates: Date[] } | null>(null);
@@ -118,20 +132,27 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
     }
   }, [location.pathname]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (isBackground = false) => {
+    const hasCache = tasks.length > 0;
     try {
-      setLoading(true);
+      if (!isBackground && !hasCache) {
+        setLoading(true);
+      }
       const taskResult = await taskApi.get();
       setTasks(taskResult);
+      localStorage.setItem('cachedTasks', JSON.stringify(taskResult));
     } catch (error: any) {
-      toast.error(MESSAGES.tasks.loadError(error.message));
+      console.warn('Failed to load tasks:', error);
+      if (!hasCache) {
+        toast.error(MESSAGES.tasks.loadError(error.message));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTasks();
+    fetchTasks(true);
   }, []);
 
   // Sync state from URL for Sub-tabs and filter state

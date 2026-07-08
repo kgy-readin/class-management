@@ -40,8 +40,22 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [logs, setLogs] = useState<StudentLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<StudentLogEntry[]>(() => {
+    try {
+      const cached = localStorage.getItem('cachedStudentLogs');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cachedStudentLogs');
+      return !cached;
+    } catch {
+      return true;
+    }
+  });
   const [viewMode, setViewMode] = useState<'monthly' | 'student' | 'monthly-detail'>('monthly');
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedStudent, setSelectedStudent] = useState<string>('');
@@ -72,19 +86,27 @@ export default function StudentLog({ students = [] }: StudentLogProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (isBackground = false) => {
+    const hasCache = logs.length > 0;
     try {
+      if (!isBackground && !hasCache) {
+        setLoading(true);
+      }
       const data = await studentLogApi.get();
       setLogs(data);
+      localStorage.setItem('cachedStudentLogs', JSON.stringify(data));
     } catch (error: any) {
-      toast.error(MESSAGES.studentLog.loadError(error.message));
+      console.warn('Failed to load student logs:', error);
+      if (!hasCache) {
+        toast.error(MESSAGES.studentLog.loadError(error.message));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(true);
   }, []);
 
   // Sync state from URL on mount and location changes

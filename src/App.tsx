@@ -70,8 +70,22 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(() => {
+    try {
+      const cached = localStorage.getItem('cachedDashboardData');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cachedDashboardData');
+      return !cached;
+    } catch {
+      return true;
+    }
+  });
   const [config, setConfig] = useState<{ isConfigured: boolean; gasUrl?: string } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const savedTimestamp = sessionStorage.getItem('site_login_timestamp');
@@ -228,7 +242,9 @@ export default function App() {
     setSelectedStudent(null);
   };
 
-  const fetchData = async () => {
+  const fetchData = async (isManual: any = false) => {
+    const isManualBool = isManual === true;
+    const hasCache = !!data;
     try {
       const configData = dataApi.getConfig();
       setConfig(configData);
@@ -236,16 +252,20 @@ export default function App() {
       if (configData.isConfigured) {
         const result = await dataApi.fetchData();
         setData(result);
+        localStorage.setItem('cachedDashboardData', JSON.stringify(result));
       }
     } catch (error: any) {
-      toast.error(MESSAGES.general.loadError(error.message));
+      console.warn('Dashboard fetch failed (using cache if available):', error);
+      if (isManualBool || !hasCache) {
+        toast.error(MESSAGES.general.loadError(error.message));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleHomeClick = async () => {
-    await fetchData();
+    await fetchData(true);
     setSelectedStudent(null);
     if (appMode === 'work') {
       selectTab('tasks');
@@ -317,7 +337,7 @@ export default function App() {
           )}
 
           <TabsContent value="dashboard" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            {selectedStudent ? (
+            {activeTab === 'dashboard' && (selectedStudent ? (
               <StudentDetail 
                 studentName={selectedStudent} 
                 data={data} 
@@ -347,11 +367,11 @@ export default function App() {
                 }}
                 onNavigateToStudents={() => selectTab('students')}
               />
-            )}
+            ))}
           </TabsContent>
           
           <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            {selectedStudent ? (
+            {activeTab === 'students' && (selectedStudent ? (
               <StudentDetail 
                 studentName={selectedStudent} 
                 data={data} 
@@ -380,35 +400,35 @@ export default function App() {
                   navigate(targetPath);
                 }} 
               />
-            )}
+            ))}
           </TabsContent>
           
           <TabsContent value="writing" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <WritingTracker students={data?.students || []} />
+            {activeTab === 'writing' && <WritingTracker students={data?.students || []} />}
           </TabsContent>
           
           <TabsContent value="tasks" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />
+            {activeTab === 'tasks' && <TaskManager students={data?.students || []} onRefreshGlobal={fetchData} />}
           </TabsContent>
 
           <TabsContent value="logs" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-             <StudentLog students={data?.students || []} />
+             {activeTab === 'logs' && <StudentLog students={data?.students || []} />}
           </TabsContent>
 
           <TabsContent value="meeting" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <MeetingNote />
+            {activeTab === 'meeting' && <MeetingNote />}
           </TabsContent>
           
           <TabsContent value="noticeForm" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <NoticeForm />
+            {activeTab === 'noticeForm' && <NoticeForm />}
           </TabsContent>
 
           <TabsContent value="beginners" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <BeginnerFeedback />
+            {activeTab === 'beginners' && <BeginnerFeedback />}
           </TabsContent>
 
           <TabsContent value="familyLetters" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
-            <FamilyLetters />
+            {activeTab === 'familyLetters' && <FamilyLetters />}
           </TabsContent>
         </div>
       </Tabs>
