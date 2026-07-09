@@ -399,9 +399,12 @@ export default function FamilyLetters() {
             <div className="flex-1 flex flex-col min-h-0 h-full">
               {/* Note Header */}
               <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4 select-none shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   {getCustomTabIcon(selectedTab.title, "w-4.5 h-4.5 shrink-0", true)}
                   <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate">{selectedTab.title}</h2>
+                  <span className="text-[11px] md:text-xs text-zinc-500 font-normal whitespace-nowrap bg-zinc-100/70 px-2 py-0.5 rounded-full">
+                    {stripMarkdown(isEditing ? editText : (selectedTab.text || '')).replace(/[\r\n]/g, '').length.toLocaleString()}자
+                  </span>
                 </div>
                 
                 {/* Action Buttons: Copy, Edit, Sync */}
