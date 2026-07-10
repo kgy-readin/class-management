@@ -496,7 +496,7 @@ export default function FamilyLetters() {
                      value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     disabled={savingTab}
-                    className="w-full flex-1 min-h-[300px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-md leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
+                    className="w-full flex-1 min-h-[500px] lg:min-h-0 h-full p-5 border border-primary/20 bg-[#fafaff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary rounded-md leading-[1.8] text-neutral-700 text-[14px] md:text-[18px] font-sans resize-none"
                     placeholder="내용을 수정해 주세요..."
                   />
                 ) : selectedTab.text ? (
