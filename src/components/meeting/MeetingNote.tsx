@@ -563,7 +563,7 @@ export default function MeetingNote() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
                       <FileText className="w-4.5 h-4.5 text-primary shrink-0 ml-1" />
                       <h2 className="text-[14px] md:text-[18px] font-semibold text-gray-800 truncate" title={selectedItem.title}>
                         {selectedItem.title}

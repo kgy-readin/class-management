@@ -99,7 +99,7 @@ export function AddLogDialog({
               <textarea
                 rows={4}
                 placeholder="기록할 내용을 작성해 주세요."
-                className="w-full bg-zinc-50 border border-solid border-zinc-100 rounded-lg px-4 py-3 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all resize-none"
+                className="w-full bg-zinc-50 border border-solid border-zinc-100 rounded-md px-4 py-3 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary/20 hover:border-zinc-300 focus:bg-white outline-none transition-all resize-none"
                 value={addForm.content}
                 onChange={e => setAddForm(prev => ({ ...prev, content: e.target.value }))}
               />

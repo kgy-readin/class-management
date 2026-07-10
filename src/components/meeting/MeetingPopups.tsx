@@ -107,7 +107,7 @@ export function AddMeetingDialog({
                 placeholder="회의 내용을 작성해 주세요."
                 value={addForm.content}
                 onChange={(e) => setAddForm(prev => ({ ...prev, content: e.target.value }))}
-                className="w-full px-4 py-3 border border-zinc-200 rounded-xl bg-zinc-50 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white outline-none transition-all resize-none"
+                className="w-full px-4 py-3 border border-zinc-200 rounded-md bg-zinc-50 text-[14px] font-normal leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary focus:bg-white outline-none transition-all resize-none"
               />
             </div>
           </div>
