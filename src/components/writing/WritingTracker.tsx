@@ -147,40 +147,69 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       toast.error(MESSAGES.writing.enterBook);
       return;
     }
-    setSubmittingAdd(true);
-    try {
-      await writingStatusApi.update({
-        name: addForm.name,
-        bookTitle: addForm.bookTitle.trim(),
-        progress: addForm.progress,
-        date: addForm.date
+
+    const newStatusItem: WritingStatus = {
+      name: addForm.name,
+      bookTitle: addForm.bookTitle.trim(),
+      progress: addForm.progress as any,
+      date: addForm.date
+    };
+
+    // Keep backup of current statuses for rollback
+    const oldStatuses = [...statuses];
+
+    // Optimistically update state
+    const updatedStatuses = [newStatusItem, ...statuses];
+    setStatuses(updatedStatuses);
+    localStorage.setItem('cachedWritingStatuses', JSON.stringify(updatedStatuses));
+    setAddOpen(false);
+    toast.success(MESSAGES.writing.addSuccess);
+
+    // Run update in background
+    writingStatusApi.update({
+      name: addForm.name,
+      bookTitle: addForm.bookTitle.trim(),
+      progress: addForm.progress,
+      date: addForm.date
+    })
+      .then(() => {
+        fetchWritingStatus(true); // silent background sync
+      })
+      .catch((error: any) => {
+        toast.error(`글쓰기 추가 실패: ${error.message}. 이전 상태로 되돌립니다.`);
+        setStatuses(oldStatuses);
+        localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
-      toast.success(MESSAGES.writing.addSuccess);
-      setAddOpen(false);
-      fetchWritingStatus();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setSubmittingAdd(false);
-    }
   };
 
   const handleDeleteStatus = async (item: WritingStatus) => {
-    setIsDeleting(true);
-    try {
-      await writingStatusApi.remove({
-        name: item.name,
-        bookTitle: item.bookTitle,
-        date: item.date
+    const oldStatuses = [...statuses];
+
+    // Optimistically update state
+    const updatedStatuses = statuses.filter(s => !(
+      s.name === item.name &&
+      s.bookTitle === item.bookTitle &&
+      s.date === item.date
+    ));
+    setStatuses(updatedStatuses);
+    localStorage.setItem('cachedWritingStatuses', JSON.stringify(updatedStatuses));
+    setDeletingItem(null);
+    toast.success(MESSAGES.writing.deleteSuccess);
+
+    // Run remove in background
+    writingStatusApi.remove({
+      name: item.name,
+      bookTitle: item.bookTitle,
+      date: item.date
+    })
+      .then(() => {
+        fetchWritingStatus(true); // silent background sync
+      })
+      .catch((error: any) => {
+        toast.error(`삭제 실패: ${error.message}. 복구합니다.`);
+        setStatuses(oldStatuses);
+        localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
-      toast.success(MESSAGES.writing.deleteSuccess);
-      setDeletingItem(null);
-      fetchWritingStatus();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const fetchWritingStatus = async (isBackground = false) => {
@@ -291,27 +320,46 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     }
   };
 
-  const handleStatusUpdate = async (status: WritingStatus) => {
+  const handleStatusUpdate = (status: WritingStatus) => {
     if (!editValues) return;
     const key = `${status.name}-${status.bookTitle}-${status.date}`;
-    setUpdatingStatus(key);
-    try {
-      await writingStatusApi.update({ 
-        name: status.name, 
-        bookTitle: editValues.bookTitle,
-        progress: editValues.progress,
-        date: editValues.date,
-        originalDate: status.date,
-        originalBookTitle: status.bookTitle
+
+    const oldStatuses = [...statuses];
+
+    // Optimistically update state
+    const updatedStatuses = statuses.map(s => {
+      if (s.name === status.name && s.bookTitle === status.bookTitle && s.date === status.date) {
+        return {
+          ...s,
+          bookTitle: editValues.bookTitle,
+          progress: editValues.progress as any,
+          date: editValues.date
+        };
+      }
+      return s;
+    });
+    setStatuses(updatedStatuses);
+    localStorage.setItem('cachedWritingStatuses', JSON.stringify(updatedStatuses));
+    setEditingKey(null);
+    toast.success(MESSAGES.writing.updateSuccess);
+
+    // Run update in background
+    writingStatusApi.update({ 
+      name: status.name, 
+      bookTitle: editValues.bookTitle,
+      progress: editValues.progress,
+      date: editValues.date,
+      originalDate: status.date,
+      originalBookTitle: status.bookTitle
+    })
+      .then(() => {
+        fetchWritingStatus(true); // silent background sync
+      })
+      .catch((error: any) => {
+        toast.error(`수정 실패: ${error.message}. 되돌립니다.`);
+        setStatuses(oldStatuses);
+        localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
-      toast.success(MESSAGES.writing.updateSuccess);
-      setEditingKey(null);
-      fetchWritingStatus();
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setUpdatingStatus(null);
-    }
   };
 
   if (loading) return <div className="text-center py-20 text-zinc-400">로딩 중...</div>;

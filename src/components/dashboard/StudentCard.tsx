@@ -49,20 +49,21 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
     }
 
-    try {
-      setIsAttendanceOpen(false);
-      await attendanceApi.update({ name: student.name, isAttending, dismissalTime });
-      toast.success(MESSAGES.students.attendanceSuccess(student.name, isAttending));
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    }
+    setIsAttendanceOpen(false);
+    toast.success(MESSAGES.students.attendanceSuccess(student.name, isAttending));
+
+    // Background call
+    attendanceApi.update({ name: student.name, isAttending, dismissalTime })
+      .then(() => {
+        onRefresh(); // silent sync
+      })
+      .catch((error: any) => {
+        toast.error(`출결 저장 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
   };
 
-  const handleSubProgramUpdate = async () => {
-    setUpdating(`${student.name}-subprogram`);
-    
+  const handleSubProgramUpdate = () => {
     // 1. Optimistically update local state immediately
     if (setData) {
       setData(prev => {
@@ -79,40 +80,40 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
     }
 
-    try {
-      setIsEditingSubProgram(false);
-      await studentApi.update(student.name, { subProgram: subProgramValue });
-      toast.success(MESSAGES.dashboard.subprogramUpdated);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    } finally {
-      setUpdating(null);
-    }
-  };
+    setIsEditingSubProgram(false);
+    toast.success(MESSAGES.dashboard.subprogramUpdated);
 
-  const handleAddToWritingStatus = async (item: Curriculum) => {
-    setUpdating(`writing-${student.name}-${item.bookId}`);
-
-    try {
-      setWritingConfirmItem(null);
-      await writingStatusApi.update({ 
-        name: student.name, 
-        bookTitle: item.bookTitle,
-        progress: '완료' 
+    // Background call
+    studentApi.update(student.name, { subProgram: subProgramValue })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`세부프로그램 저장 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
       });
-      toast.success(MESSAGES.dashboard.writingTrackerAdded);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    } finally {
-      setUpdating(null);
-    }
   };
 
-  const handleCheckout = async () => {
+  const handleAddToWritingStatus = (item: Curriculum) => {
+    setWritingConfirmItem(null);
+    toast.success(MESSAGES.dashboard.writingTrackerAdded);
+
+    // Background call
+    writingStatusApi.update({ 
+      name: student.name, 
+      bookTitle: item.bookTitle,
+      progress: '완료' 
+    })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`글쓰기 추가 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
+  };
+
+  const handleCheckout = () => {
     // 1. Optimistically update local state immediately
     if (setData) {
       setData(prev => {
@@ -132,19 +133,20 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
     }
 
-    try {
-      await attendanceApi.update({ name: student.name, isAttending: false });
-      toast.success(MESSAGES.dashboard.dismissalSuccess(student.name));
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    }
+    toast.success(MESSAGES.dashboard.dismissalSuccess(student.name));
+
+    // Background call
+    attendanceApi.update({ name: student.name, isAttending: false })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`하원 처리 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
   };
 
-  const handleHomework = async (isDone: boolean) => {
-    setUpdating(`${student.name}-homework`);
-    
+  const handleHomework = (isDone: boolean) => {
     // 1. Optimistically update local state immediately
     if (setData) {
       setData(prev => {
@@ -182,23 +184,23 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
     }
 
-    try {
-      await homeworkApi.update({ name: student.name, isDone });
-      toast.success(isDone ? MESSAGES.dashboard.homeworkDone : MESSAGES.dashboard.homeworkNotSubmitted);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    } finally {
-      setUpdating(null);
-    }
+    toast.success(isDone ? MESSAGES.dashboard.homeworkDone : MESSAGES.dashboard.homeworkNotSubmitted);
+
+    // Background call
+    homeworkApi.update({ name: student.name, isDone })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`숙제 상태 저장 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
   };
 
-  const handleStatusUpdate = async (bookId: string, index: number, forcedStatus?: string) => {
+  const handleStatusUpdate = (bookId: string, index: number, forcedStatus?: string) => {
     const key = `${student.name}-${bookId}-${index}`;
     const statusVal = forcedStatus || localStatuses[key]?.status || progressList.find(item => item.bookId === bookId && item.index === index)?.status;
     if (!statusVal) return;
-    setUpdating(`${student.name}-${bookId}`);
 
     if (forcedStatus) {
       setLocalStatuses(prev => ({
@@ -247,22 +249,23 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
     }
 
-    try {
-      setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
-      await curriculumApi.update({ 
-        studentName: student.name, 
-        bookId, 
-        status: statusVal,
-        originalIndex: index
+    setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
+    toast.success(MESSAGES.dashboard.progressUpdated);
+
+    // Background call
+    curriculumApi.update({ 
+      studentName: student.name, 
+      bookId, 
+      status: statusVal,
+      originalIndex: index
+    })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`진도 저장 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
       });
-      toast.success(MESSAGES.dashboard.progressUpdated);
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    } finally {
-      setUpdating(null);
-    }
   };
 
   return (

@@ -167,18 +167,21 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       });
     }
 
-    try {
-      setAttendanceStudent(null);
-      await attendanceApi.update({ name: targetName, isAttending, dismissalTime });
-      toast.success(MESSAGES.students.attendanceSuccess(targetName, isAttending));
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    }
+    setAttendanceStudent(null);
+    toast.success(MESSAGES.students.attendanceSuccess(targetName, isAttending));
+
+    // Background call
+    attendanceApi.update({ name: targetName, isAttending, dismissalTime })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`출결 저장 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
   };
 
-  const handleSimpleDismiss = async (name: string) => {
+  const handleSimpleDismiss = (name: string) => {
     // 1. Optimistic update
     if (setData) {
       setData(prev => {
@@ -199,14 +202,17 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       });
     }
 
-    try {
-      await attendanceApi.update({ name, isAttending: false, dismissalTime: '' });
-      toast.success(MESSAGES.students.dismissalSuccess(name));
-      onRefresh();
-    } catch (error: any) {
-      toast.error(error.message);
-      onRefresh(); // rollback/resync on error
-    }
+    toast.success(MESSAGES.students.dismissalSuccess(name));
+
+    // Background call
+    attendanceApi.update({ name, isAttending: false, dismissalTime: '' })
+      .then(() => {
+        onRefresh();
+      })
+      .catch((error: any) => {
+        toast.error(`하원 처리 실패: ${error.message}`);
+        onRefresh(); // rollback/resync on error
+      });
   };
 
   const handleLevelUpConfirm = async () => {
