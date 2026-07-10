@@ -26,7 +26,7 @@ async function getSheetData(sheet: string, range: string) {
   if (!SHEET_ID) throw new Error(MESSAGES.api.sheetIdNotSetInternal);
   
   // Use Google Visualization API for direct JSON fetching
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&range=${encodeURIComponent(range)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheet)}&range=${encodeURIComponent(range)}&t=${Date.now()}`;
   
   try {
     const response = await fetch(url);

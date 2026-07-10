@@ -328,42 +328,63 @@ export default function MeetingNote() {
       return;
     }
 
+    // Generate a temporary sheetRowIndex using a negative timestamp to prevent any collisions
+    const tempIndex = -Date.now();
+    const newNoteWithIndex: MeetingNoteType = {
+      sheetRowIndex: tempIndex,
+      date: addForm.date,
+      category: addForm.category,
+      title: addForm.title,
+      content: addForm.content
+    };
+
+    const updated = [newNoteWithIndex, ...items];
+    setItems(updated);
+    localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
+    
+    setShowAddDialog(false);
+    setAddForm({
+      date: new Date().toISOString().split('T')[0],
+      category: '회의',
+      title: '',
+      content: ''
+    });
+
+    // Route to the new item immediately so the user can view it without any delay
+    navigate(`/meeting/${getMeetingId(newNoteWithIndex, updated)}`);
+    toast.success(MESSAGES.meeting.registerSuccess);
+
     try {
       setAddingNote(true);
       const res = await meetingNoteApi.add({
-        date: addForm.date,
-        category: addForm.category,
-        title: addForm.title,
-        content: addForm.content
+        date: newNoteWithIndex.date,
+        category: newNoteWithIndex.category,
+        title: newNoteWithIndex.title,
+        content: newNoteWithIndex.content
       });
 
-      if (res.success) {
-        const newNoteWithIndex: MeetingNoteType = {
-          sheetRowIndex: res.sheetRowIndex,
-          date: addForm.date,
-          category: addForm.category,
-          title: addForm.title,
-          content: addForm.content
-        };
-
-        const updated = [newNoteWithIndex, ...items];
-        setItems(updated);
-        localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(updated));
-        
-        setShowAddDialog(false);
-        setAddForm({
-          date: new Date().toISOString().split('T')[0],
-          category: '회의',
-          title: '',
-          content: ''
+      if (res.success && res.sheetRowIndex) {
+        // Replace temporary index with real index in background
+        setItems(prevItems => {
+          const replaced = prevItems.map(item => {
+            if (item.sheetRowIndex === tempIndex) {
+              return { ...item, sheetRowIndex: res.sheetRowIndex };
+            }
+            return item;
+          });
+          localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(replaced));
+          return replaced;
         });
-        toast.success(MESSAGES.meeting.registerSuccess);
-
-        // route to the new item
-        navigate(`/meeting/${getMeetingId(newNoteWithIndex, updated)}`);
       }
     } catch (err: any) {
       toast.error(MESSAGES.meeting.registerError(err.message));
+      // Revert from list if failed
+      setItems(prevItems => {
+        const filtered = prevItems.filter(item => item.sheetRowIndex !== tempIndex);
+        localStorage.setItem('webapp_meeting_notes_backup', JSON.stringify(filtered));
+        return filtered;
+      });
+      navigate('/meeting');
     } finally {
       setAddingNote(false);
     }

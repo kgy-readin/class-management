@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Student, Curriculum } from '../../types';
+import { Student, Curriculum, DashboardData } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { LogOut, Save, Star, User, BookA, FilePlus, X, Smile, Check, Circle, Pencil } from 'lucide-react';
@@ -16,9 +16,10 @@ interface StudentCardProps {
   progressList: Curriculum[];
   onRefresh: () => void;
   onSelectStudent: (name: string) => void;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
 }
 
-const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefresh, onSelectStudent }) => {
+const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefresh, onSelectStudent, setData }) => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [localStatuses, setLocalStatuses] = useState<Record<string, { status?: string }>>({});
   const [writingConfirmItem, setWritingConfirmItem] = useState<Curriculum | null>(null);
@@ -28,25 +29,64 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   const [editingCurriculumKeys, setEditingCurriculumKeys] = useState<Record<string, boolean>>({});
 
   const handleAttendanceConfirm = async (isAttending: boolean, dismissalTime: string) => {
+    // 1. Optimistically update local state immediately
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              return {
+                ...s,
+                isAttending,
+                dismissalTime
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
+      setIsAttendanceOpen(false);
       await attendanceApi.update({ name: student.name, isAttending, dismissalTime });
       toast.success(MESSAGES.students.attendanceSuccess(student.name, isAttending));
-      setIsAttendanceOpen(false);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     }
   };
 
   const handleSubProgramUpdate = async () => {
     setUpdating(`${student.name}-subprogram`);
+    
+    // 1. Optimistically update local state immediately
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              return { ...s, subProgram: subProgramValue };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
+      setIsEditingSubProgram(false);
       await studentApi.update(student.name, { subProgram: subProgramValue });
       toast.success(MESSAGES.dashboard.subprogramUpdated);
-      setIsEditingSubProgram(false);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     } finally {
       setUpdating(null);
     }
@@ -54,7 +94,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
 
   const handleAddToWritingStatus = async (item: Curriculum) => {
     setUpdating(`writing-${student.name}-${item.bookId}`);
+
     try {
+      setWritingConfirmItem(null);
       await writingStatusApi.update({ 
         name: student.name, 
         bookTitle: item.bookTitle,
@@ -64,41 +106,149 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     } finally {
       setUpdating(null);
-      setWritingConfirmItem(null);
     }
   };
 
   const handleCheckout = async () => {
+    // 1. Optimistically update local state immediately
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              return {
+                ...s,
+                isAttending: false
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
       await attendanceApi.update({ name: student.name, isAttending: false });
       toast.success(MESSAGES.dashboard.dismissalSuccess(student.name));
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     }
   };
 
   const handleHomework = async (isDone: boolean) => {
     setUpdating(`${student.name}-homework`);
+    
+    // 1. Optimistically update local state immediately
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              const previousChecked = s.homeworkChecked;
+              const previousMissedToday = s.homeworkMissedToday;
+              let currentMissedCount = s.homeworkMissed;
+              
+              if (isDone) {
+                // If it was marked as missed before, decrement missed count
+                if (previousChecked && previousMissedToday) {
+                  currentMissedCount = Math.max(0, s.homeworkMissed - 1);
+                }
+              } else {
+                // If it wasn't marked as missed before, increment missed count
+                if (!previousChecked || !previousMissedToday) {
+                  currentMissedCount = s.homeworkMissed + 1;
+                }
+              }
+
+              return {
+                ...s,
+                homeworkChecked: true,
+                homeworkMissedToday: !isDone,
+                homeworkMissed: currentMissedCount
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
       await homeworkApi.update({ name: student.name, isDone });
       toast.success(isDone ? MESSAGES.dashboard.homeworkDone : MESSAGES.dashboard.homeworkNotSubmitted);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     } finally {
       setUpdating(null);
     }
   };
 
-  const handleStatusUpdate = async (bookId: string, index: number) => {
+  const handleStatusUpdate = async (bookId: string, index: number, forcedStatus?: string) => {
     const key = `${student.name}-${bookId}-${index}`;
-    const statusVal = localStatuses[key]?.status || progressList.find(item => item.bookId === bookId && item.index === index)?.status;
+    const statusVal = forcedStatus || localStatuses[key]?.status || progressList.find(item => item.bookId === bookId && item.index === index)?.status;
     if (!statusVal) return;
     setUpdating(`${student.name}-${bookId}`);
+
+    if (forcedStatus) {
+      setLocalStatuses(prev => ({
+        ...prev,
+        [key]: { ...prev[key], status: forcedStatus }
+      }));
+    }
+
+    // 1. Optimistically update local state immediately
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+
+        let updatedStudents = prev.students;
+        const previousItem = prev.curriculums.find(c => c.studentName === student.name && c.bookId === bookId && c.index === index);
+
+        if (previousItem && previousItem.status !== statusVal) {
+          const isBook = bookId && bookId.trim() !== '' && bookId.trim() !== '-';
+          if (isBook) {
+            updatedStudents = prev.students.map(s => {
+              if (s.name === student.name) {
+                let diff = 0;
+                if (statusVal === '통과' && previousItem.status !== '통과') diff = 1;
+                else if (previousItem.status === '통과' && statusVal !== '통과') diff = -1;
+
+                return {
+                  ...s,
+                  booksCompleted: Math.max(0, s.booksCompleted + diff)
+                };
+              }
+              return s;
+            });
+          }
+        }
+
+        return {
+          ...prev,
+          students: updatedStudents,
+          curriculums: prev.curriculums.map(c => {
+            if (c.studentName === student.name && c.bookId === bookId && c.index === index) {
+              return { ...c, status: statusVal as any };
+            }
+            return c;
+          })
+        };
+      });
+    }
+
     try {
+      setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
       await curriculumApi.update({ 
         studentName: student.name, 
         bookId, 
@@ -107,9 +257,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
       toast.success(MESSAGES.dashboard.progressUpdated);
       onRefresh();
-      setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     } finally {
       setUpdating(null);
     }
@@ -276,6 +426,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             const currentStatus = localStatuses[key] || { status: item.status };
             const isWriting = item.bookTitle === '글쓰기';
             const isProgressing = currentStatus.status === '진행';
+            const isCompleted = currentStatus.status === '통과';
 
             return (
               <div 
@@ -289,22 +440,17 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                     className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                       updating === key 
                         ? 'animate-pulse' 
-                        : editingCurriculumKeys[key]
-                          ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-semibold border border-emerald-200'
+                        : isCompleted
+                          ? 'text-emerald-600 bg-emerald-50 border border-emerald-100 font-semibold'
                           : isWriting 
                             ? 'text-purple-600 hover:bg-purple-50'
                             : isProgressing
                               ? 'text-blue-600 hover:bg-blue-50'
-                              : 'text-primary hover:bg-primary/5'
+                              : 'text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50'
                     }`}
-                    onClick={() => {
-                      if (!editingCurriculumKeys[key]) {
-                        setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }));
-                      } else {
-                        handleStatusUpdate(item.bookId, item.index);
-                      }
-                    }}
+                    onClick={() => handleStatusUpdate(item.bookId, item.index, '통과')}
                     disabled={updating === key}
+                    title="통과로 바로 저장"
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                   </Button>
@@ -325,22 +471,43 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
 
                 <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
                   {editingCurriculumKeys[key] ? (
-                    <select 
-                      className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm -translate-x-[2px] ${
-                        isProgressing
-                          ? 'ring-amber-400 text-amber-900 border-amber-200'
-                          : isWriting 
-                            ? 'ring-purple-400 text-purple-900 border-purple-200' 
-                            : 'ring-primary/20 text-foreground border-zinc-200'
-                      }`}
-                      value={currentStatus.status}
-                      onChange={(e) => setLocalStatuses(prev => ({
-                        ...prev,
-                        [key]: { ...currentStatus, status: e.target.value }
-                      }))}
-                    >
-                      {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                        onClick={() => handleStatusUpdate(item.bookId, item.index)}
+                        disabled={updating === key}
+                        title="저장"
+                      >
+                        <Save className="w-3.5 h-3.5 stroke-[2]" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                        onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }))}
+                        title="취소"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                      <select 
+                        className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
+                          isProgressing
+                            ? 'ring-amber-400 text-amber-900 border-amber-200'
+                            : isWriting 
+                              ? 'ring-purple-400 text-purple-900 border-purple-200' 
+                              : 'ring-primary/20 text-foreground border-zinc-200'
+                        }`}
+                        value={currentStatus.status}
+                        onChange={(e) => setLocalStatuses(prev => ({
+                          ...prev,
+                          [key]: { ...currentStatus, status: e.target.value }
+                        }))}
+                      >
+                        {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
                   ) : (
                     <span 
                       onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}

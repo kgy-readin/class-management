@@ -8,9 +8,10 @@ interface DashboardProps {
   onRefresh: () => void;
   onSelectStudent: (name: string) => void;
   onNavigateToStudents?: () => void;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
 }
 
-export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigateToStudents }: DashboardProps) {
+export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigateToStudents, setData }: DashboardProps) {
   if (!data) return null;
 
   const attendingStudents = data.students
@@ -78,6 +79,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
               progressList={getProgressList(student.name)}
               onRefresh={onRefresh}
               onSelectStudent={onSelectStudent}
+              setData={setData}
             />
           ))
         )}

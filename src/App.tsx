@@ -366,6 +366,7 @@ export default function App() {
                   navigate(targetPath);
                 }}
                 onNavigateToStudents={() => selectTab('students')}
+                setData={setData}
               />
             ))}
           </TabsContent>
@@ -399,6 +400,7 @@ export default function App() {
                   const targetPath = getStudentPath(name, data?.students || []);
                   navigate(targetPath);
                 }} 
+                setData={setData}
               />
             ))}
           </TabsContent>

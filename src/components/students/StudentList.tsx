@@ -22,9 +22,10 @@ interface StudentListProps {
   data: DashboardData | null;
   onRefresh: () => void;
   onSelectStudent: (name: string) => void;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
 }
 
-export default function StudentList({ data, onRefresh, onSelectStudent }: StudentListProps) {
+export default function StudentList({ data, onRefresh, onSelectStudent, setData }: StudentListProps) {
   const [search, setSearch] = useState('');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [showDayFilter, setShowDayFilter] = useState(false);
@@ -144,23 +145,67 @@ export default function StudentList({ data, onRefresh, onSelectStudent }: Studen
 
   const handleAttendanceConfirm = async (isAttending: boolean, dismissalTime: string) => {
     if (!attendanceStudent) return;
+    const targetName = attendanceStudent.name;
+
+    // 1. Optimistic update
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === targetName) {
+              return {
+                ...s,
+                isAttending,
+                dismissalTime
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
-      await attendanceApi.update({ name: attendanceStudent.name, isAttending, dismissalTime });
-      toast.success(MESSAGES.students.attendanceSuccess(attendanceStudent.name, isAttending));
       setAttendanceStudent(null);
+      await attendanceApi.update({ name: targetName, isAttending, dismissalTime });
+      toast.success(MESSAGES.students.attendanceSuccess(targetName, isAttending));
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     }
   };
 
   const handleSimpleDismiss = async (name: string) => {
+    // 1. Optimistic update
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === name) {
+              return {
+                ...s,
+                isAttending: false,
+                dismissalTime: ''
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
       await attendanceApi.update({ name, isAttending: false, dismissalTime: '' });
       toast.success(MESSAGES.students.dismissalSuccess(name));
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh(); // rollback/resync on error
     }
   };
 
