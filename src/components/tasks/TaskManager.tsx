@@ -479,6 +479,17 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       return matches;
     });
 
+    if (selectedStudent) {
+      return filtered.sort((a, b) => {
+        const dateA = a.date?.trim() || '';
+        const dateB = b.date?.trim() || '';
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB.localeCompare(dateA);
+      });
+    }
+
     // Sort matching basic view sorted hierarchy
     return filtered.sort((a, b) => {
       const statusA = a.status || '예정';
@@ -1467,6 +1478,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               handleQuickComplete={handleQuickComplete}
                               setReservingTask={setReservingTask}
                               setEditingRowIndex={setEditingRowIndex}
+                              isStudentFiltered={!!selectedStudent}
                             />
                           ))}
                         </div>

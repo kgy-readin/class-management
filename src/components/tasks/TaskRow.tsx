@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Check, X, Save, Trash2 } from 'lucide-react';
 import { Task, Student } from '../../types';
 import StudentCombobox from '../common/StudentCombobox';
-import { isTaskOverdue, isTodayTask, formatRelativeTaskDate } from './dateUtils';
+import { isTaskOverdue, isTodayTask, formatRelativeTaskDate, formatTaskDateYYMMDD } from './dateUtils';
 import { getCategoryBadgeClass, getStatusBadgeClass, getFamilyClassBadgeClass } from './badgeUtils';
 import { MESSAGES } from '@/src/constants/messages';
 import { toast } from 'sonner';
@@ -21,6 +21,7 @@ interface TaskRowProps {
   handleQuickComplete: (sheetRowIndex: number) => Promise<void>;
   setReservingTask: (task: Task) => void;
   setEditingRowIndex: (val: number | null) => void;
+  isStudentFiltered?: boolean;
 }
 
 export default function TaskRow({
@@ -36,6 +37,7 @@ export default function TaskRow({
   handleQuickComplete,
   setReservingTask,
   setEditingRowIndex,
+  isStudentFiltered = false,
 }: TaskRowProps) {
   const isEditing = editingRowIndex === task.sheetRowIndex;
   const isOverdue = isTaskOverdue(task.date, task.status);
@@ -260,7 +262,7 @@ export default function TaskRow({
             )}
             {task.date && (
               <span className={`font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
-                {formatRelativeTaskDate(task.date)}
+                {isStudentFiltered ? formatTaskDateYYMMDD(task.date) : formatRelativeTaskDate(task.date)}
               </span>
             )}
             <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
@@ -289,7 +291,7 @@ export default function TaskRow({
           )}
           {task.date && (
             <span className={`text-[13px] font-normal ${isOverdue ? 'text-red-600 font-medium' : isTodayTask(task.date) ? 'text-blue-600 font-medium' : 'text-zinc-750'}`}>
-              {formatRelativeTaskDate(task.date)}
+              {isStudentFiltered ? formatTaskDateYYMMDD(task.date) : formatRelativeTaskDate(task.date)}
             </span>
           )}
           <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>

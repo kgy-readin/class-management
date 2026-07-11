@@ -113,3 +113,10 @@ export const formatRelativeTaskDate = (dateStr: string) => {
 
   return format(d, 'M월 d일', { locale: ko });
 };
+
+export const formatTaskDateYYMMDD = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const d = parseTaskDate(dateStr);
+  if (!d) return dateStr;
+  return format(d, 'yy. MM. dd.');
+};
