@@ -607,11 +607,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
       if (type === '한달') {
         targetDate = addMonths(today, 1);
-        todoText = `${studentName} 학생 한달 가정통신문`;
+        todoText = `${studentName} 한달 가정통신문`;
         fClass = '한달';
       } else {
         targetDate = addMonths(today, 5);
-        todoText = `${studentName} 학생 가정통신문`;
+        todoText = `${studentName} 가정통신문`;
         fClass = '정기';
       }
 

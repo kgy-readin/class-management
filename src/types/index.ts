@@ -24,6 +24,7 @@ export interface Student {
   homeworkMissedToday: boolean;
   lastResultDate?: string;
   studentMemo?: string;
+  noHomework?: boolean;
 }
 
 export interface Curriculum {

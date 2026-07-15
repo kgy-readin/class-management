@@ -400,6 +400,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     homeworkMissed: number;
     booksCompleted: number;
     lastResultDate: string;
+    noHomework?: boolean;
   }) => {
     if (!student) return;
     try {
@@ -411,7 +412,8 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         attendanceDays: formData.attendanceDays.join(', '),
         homeworkMissed: Number(formData.homeworkMissed) || 0,
         booksCompleted: Number(formData.booksCompleted) || 0,
-        lastResultDate: formData.lastResultDate
+        lastResultDate: formData.lastResultDate,
+        noHomework: formData.noHomework
       });
       toast.success(MESSAGES.students.editSuccess(student.name));
       setIsEditOpen(false);

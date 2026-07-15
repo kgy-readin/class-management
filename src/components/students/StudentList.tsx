@@ -61,6 +61,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     homeworkMissed: number;
     booksCompleted: number;
     lastResultDate: string;
+    noHomework?: boolean;
   }) => {
     if (!editingStudent) return;
     try {
@@ -72,7 +73,8 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
         attendanceDays: formData.attendanceDays.join(', '),
         homeworkMissed: Number(formData.homeworkMissed) || 0,
         booksCompleted: Number(formData.booksCompleted) || 0,
-        lastResultDate: formData.lastResultDate
+        lastResultDate: formData.lastResultDate,
+        noHomework: formData.noHomework
       });
       toast.success(MESSAGES.students.editSuccess(editingStudent.name));
       setIsEditOpen(false);
@@ -454,9 +456,9 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                   <span className="text-base font-extrabold text-foreground">{student.booksCompleted}</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-[10px] font-normal text-muted-foreground uppercase tracking-wider mb-1">미제출</span>
-                  <span className={`text-base font-extrabold ${student.homeworkMissed > 0 ? 'text-destructive' : 'text-foreground'}`}>
-                    {student.homeworkMissed}
+                  <span className="block text-[10px] font-normal text-muted-foreground uppercase tracking-wider mb-1">숙X</span>
+                  <span className={`text-base font-extrabold ${student.noHomework ? 'text-zinc-400' : student.homeworkMissed > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                    {student.noHomework ? '-' : student.homeworkMissed}
                   </span>
                 </div>
                 <div className="text-center hidden xl:block">

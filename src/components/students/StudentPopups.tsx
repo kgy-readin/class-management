@@ -429,6 +429,7 @@ interface StudentEditInfoDialogProps {
     homeworkMissed?: number;
     booksCompleted?: number;
     lastResultDate?: string;
+    noHomework?: boolean;
   } | null;
   onSave: (data: {
     grade: string;
@@ -438,6 +439,7 @@ interface StudentEditInfoDialogProps {
     homeworkMissed: number;
     booksCompleted: number;
     lastResultDate: string;
+    noHomework?: boolean;
   }) => Promise<void>;
   isSaving: boolean;
   onRefresh?: () => void;
@@ -451,6 +453,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
   const [homeworkMissed, setHomeworkMissed] = useState<number>(0);
   const [booksCompleted, setBooksCompleted] = useState<number>(0);
   const [lastResultDate, setLastResultDate] = useState('');
+  const [noHomework, setNoHomework] = useState(false);
   const [isProcessingTask, setIsProcessingTask] = useState(false);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [isLevelUpConfirmOpen, setIsLevelUpConfirmOpen] = useState(false);
@@ -468,6 +471,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       setHomeworkMissed(student.homeworkMissed || 0);
       setBooksCompleted(student.booksCompleted || 0);
       setLastResultDate(student.lastResultDate || '');
+      setNoHomework(student.noHomework || false);
     }
   }, [student, open]);
 
@@ -565,7 +569,8 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       attendanceDays,
       homeworkMissed,
       booksCompleted,
-      lastResultDate
+      lastResultDate,
+      noHomework
     });
   };
 
@@ -658,49 +663,61 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="grid grid-cols-2 gap-3 flex-1">
-                <div className="space-y-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="숙제 미수행 없음"
-                    value={homeworkMissed === 0 ? '' : homeworkMissed}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setHomeworkMissed(val === '' ? 0 : Number(val));
-                    }}
-                    className="rounded-xl h-10 border-neutral-200 text-sm placeholder:text-neutral-400"
-                  />
-                </div>
+             <div className="flex items-center gap-2">
+               <div className="flex items-center gap-2 flex-1">
+                 <div className="flex-1">
+                   <Input
+                     type="number"
+                     min="0"
+                     placeholder={noHomework ? "숙제 없음" : "숙제 미수행 없음"}
+                     value={homeworkMissed === 0 ? '' : homeworkMissed}
+                     onChange={(e) => {
+                       const val = e.target.value;
+                       setHomeworkMissed(val === '' ? 0 : Number(val));
+                     }}
+                     className="rounded-xl h-10 border-neutral-200 text-sm placeholder:text-neutral-400 w-full"
+                     disabled={noHomework}
+                   />
+                 </div>
 
-                <div className="space-y-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="완독 권수"
-                    value={booksCompleted}
-                    onChange={(e) => setBooksCompleted(Number(e.target.value) || 0)}
-                    className="rounded-xl h-10 border-neutral-200 text-sm"
-                  />
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={isLevelingUp}
-                onClick={() => setIsLevelUpConfirmOpen(true)}
-                className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center"
-                title="레벨업 (커리큘럼 초기화)"
-              >
-                {isLevelingUp ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <ArrowUpCircle className="w-5 h-5" />
-                )}
-              </Button>
-            </div>
+                 <div className="w-10 h-10 shrink-0 flex items-center justify-center border border-neutral-200 rounded-xl bg-white" title="숙제 없음">
+                   <label className="w-full h-full flex items-center justify-center cursor-pointer">
+                     <input
+                       type="checkbox"
+                       checked={noHomework}
+                       onChange={(e) => setNoHomework(e.target.checked)}
+                       className="w-[18px] h-[18px] text-primary focus:ring-primary border-neutral-300 rounded cursor-pointer"
+                     />
+                   </label>
+                 </div>
+
+                 <div className="flex-1">
+                   <Input
+                     type="number"
+                     min="0"
+                     placeholder="완독 권수"
+                     value={booksCompleted}
+                     onChange={(e) => setBooksCompleted(Number(e.target.value) || 0)}
+                     className="rounded-xl h-10 border-neutral-200 text-sm w-full"
+                   />
+                 </div>
+               </div>
+               <Button
+                 type="button"
+                 variant="outline"
+                 size="icon"
+                 disabled={isLevelingUp}
+                 onClick={() => setIsLevelUpConfirmOpen(true)}
+                 className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center"
+                 title="레벨업 (커리큘럼 초기화)"
+               >
+                 {isLevelingUp ? (
+                   <Loader2 className="w-5 h-5 animate-spin" />
+                 ) : (
+                   <ArrowUpCircle className="w-5 h-5" />
+                 )}
+               </Button>
+             </div>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2">

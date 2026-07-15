@@ -324,40 +324,46 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
               <Smile className="w-[18px] h-[18px] text-primary stroke-[2.5]" />
             </div>
             <div className="flex-1 min-w-0">
-               <p className="text-sm font-medium text-foreground">
-                숙제 미수행 <span className={student.homeworkMissed > 0 ? 'text-destructive' : ''}>{student.homeworkMissed}회</span>
-              </p>
+               {student.noHomework ? (
+                 <span className="text-sm font-medium text-zinc-400 block">숙제 없음</span>
+               ) : (
+                 <p className="text-sm font-medium text-foreground">
+                   숙제 미수행 <span className={student.homeworkMissed > 0 ? 'text-destructive' : ''}>{student.homeworkMissed}회</span>
+                 </p>
+               )}
             </div>
-            <div className="flex gap-1 pr-[1.5px] items-center">
-              {student.homeworkChecked ? (
-                student.homeworkMissedToday ? (
-                  <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-destructive text-white border border-destructive select-none shadow-sm -translate-x-[2px]">
-                    안함
-                  </span>
+            {!student.noHomework && (
+              <div className="flex gap-1 pr-[1.5px] items-center">
+                {student.homeworkChecked ? (
+                  student.homeworkMissedToday ? (
+                    <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-destructive text-white border border-destructive select-none shadow-sm -translate-x-[2px]">
+                      안함
+                    </span>
+                  ) : (
+                    <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-primary text-white border border-primary select-none shadow-sm -translate-x-[2px]">
+                      완료
+                    </span>
+                  )
                 ) : (
-                  <span className="px-[9px] py-0.5 rounded-full text-[12px] font-medium bg-primary text-white border border-primary select-none shadow-sm -translate-x-[2px]">
-                    완료
-                  </span>
-                )
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleHomework(true)}
-                    disabled={updating === `${student.name}-homework`}
-                    className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
-                  >
-                    완료
-                  </button>
-                  <button
-                    onClick={() => handleHomework(false)}
-                    disabled={updating === `${student.name}-homework`}
-                    className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-red-50 text-red-700 border border-red-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
-                  >
-                    안함
-                  </button>
-                </>
-              )}
-            </div>
+                  <>
+                    <button
+                      onClick={() => handleHomework(true)}
+                      disabled={updating === `${student.name}-homework`}
+                      className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
+                    >
+                      완료
+                    </button>
+                    <button
+                      onClick={() => handleHomework(false)}
+                      disabled={updating === `${student.name}-homework`}
+                      className="px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-red-50 text-red-700 border border-red-200 shadow-sm hover:opacity-80 transition-all select-none disabled:opacity-50"
+                    >
+                      안함
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sub-program row */}

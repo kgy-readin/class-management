@@ -53,7 +53,7 @@ export const MESSAGES = {
     editSuccess: '업무가 수정되었습니다.',
     deleteSuccess: '업무가 삭제되었습니다.',
     completeSuccess: '완료 처리되었습니다.',
-    reservationSuccess: (name: string, fClass: string) => `${name} 학생 다음 ${fClass} 가정통신문이 예약되었습니다.`,
+    reservationSuccess: (name: string) => `${name} 학생의 다음 가정통신문이 예약되었습니다.`,
   },
 
   // 5. Notes / Memo (메모) Messages

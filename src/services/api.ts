@@ -204,7 +204,7 @@ export const dataApi = {
       throw new Error(MESSAGES.api.sheetIdNotSet);
     }
     const fetchPromises = [
-      getSheetData('학생정보', 'A2:M'),
+      getSheetData('학생정보', 'A2:N'),
       getSheetData('커리큘럼', 'A2:G'),
     ];
 
@@ -256,12 +256,13 @@ export const dataApi = {
         attendanceDays: row[4] || '',
         isAttending: row[5] === true || row[5] === 'TRUE',
         dismissalTime: row[6] || '',
-        homeworkChecked: row[7] === true || row[7] === 'TRUE',
-        homeworkMissedToday: row[8] === true || row[8] === 'TRUE',
-        homeworkMissed: Number(row[9]) || 0,
-        booksCompleted: Number(row[10]) || 0,
-        lastResultDate: row[11] || '',
-        studentMemo: row[12] || '',
+        noHomework: row[7] === true || row[7] === 'TRUE',
+        homeworkChecked: row[8] === true || row[8] === 'TRUE',
+        homeworkMissedToday: row[9] === true || row[9] === 'TRUE',
+        homeworkMissed: Number(row[10]) || 0,
+        booksCompleted: Number(row[11]) || 0,
+        lastResultDate: row[12] || '',
+        studentMemo: row[13] || '',
       }));
 
     const curriculums: Curriculum[] = curriculumsRaw
@@ -286,44 +287,49 @@ export const attendanceApi = {
     const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
     if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
-    await updateSheetData('학생정보', `F${rowIndex}:I${rowIndex}`, [
-      [data.isAttending ? 'TRUE' : 'FALSE', data.isAttending ? (data.dismissalTime || '') : '', 'FALSE', 'FALSE']
+    await updateSheetData('학생정보', `F${rowIndex}:G${rowIndex}`, [
+      [data.isAttending ? 'TRUE' : 'FALSE', data.isAttending ? (data.dismissalTime || '') : '']
+    ]);
+    await updateSheetData('학생정보', `I${rowIndex}:J${rowIndex}`, [
+      ['FALSE', 'FALSE']
     ]);
     return { success: true };
   },
   bulkDismiss: async () => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:I');
-    const updatedFtoI = studentsRaw.map((row) => {
+    const studentsRaw = await getSheetData('학생정보', 'A2:J');
+    const updatedFtoJ = studentsRaw.map((row) => {
       const isAttending = row[5] === true || row[5] === 'TRUE';
       if (isAttending) {
-        return ['FALSE', '', 'FALSE', 'FALSE'];
+        const noHomeworkVal = row[7] === true || row[7] === 'TRUE' ? 'TRUE' : 'FALSE';
+        return ['FALSE', '', noHomeworkVal, 'FALSE', 'FALSE'];
       } else {
         const originalF = row[5] === true || row[5] === 'TRUE' ? 'TRUE' : 'FALSE';
         const originalG = row[6] || '';
         const originalH = row[7] === true || row[7] === 'TRUE' ? 'TRUE' : 'FALSE';
         const originalI = row[8] === true || row[8] === 'TRUE' ? 'TRUE' : 'FALSE';
-        return [originalF, originalG, originalH, originalI];
+        const originalJ = row[9] === true || row[9] === 'TRUE' ? 'TRUE' : 'FALSE';
+        return [originalF, originalG, originalH, originalI, originalJ];
       }
     });
-    await updateSheetData('학생정보', `F2:I${studentsRaw.length + 1}`, updatedFtoI);
+    await updateSheetData('학생정보', `F2:J${studentsRaw.length + 1}`, updatedFtoJ);
     return { success: true };
   }
 };
 
 export const homeworkApi = {
   update: async (data: { name: string; isDone: boolean }) => {
-    // Fetch columns A to J to find the current missed count in column J
-    const studentsRaw = await getSheetData('학생정보', 'A2:J');
+    // Fetch columns A to K to find the current missed count in column K
+    const studentsRaw = await getSheetData('학생정보', 'A2:K');
     const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[0] || '').trim() === String(data.name).trim()) + 2;
     if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
-    const currentCount = Number(studentsRaw[rowIndex - 2][9]) || 0;
+    const currentCount = Number(studentsRaw[rowIndex - 2][10]) || 0;
     // If homework is done, count resets to 0. Otherwise, increments by 1.
     const newCount = data.isDone ? 0 : currentCount + 1;
 
-    // H: 숙제검사, I: 미수행, J: 숙제안함
-    // Update H (Check), I (MissedToday), J (Accumulated Missed)
-    await updateSheetData('학생정보', `H${rowIndex}:J${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
+    // I: 숙제검사, J: 미수행, K: 숙제안함
+    // Update I (Check), J (MissedToday), K (Accumulated Missed)
+    await updateSheetData('학생정보', `I${rowIndex}:K${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
     return { success: true, newCount };
   }
 };
@@ -369,18 +375,18 @@ export const curriculumApi = {
     
     if (isBook && data.status !== undefined && newStatus !== previousStatus) {
       if (newStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:K');
+        const studentsRaw = await getSheetData('학생정보', 'A2:L');
         const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][10]) || 0;
-          await updateSheetData('학생정보', `K${studentRowIndex}`, [[currentCompleted + 1]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][11]) || 0;
+          await updateSheetData('학생정보', `L${studentRowIndex}`, [[currentCompleted + 1]]);
         }
       } else if (previousStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:K');
+        const studentsRaw = await getSheetData('학생정보', 'A2:L');
         const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][10]) || 0;
-          await updateSheetData('학생정보', `K${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][11]) || 0;
+          await updateSheetData('학생정보', `L${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
         }
       }
     }
@@ -480,7 +486,7 @@ export const studentApi = {
     const nextLevel = String(currentLevel + 1);
     
     await updateSheetData('학생정보', `C${studentRowIndex}`, [[nextLevel]]);
-    await updateSheetData('학생정보', `K${studentRowIndex}`, [[0]]);
+    await updateSheetData('학생정보', `L${studentRowIndex}`, [[0]]);
     try {
       await deleteRows('커리큘럼', 1, name);
     } catch (e) {
@@ -506,17 +512,20 @@ export const studentApi = {
     if (data.attendanceDays !== undefined) {
       await updateSheetData('학생정보', `E${studentRowIndex}`, [[data.attendanceDays]]);
     }
+    if (data.noHomework !== undefined) {
+      await updateSheetData('학생정보', `H${studentRowIndex}`, [[data.noHomework ? 'TRUE' : 'FALSE']]);
+    }
     if (data.homeworkMissed !== undefined) {
-      await updateSheetData('학생정보', `J${studentRowIndex}`, [[data.homeworkMissed]]);
+      await updateSheetData('학생정보', `K${studentRowIndex}`, [[data.homeworkMissed]]);
     }
     if (data.booksCompleted !== undefined) {
-      await updateSheetData('학생정보', `K${studentRowIndex}`, [[data.booksCompleted]]);
+      await updateSheetData('학생정보', `L${studentRowIndex}`, [[data.booksCompleted]]);
     }
     if (data.lastResultDate !== undefined) {
-      await updateSheetData('학생정보', `L${studentRowIndex}`, [[data.lastResultDate]]);
+      await updateSheetData('학생정보', `M${studentRowIndex}`, [[data.lastResultDate]]);
     }
     if (data.studentMemo !== undefined) {
-      await updateSheetData('학생정보', `M${studentRowIndex}`, [[data.studentMemo]]);
+      await updateSheetData('학생정보', `N${studentRowIndex}`, [[data.studentMemo]]);
     }
     return { success: true };
   },
@@ -538,12 +547,13 @@ export const studentApi = {
       '',
       'FALSE',
       'FALSE',
+      'FALSE',
       0,
       data.booksCompleted,
       data.lastResultDate || '',
       data.studentMemo || ''
     ];
-    await updateSheetData('학생정보', `A${nextEmptyRow}:M${nextEmptyRow}`, [newRow]);
+    await updateSheetData('학생정보', `A${nextEmptyRow}:N${nextEmptyRow}`, [newRow]);
     return { success: true };
   },
   delete: async (name: string) => {
