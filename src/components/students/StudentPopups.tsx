@@ -675,7 +675,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                        const val = e.target.value;
                        setHomeworkMissed(val === '' ? 0 : Number(val));
                      }}
-                     className="rounded-xl h-10 border-neutral-200 text-sm placeholder:text-neutral-400 w-full"
+                     className="rounded-xl h-10 border-neutral-200 text-sm placeholder:text-neutral-400 w-full disabled:opacity-100 disabled:bg-transparent"
                      disabled={noHomework}
                    />
                  </div>

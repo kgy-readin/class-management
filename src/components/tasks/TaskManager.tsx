@@ -626,7 +626,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       };
 
       await taskApi.add(reservedForm);
-      toast.success(MESSAGES.tasks.reservationSuccess(studentName, fClass));
+      toast.success(MESSAGES.tasks.reservationSuccess(studentName));
       setReservingTask(null);
       setEditingRowIndex(null);
       await fetchTasks();
