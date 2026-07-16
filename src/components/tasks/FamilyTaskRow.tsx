@@ -4,7 +4,7 @@ import { Pencil, Check, X, Save, Trash2 } from 'lucide-react';
 import { Task, Student } from '../../types';
 import StudentCombobox from '../common/StudentCombobox';
 import { getFamilyTaskDateClass, formatTaskDateDisplay } from './dateUtils';
-import { getCategoryBadgeClass, getStatusBadgeClass, getFamilyClassBadgeClass } from './badgeUtils';
+import { getCategoryBadgeClass, getStatusBadgeClass, getFamilyClassBadgeClass, getStatusDotColor } from './badgeUtils';
 import { MESSAGES } from '@/src/constants/messages';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ interface FamilyTaskRowProps {
   handleQuickComplete: (sheetRowIndex: number) => Promise<void>;
   setReservingTask: (task: Task) => void;
   setEditingRowIndex: (val: number | null) => void;
+  isLast?: boolean;
 }
 
 export default function FamilyTaskRow({
@@ -36,6 +37,7 @@ export default function FamilyTaskRow({
   handleQuickComplete,
   setReservingTask,
   setEditingRowIndex,
+  isLast = false,
 }: FamilyTaskRowProps) {
   const isEditing = editingRowIndex === task.sheetRowIndex;
 
@@ -43,7 +45,7 @@ export default function FamilyTaskRow({
     return (
       <div 
         key={task.sheetRowIndex} 
-        className="px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 border-b border-zinc-200/50 flex flex-col gap-2 rounded-lg transition-colors font-sans"
+        className={`px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 flex flex-col gap-2 rounded-none transition-colors font-sans ${isLast ? 'border-b-0' : 'border-b border-zinc-100/70'}`}
       >
         {/* Row 1: Looks identical to static viewer row (No student name, contains familyClass badge, todo, memo, date, status) */}
         <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -207,50 +209,46 @@ export default function FamilyTaskRow({
   return (
     <div 
       key={task.sheetRowIndex} 
-      className="group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/75 border-b border-zinc-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-lg font-normal"
+      className={`group relative pl-0.5 pr-0.5 py-1.5 bg-white hover:bg-zinc-50/75 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] transition-colors rounded-none font-normal ${isLast ? 'border-b-0' : 'border-b border-zinc-100/70'}`}
     >
       {/* Mobile View Container */}
-      <div className="w-full sm:hidden flex items-start gap-1.5">
-        {/* Badge on left */}
-        {task.familyClass && (
-          <div className="shrink-0 pt-0.5">
-            <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)}`}>
-              {task.familyClass}
-            </span>
-          </div>
-        )}
-
-        {/* Right Column: Title + Metadata + Edit Button */}
-        <div className="flex-1 flex flex-col gap-1 min-w-0 pr-1">
-          <div className="flex items-start justify-between gap-1.5">
+      <div className="w-full sm:hidden flex flex-col gap-1.5">
+        <div className="flex items-start justify-between gap-1.5 w-full">
+          <div className="flex-1 flex flex-wrap items-center gap-1.5 min-w-0">
+            {task.familyClass && (
+              <span className={`px-1.5 py-0.5 rounded text-[13px] font-normal tracking-tight ${getFamilyClassBadgeClass(task.familyClass)} shrink-0`}>
+                {task.familyClass}
+              </span>
+            )}
             <span className="font-medium text-zinc-750 text-[14.5px] break-all">
               {task.todo}
             </span>
-            <div className="shrink-0">
-              <Button
-                size="icon"
-                variant="ghost"
-                disabled={submitting}
-                onClick={() => handleStartEdit(task)}
-                className="h-6 w-6 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
-                title="수정하기"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </Button>
-            </div>
           </div>
+          <div className="shrink-0">
+            <Button
+              size="icon"
+              variant="ghost"
+              disabled={submitting}
+              onClick={() => handleStartEdit(task)}
+              className="h-6 w-6 text-zinc-400 opacity-30 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
+              title="수정하기"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
 
-          {/* Metadata perfectly aligned with task.todo first letter */}
-          <div className="flex flex-wrap items-center gap-2 select-none text-[12px] mt-0.5">
-            {task.date && (
-              <span className={`font-normal ${getFamilyTaskDateClass(task.date)}`}>
-                {formatTaskDateDisplay(task.date)}
-              </span>
-            )}
-            <span className={`rounded-lg font-normal text-[13px] px-1.5 py-0.5 ${getStatusBadgeClass(task.status)}`}>
-              {task.status || '예정'}
+        {/* Metadata starts at x=0, matching the familyClass badge */}
+        <div className="flex flex-wrap items-center gap-2 select-none text-[12px]">
+          {task.date && (
+            <span className={`text-[13px] font-normal ${getFamilyTaskDateClass(task.date)}`}>
+              {formatTaskDateDisplay(task.date)}
             </span>
-          </div>
+          )}
+          <span className={`rounded-full font-medium text-[13px] px-[8px] py-[1px] inline-flex items-center gap-[4px] ${getStatusBadgeClass(task.status)}`}>
+            <span className={`w-[7px] h-[7px] rounded-full -translate-y-[0.5px] ${getStatusDotColor(task.status)} shrink-0`} />
+            {task.status || '예정'}
+          </span>
         </div>
       </div>
 
@@ -273,7 +271,8 @@ export default function FamilyTaskRow({
               {formatTaskDateDisplay(task.date)}
             </span>
           )}
-          <span className={`rounded-lg font-normal text-[13px] px-2 py-0.5 ${getStatusBadgeClass(task.status)}`}>
+          <span className={`rounded-full font-medium text-[13px] px-[8px] py-[1px] inline-flex items-center gap-[4px] ${getStatusBadgeClass(task.status)}`}>
+            <span className={`w-[7px] h-[7px] rounded-full -translate-y-[0.5px] ${getStatusDotColor(task.status)} shrink-0`} />
             {task.status || '예정'}
           </span>
 

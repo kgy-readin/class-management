@@ -24,7 +24,7 @@ export const getStatusBadgeClass = (status: string) => {
     case '진행':
       return getTagColor('초록색');
     case '보류':
-      return getTagColor('노란색');
+      return 'bg-yellow-500/20 text-yellow-900 font-medium';
     case '대기':
       return getTagColor('보라색');
     case '완료':
@@ -34,6 +34,24 @@ export const getStatusBadgeClass = (status: string) => {
     case '예정':
     default:
       return getTagColor('기본');
+  }
+};
+
+export const getStatusDotColor = (status: string) => {
+  switch (status) {
+    case '진행':
+      return 'bg-[#1d8668]';
+    case '보류':
+      return 'bg-[#aa7220]';
+    case '대기':
+      return 'bg-[#8a53e0]';
+    case '완료':
+      return 'bg-[#1c78aa]';
+    case '취소':
+      return 'bg-[#c74949]';
+    case '예정':
+    default:
+      return 'bg-[#8a8a93]';
   }
 };
 

@@ -1180,14 +1180,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
                               exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="space-y-1.5 pl-0"
+                              className="flex flex-col pl-0"
                             >
                               {todoGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                                   등록되었거나 해당되는 예정된 일이 없습니다.
                                 </div>
                               ) : (
-                                todoGroup.map(task => (
+                                todoGroup.map((task, index, arr) => (
                                   <TaskRow
                                     key={task.sheetRowIndex}
                                     task={task}
@@ -1202,29 +1202,32 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                     handleQuickComplete={handleQuickComplete}
                                     setReservingTask={setReservingTask}
                                     setEditingRowIndex={setEditingRowIndex}
+                                    isLast={index === arr.length - 1}
                                   />
                                 ))
                               )}
 
-                              {inlineAddGroup === 'todo' ? (
-                                <InlineAddForm
-                                  group="todo"
-                                  newForm={newForm}
-                                  setNewForm={setNewForm}
-                                  students={students}
-                                  submitting={submitting}
-                                  handleCreateTask={handleCreateTask}
-                                  setInlineAddGroup={setInlineAddGroup}
-                                />
-                              ) : (
-                                <button 
-                                  onClick={() => handleOpenInlineAdd('todo')}
-                                  className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
-                                  title="예정 업무 추가"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                              )}
+                              <div className="mt-2.5">
+                                {inlineAddGroup === 'todo' ? (
+                                  <InlineAddForm
+                                    group="todo"
+                                    newForm={newForm}
+                                    setNewForm={setNewForm}
+                                    students={students}
+                                    submitting={submitting}
+                                    handleCreateTask={handleCreateTask}
+                                    setInlineAddGroup={setInlineAddGroup}
+                                  />
+                                ) : (
+                                  <button 
+                                    onClick={() => handleOpenInlineAdd('todo')}
+                                    className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
+                                    title="예정 업무 추가"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -1252,14 +1255,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
                               exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="space-y-1.5 pl-0"
+                              className="flex flex-col pl-0"
                             >
                               {inProgressGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                                   진행 중인 업무가 없습니다.
                                 </div>
                               ) : (
-                                inProgressGroup.map(task => (
+                                inProgressGroup.map((task, index, arr) => (
                                   <TaskRow
                                     key={task.sheetRowIndex}
                                     task={task}
@@ -1274,6 +1277,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                     handleQuickComplete={handleQuickComplete}
                                     setReservingTask={setReservingTask}
                                     setEditingRowIndex={setEditingRowIndex}
+                                    isLast={index === arr.length - 1}
                                   />
                                 ))
                               )}
@@ -1304,14 +1308,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
                               exit={{ height: 0, opacity: 0, overflow: "hidden" }}
                               transition={{ duration: 0.2 }}
-                              className="space-y-1.5 pl-0"
+                              className="flex flex-col pl-0"
                             >
                               {completedGroup.length === 0 ? (
                                 <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
                                   완료되었거나 취소된 업무가 없습니다.
                                 </div>
                               ) : (
-                                completedGroup.map(task => (
+                                completedGroup.map((task, index, arr) => (
                                   <TaskRow
                                     key={task.sheetRowIndex}
                                     task={task}
@@ -1326,6 +1330,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                     handleQuickComplete={handleQuickComplete}
                                     setReservingTask={setReservingTask}
                                     setEditingRowIndex={setEditingRowIndex}
+                                    isLast={index === arr.length - 1}
                                   />
                                 ))
                               )}
@@ -1336,14 +1341,14 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                     </div>
                   )}
 
-                  {activeTab === '다음주' && (
-                    <div className="space-y-2">
+                   {activeTab === '다음주' && (
+                    <div className="flex flex-col">
                       {nextWeekTasks.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4 mb-2">
                           등록되었거나 해당되는 다음주 할일이 없습니다.
                         </div>
                       ) : (
-                        nextWeekTasks.map(task => (
+                        nextWeekTasks.map((task, index, arr) => (
                           <TaskRow
                             key={task.sheetRowIndex}
                             task={task}
@@ -1358,40 +1363,43 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             handleQuickComplete={handleQuickComplete}
                             setReservingTask={setReservingTask}
                             setEditingRowIndex={setEditingRowIndex}
+                            isLast={index === arr.length - 1}
                           />
                         ))
                       )}
 
-                      {inlineAddGroup === 'nextWeek' ? (
-                        <InlineAddForm
-                          group="nextWeek"
-                          newForm={newForm}
-                          setNewForm={setNewForm}
-                          students={students}
-                          submitting={submitting}
-                          handleCreateTask={handleCreateTask}
-                          setInlineAddGroup={setInlineAddGroup}
-                        />
-                      ) : (
-                        <button 
-                          onClick={() => handleOpenInlineAdd('nextWeek')}
-                          className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
-                          title="다음주 업무 추가"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      )}
+                      <div className="mt-2.5">
+                        {inlineAddGroup === 'nextWeek' ? (
+                          <InlineAddForm
+                            group="nextWeek"
+                            newForm={newForm}
+                            setNewForm={setNewForm}
+                            students={students}
+                            submitting={submitting}
+                            handleCreateTask={handleCreateTask}
+                            setInlineAddGroup={setInlineAddGroup}
+                          />
+                        ) : (
+                          <button 
+                            onClick={() => handleOpenInlineAdd('nextWeek')}
+                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
+                            title="다음주 업무 추가"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
                   {activeTab === '가정통신문' && (
-                    <div className="space-y-2">
+                    <div className="flex flex-col">
                       {familyTasks.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4 mb-2">
                           해당되는 가정통신문 업무가 없습니다.
                         </div>
                       ) : (
-                        familyTasks.map(task => (
+                        familyTasks.map((task, index, arr) => (
                           <FamilyTaskRow
                             key={task.sheetRowIndex}
                             task={task}
@@ -1406,29 +1414,32 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                             handleQuickComplete={handleQuickComplete}
                             setReservingTask={setReservingTask}
                             setEditingRowIndex={setEditingRowIndex}
+                            isLast={index === arr.length - 1}
                           />
                         ))
                       )}
 
-                      {inlineAddGroup === 'familyView' ? (
-                        <InlineAddForm
-                          group="familyView"
-                          newForm={newForm}
-                          setNewForm={setNewForm}
-                          students={students}
-                          submitting={submitting}
-                          handleCreateTask={handleCreateTask}
-                          setInlineAddGroup={setInlineAddGroup}
-                        />
-                      ) : (
-                        <button 
-                          onClick={() => handleOpenInlineAdd('familyView')}
-                          className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white mt-2"
-                          title="가정통신문 추가"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      )}
+                      <div className="mt-2.5">
+                        {inlineAddGroup === 'familyView' ? (
+                          <InlineAddForm
+                            group="familyView"
+                            newForm={newForm}
+                            setNewForm={setNewForm}
+                            students={students}
+                            submitting={submitting}
+                            handleCreateTask={handleCreateTask}
+                            setInlineAddGroup={setInlineAddGroup}
+                          />
+                        ) : (
+                          <button 
+                            onClick={() => handleOpenInlineAdd('familyView')}
+                            className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
+                            title="가정통신문 추가"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -1462,8 +1473,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           </div>
                         )
                       ) : (
-                        <div className="space-y-1.5">
-                          {filterTasks.map(task => (
+                        <div className="flex flex-col">
+                          {filterTasks.map((task, index, arr) => (
                             <TaskRow
                               key={task.sheetRowIndex}
                               task={task}
@@ -1479,6 +1490,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               setReservingTask={setReservingTask}
                               setEditingRowIndex={setEditingRowIndex}
                               isStudentFiltered={!!selectedStudent}
+                              isLast={index === arr.length - 1}
                             />
                           ))}
                         </div>

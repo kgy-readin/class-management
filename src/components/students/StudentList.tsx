@@ -418,7 +418,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                 ? 'border-red-200 hover:border-red-400'
                 : student.isAttending 
                   ? 'border-primary/30 shadow-sm' 
-                  : 'border-border/50'
+                  : 'border-zinc-100'
             }`}
           >
             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -429,7 +429,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all p-0 ${
                   student.isAttending 
                     ? 'bg-[#f0f7ff] text-primary border border-[#dbeafe] shadow-sm hover:bg-[#e0efff]' 
-                    : 'bg-background text-muted-foreground border border-border/50 hover:bg-secondary'
+                    : 'bg-background text-muted-foreground border border-zinc-100 hover:bg-secondary'
                 } ${isDeleteMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => !isDeleteMode && onSelectStudent(student.name)}
                 title={isDeleteMode ? "삭제 모드에서는 상세 정보를 열 수 없습니다" : `${student.name} 학생 상세 정보`}
