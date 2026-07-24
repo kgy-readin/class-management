@@ -352,9 +352,19 @@ export default function StudentLogStudents({
                           <td className="px-3 pt-[12px] pb-[12px] text-left align-top overflow-visible">
                             <textarea
                               rows={2}
-                              className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[14px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-y"
+                              ref={(el) => {
+                                if (el) {
+                                  el.style.height = 'auto';
+                                  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+                                }
+                              }}
+                              className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[14px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-none min-h-[52px] max-h-[160px] overflow-y-auto [field-sizing:content]"
                               value={editForm.content}
-                              onChange={e => setEditForm({ ...editForm, content: e.target.value })}
+                              onChange={e => {
+                                setEditForm({ ...editForm, content: e.target.value });
+                                e.target.style.height = 'auto';
+                                e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+                              }}
                             />
                           </td>
 
@@ -579,9 +589,19 @@ export default function StudentLogStudents({
                         {isEditing && editForm ? (
                           <textarea
                             rows={2}
-                            className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-y"
+                            ref={(el) => {
+                              if (el) {
+                                el.style.height = 'auto';
+                                el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+                              }
+                            }}
+                            className="w-full bg-white border border-zinc-200 rounded px-2 py-1 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-primary resize-none min-h-[52px] max-h-[160px] overflow-y-auto [field-sizing:content]"
                             value={editForm.content}
-                            onChange={e => setEditForm({ ...editForm, content: e.target.value })}
+                            onChange={e => {
+                              setEditForm({ ...editForm, content: e.target.value });
+                              e.target.style.height = 'auto';
+                              e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+                            }}
                           />
                         ) : (
                           <p className="whitespace-pre-wrap break-all">{renderBoldBrackets(log.content)}</p>

@@ -412,9 +412,19 @@ export default function StudentLogMobileCalendar({
                       {isEditing && editForm ? (
                         <textarea
                           rows={2}
-                          className="w-full bg-white border border-solid border-zinc-200 rounded px-2 py-1.5 text-[13px] font-normal leading-relaxed focus:outline-none focus:ring-1 ring-primary/20 resize-none"
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+                            }
+                          }}
+                          className="w-full bg-white border border-solid border-zinc-200 rounded px-2 py-1.5 text-[13px] font-normal leading-relaxed focus:outline-none focus:ring-1 ring-primary/20 resize-none min-h-[52px] max-h-[160px] overflow-y-auto [field-sizing:content]"
                           value={editForm.content}
-                          onChange={e => setEditForm(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
+                          onChange={e => {
+                            setEditForm(prev => prev ? ({ ...prev, content: e.target.value }) : null);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+                          }}
                         />
                       ) : (
                         <p className="whitespace-pre-wrap break-all mt-1">

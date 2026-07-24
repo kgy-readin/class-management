@@ -46,7 +46,7 @@ export default function StudentLogCalendar({
   const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
 
   return (
-    <Card className="rounded-[2.5rem] border-none ring-0 shadow-sm overflow-hidden bg-white">
+    <Card className="rounded-[2.5rem] border-none ring-0 shadow-sm overflow-visible bg-white">
       <CardContent className="p-8" style={{ paddingTop: '8px' }}>
         
         {/* Header with calendar controls */}
@@ -132,7 +132,7 @@ export default function StudentLogCalendar({
                 <div
                   key={day.toISOString()}
                   onClick={() => handleCellClick(day)}
-                  className={`min-h-[120px] p-3.5 rounded-[13px] shadow-[0_6px_22px_rgba(0,0,0,0.035),0_2px_6px_rgba(0,0,0,0.015)] gap-1.5 flex flex-col justify-between cursor-pointer transition-all hover:bg-zinc-50/50 hover:shadow-[0_16px_32px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 hover:z-10 select-none relative ${
+                  className={`min-h-[120px] p-3.5 rounded-[13px] shadow-[0_6px_22px_rgba(0,0,0,0.035),0_2px_6px_rgba(0,0,0,0.015)] gap-1.5 flex flex-col justify-between cursor-pointer transition-all hover:bg-zinc-50/50 hover:shadow-[0_16px_32px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 hover:z-40 select-none relative ${
                     isCurrentMonth ? 'bg-white' : 'bg-white/40 opacity-40'
                   }`}
                 >
@@ -178,7 +178,13 @@ export default function StudentLogCalendar({
                         </div>
 
                         {/* Custom Hover Popup */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 bg-white border border-solid border-zinc-100 p-3.5 rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:pointer-events-none w-[300px] pointer-events-none transition-all duration-200">
+                        <div className={`absolute bottom-full mb-2 hidden group-hover:block z-50 bg-white border border-solid border-zinc-100 p-3.5 rounded-[20px] shadow-[0_12px_40px_rgba(0,0,0,0.12)] hover:pointer-events-none w-[300px] pointer-events-none transition-all duration-200 ${
+                          day.getDay() === 1 || day.getDay() === 2
+                            ? 'left-0 translate-x-0'
+                            : day.getDay() === 0 || day.getDay() === 6
+                            ? 'right-0 left-auto translate-x-0'
+                            : 'left-1/2 -translate-x-1/2'
+                        }`}>
                           <div className="whitespace-normal text-left">
                             <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
                               <span className="text-[13px] font-medium text-zinc-800 leading-normal">{log.name}</span>
