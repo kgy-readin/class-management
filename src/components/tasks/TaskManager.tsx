@@ -1183,8 +1183,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               className="flex flex-col pl-0"
                             >
                               {todoGroup.length === 0 ? (
-                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
-                                  등록되었거나 해당되는 예정된 일이 없습니다.
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100">
+                                  이번 주 마감 예정 업무가 없습니다.
                                 </div>
                               ) : (
                                 todoGroup.map((task, index, arr) => (
@@ -1258,7 +1258,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               className="flex flex-col pl-0"
                             >
                               {inProgressGroup.length === 0 ? (
-                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100">
                                   진행 중인 업무가 없습니다.
                                 </div>
                               ) : (
@@ -1311,7 +1311,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                               className="flex flex-col pl-0"
                             >
                               {completedGroup.length === 0 ? (
-                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100">
+                                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100">
                                   완료되었거나 취소된 업무가 없습니다.
                                 </div>
                               ) : (
@@ -1344,8 +1344,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                    {activeTab === '다음주' && (
                     <div className="flex flex-col">
                       {nextWeekTasks.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4 mb-2">
-                          등록되었거나 해당되는 다음주 할일이 없습니다.
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100 px-4 mb-2">
+                          다음주 마감 예정 업무가 없습니다.
                         </div>
                       ) : (
                         nextWeekTasks.map((task, index, arr) => (
@@ -1395,8 +1395,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                   {activeTab === '가정통신문' && (
                     <div className="flex flex-col">
                       {familyTasks.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4 mb-2">
-                          해당되는 가정통신문 업무가 없습니다.
+                        <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100 px-4 mb-2">
+                          이번 달 내 마감인 가정통신문 업무가 없습니다.
                         </div>
                       ) : (
                         familyTasks.map((task, index, arr) => (
@@ -1461,15 +1461,15 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
                       {!selectedStudent && !selectedDate && !selectedWeek && !taskSearchQuery.trim() ? (
                         inlineAddGroup !== 'filterView' && (
-                          <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-2xl border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
+                          <div className="py-12 text-center text-zinc-400 bg-neutral-50/20 rounded-lg border border-solid border-zinc-100 flex flex-col items-center justify-center gap-2 px-4 select-none">
                             <ListFilter className="w-10 h-10 text-zinc-300" />
                             <div className="text-[16px] font-medium text-zinc-500">필터를 선택해 주세요.</div>
                           </div>
                         )
                       ) : filterTasks.length === 0 ? (
                         inlineAddGroup !== 'filterView' && (
-                          <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-xl border border-solid border-zinc-100 px-4">
-                            필터 결과에 해당하는 할 일이 없습니다.
+                          <div className="py-8 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-solid border-zinc-100 px-4">
+                            필터 결과에 해당하는 업무가 없습니다.
                           </div>
                         )
                       ) : (
