@@ -39,7 +39,9 @@ export default function StudentCombobox({
 
   // Convert students prop to array of strings
   const studentNames = Array.isArray(students)
-    ? students.map(s => (typeof s === 'string' ? s : s.name))
+    ? students
+        .filter(s => typeof s === 'string' || !s.isHidden)
+        .map(s => (typeof s === 'string' ? s : s.name))
     : [];
 
   // Filter students based on modern autocomplete match

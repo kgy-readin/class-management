@@ -106,30 +106,44 @@ async function getSheetData(sheet: string, range: string) {
   }
 }
 
-// Helper to update sheet data via GAS (Writing still requires GAS or OAuth)
-async function updateSheetData(sheet: string, range: string, values: any[][]) {
+// Helper to execute POST requests to Google Apps Script Web App
+async function postToGas(payload: Record<string, any>, errorMessagePrefix: string, urlRequiredErrorMsg?: string) {
   if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error(MESSAGES.api.gasUrlRequiredForUpdate);
+    throw new Error(urlRequiredErrorMsg || MESSAGES.api.gasUrlRequiredForUpdate);
   }
 
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      // Use text/plain to avoid CORS preflight (OPTIONS) which GAS doesn't handle well
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'update', sheet, range, values }),
+      body: JSON.stringify(payload),
     });
-    
-    if (!response.ok) throw new Error(MESSAGES.api.gasUpdateError(response.statusText));
-    
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
+
+    const rawText = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`${errorMessagePrefix}: HTTP ${response.status} ${response.statusText || ''}`.trim());
+    }
+
+    const trimmed = rawText.trim();
+    if (trimmed.startsWith('<') || trimmed.toLowerCase().includes('<!doctype') || trimmed.toLowerCase().includes('<html')) {
       throw new Error(MESSAGES.api.gasHtmlResponseError);
     }
 
-    return await response.json();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      throw new Error(MESSAGES.api.gasHtmlResponseError);
+    }
+
+    if (parsed && typeof parsed === 'object' && parsed.error) {
+      throw new Error(parsed.error);
+    }
+
+    return parsed;
   } catch (error: any) {
-    console.error('GAS Update Failed:', error);
+    console.error(`${errorMessagePrefix} Failed:`, error);
     if (error.message === 'Failed to fetch') {
       throw new Error(MESSAGES.api.gasConnectionError);
     }
@@ -137,58 +151,19 @@ async function updateSheetData(sheet: string, range: string, values: any[][]) {
   }
 }
 
+// Helper to update sheet data via GAS (Writing still requires GAS or OAuth)
+async function updateSheetData(sheet: string, range: string, values: any[][]) {
+  return postToGas({ action: 'update', sheet, range, values }, 'GAS Update');
+}
+
 // Helper to delete rows via GAS
 async function deleteRows(sheet: string, keyColumn: number, keyValue: string) {
-  if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error(MESSAGES.api.gasUrlRequiredForDelete);
-  }
-
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'deleteRows', sheet, keyColumn, keyValue }),
-    });
-    
-    if (!response.ok) throw new Error(MESSAGES.api.gasDeleteError(response.statusText));
-    
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(MESSAGES.api.gasHtmlResponseError);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    console.error('GAS Delete Failed:', error);
-    throw error;
-  }
+  return postToGas({ action: 'deleteRows', sheet, keyColumn, keyValue }, 'GAS Delete', MESSAGES.api.gasUrlRequiredForDelete);
 }
 
 // Helper to delete a specific row by its index
 async function deleteRow(sheet: string, rowIndex: number) {
-  if (!GAS_URL || !GAS_URL.startsWith('http')) {
-    throw new Error(MESSAGES.api.gasUrlRequiredForDelete);
-  }
-
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'deleteRow', sheet, row: rowIndex }),
-    });
-    
-    if (!response.ok) throw new Error(MESSAGES.api.gasDeleteRowError(response.statusText));
-    
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(MESSAGES.api.gasHtmlGenericError);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    console.error('GAS Delete Row Failed:', error);
-    throw error;
-  }
+  return postToGas({ action: 'deleteRow', sheet, row: rowIndex }, 'GAS Delete Row', MESSAGES.api.gasUrlRequiredForDelete);
 }
 
 export const dataApi = {
@@ -204,7 +179,7 @@ export const dataApi = {
       throw new Error(MESSAGES.api.sheetIdNotSet);
     }
     const fetchPromises = [
-      getSheetData('학생정보', 'A2:N'),
+      getSheetData('학생정보', 'A2:O'),
       getSheetData('커리큘럼', 'A2:G'),
     ];
 
@@ -247,22 +222,23 @@ export const dataApi = {
     }
 
     const students: Student[] = studentsRaw
-      .filter((row: any[]) => row[0])
+      .filter((row: any[]) => row[1])
       .map((row: any[]) => ({
-        name: row[0] || '',
-        grade: row[1] || '',
-        level: row[2] || '',
-        subProgram: row[3] || '',
-        attendanceDays: row[4] || '',
-        isAttending: row[5] === true || row[5] === 'TRUE',
-        dismissalTime: row[6] || '',
-        noHomework: row[7] === true || row[7] === 'TRUE',
-        homeworkChecked: row[8] === true || row[8] === 'TRUE',
-        homeworkMissedToday: row[9] === true || row[9] === 'TRUE',
-        homeworkMissed: Number(row[10]) || 0,
-        booksCompleted: Number(row[11]) || 0,
-        lastResultDate: row[12] || '',
-        studentMemo: row[13] || '',
+        isHidden: row[0] === true || row[0] === 'TRUE',
+        name: row[1] || '',
+        grade: row[2] || '',
+        level: row[3] || '',
+        subProgram: row[4] || '',
+        attendanceDays: row[5] || '',
+        isAttending: row[6] === true || row[6] === 'TRUE',
+        dismissalTime: row[7] || '',
+        noHomework: row[8] === true || row[8] === 'TRUE',
+        homeworkChecked: row[9] === true || row[9] === 'TRUE',
+        homeworkMissedToday: row[10] === true || row[10] === 'TRUE',
+        homeworkMissed: Number(row[11]) || 0,
+        booksCompleted: Number(row[12]) || 0,
+        lastResultDate: row[13] || '',
+        studentMemo: row[14] || '',
       }));
 
     const curriculums: Curriculum[] = curriculumsRaw
@@ -283,53 +259,53 @@ export const dataApi = {
 
 export const attendanceApi = {
   update: async (data: { name: string; isAttending: boolean; dismissalTime?: string }) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:A');
-    const rowIndex = studentsRaw.findIndex((row: any[]) => row[0] === data.name) + 2;
+    const studentsRaw = await getSheetData('학생정보', 'A2:B');
+    const rowIndex = studentsRaw.findIndex((row: any[]) => row[1] === data.name) + 2;
     if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
-    await updateSheetData('학생정보', `F${rowIndex}:G${rowIndex}`, [
+    await updateSheetData('학생정보', `G${rowIndex}:H${rowIndex}`, [
       [data.isAttending ? 'TRUE' : 'FALSE', data.isAttending ? (data.dismissalTime || '') : '']
     ]);
-    await updateSheetData('학생정보', `I${rowIndex}:J${rowIndex}`, [
+    await updateSheetData('학생정보', `J${rowIndex}:K${rowIndex}`, [
       ['FALSE', 'FALSE']
     ]);
     return { success: true };
   },
   bulkDismiss: async () => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:J');
-    const updatedFtoJ = studentsRaw.map((row) => {
-      const isAttending = row[5] === true || row[5] === 'TRUE';
+    const studentsRaw = await getSheetData('학생정보', 'A2:K');
+    const updatedGtoK = studentsRaw.map((row) => {
+      const isAttending = row[6] === true || row[6] === 'TRUE';
       if (isAttending) {
-        const noHomeworkVal = row[7] === true || row[7] === 'TRUE' ? 'TRUE' : 'FALSE';
+        const noHomeworkVal = row[8] === true || row[8] === 'TRUE' ? 'TRUE' : 'FALSE';
         return ['FALSE', '', noHomeworkVal, 'FALSE', 'FALSE'];
       } else {
-        const originalF = row[5] === true || row[5] === 'TRUE' ? 'TRUE' : 'FALSE';
-        const originalG = row[6] || '';
-        const originalH = row[7] === true || row[7] === 'TRUE' ? 'TRUE' : 'FALSE';
+        const originalG = row[6] === true || row[6] === 'TRUE' ? 'TRUE' : 'FALSE';
+        const originalH = row[7] || '';
         const originalI = row[8] === true || row[8] === 'TRUE' ? 'TRUE' : 'FALSE';
         const originalJ = row[9] === true || row[9] === 'TRUE' ? 'TRUE' : 'FALSE';
-        return [originalF, originalG, originalH, originalI, originalJ];
+        const originalK = row[10] === true || row[10] === 'TRUE' ? 'TRUE' : 'FALSE';
+        return [originalG, originalH, originalI, originalJ, originalK];
       }
     });
-    await updateSheetData('학생정보', `F2:J${studentsRaw.length + 1}`, updatedFtoJ);
+    await updateSheetData('학생정보', `G2:K${studentsRaw.length + 1}`, updatedGtoK);
     return { success: true };
   }
 };
 
 export const homeworkApi = {
   update: async (data: { name: string; isDone: boolean }) => {
-    // Fetch columns A to K to find the current missed count in column K
-    const studentsRaw = await getSheetData('학생정보', 'A2:K');
-    const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[0] || '').trim() === String(data.name).trim()) + 2;
+    // Fetch columns A to L to find the current missed count in column L
+    const studentsRaw = await getSheetData('학생정보', 'A2:L');
+    const rowIndex = studentsRaw.findIndex((row: any[]) => String(row[1] || '').trim() === String(data.name).trim()) + 2;
     if (rowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
-    const currentCount = Number(studentsRaw[rowIndex - 2][10]) || 0;
+    const currentCount = Number(studentsRaw[rowIndex - 2][11]) || 0;
     // If homework is done, count resets to 0. Otherwise, increments by 1.
     const newCount = data.isDone ? 0 : currentCount + 1;
 
-    // I: 숙제검사, J: 미수행, K: 숙제안함
-    // Update I (Check), J (MissedToday), K (Accumulated Missed)
-    await updateSheetData('학생정보', `I${rowIndex}:K${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
+    // J: 숙제검사, K: 미수행, L: 숙제안함
+    // Update J (Check), K (MissedToday), L (Accumulated Missed)
+    await updateSheetData('학생정보', `J${rowIndex}:L${rowIndex}`, [['TRUE', data.isDone ? 'FALSE' : 'TRUE', newCount]]);
     return { success: true, newCount };
   }
 };
@@ -375,18 +351,18 @@ export const curriculumApi = {
     
     if (isBook && data.status !== undefined && newStatus !== previousStatus) {
       if (newStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:L');
-        const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
+        const studentsRaw = await getSheetData('학생정보', 'A2:M');
+        const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[1]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][11]) || 0;
-          await updateSheetData('학생정보', `L${studentRowIndex}`, [[currentCompleted + 1]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][12]) || 0;
+          await updateSheetData('학생정보', `M${studentRowIndex}`, [[currentCompleted + 1]]);
         }
       } else if (previousStatus === '통과') {
-        const studentsRaw = await getSheetData('학생정보', 'A2:L');
-        const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === String(data.studentName).trim()) + 2;
+        const studentsRaw = await getSheetData('학생정보', 'A2:M');
+        const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[1]).trim() === String(data.studentName).trim()) + 2;
         if (studentRowIndex >= 2) {
-          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][11]) || 0;
-          await updateSheetData('학생정보', `L${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
+          const currentCompleted = Number(studentsRaw[studentRowIndex - 2][12]) || 0;
+          await updateSheetData('학생정보', `M${studentRowIndex}`, [[Math.max(0, currentCompleted - 1)]]);
         }
       }
     }
@@ -430,7 +406,7 @@ export const curriculumApi = {
       if (!book) throw new Error(MESSAGES.api.bookNotFound);
       bookLevel = book.level;
       bookId = book.id;
-      info = `${book.therapy} / ${book.difficulty}`;
+      info = [book.category, book.therapy, book.difficulty].filter(Boolean).join(' / ');
     }
 
     const studentCurriculum = curriculumsRaw.filter((row: any[]) => row[0] === data.studentName);
@@ -477,16 +453,16 @@ export const curriculumApi = {
 
 export const studentApi = {
   levelUp: async (name: string) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:C');
-    const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === name.trim()) + 2;
+    const studentsRaw = await getSheetData('학생정보', 'A2:D');
+    const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[1]).trim() === name.trim()) + 2;
     if (studentRowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
     const studentRow = studentsRaw[studentRowIndex - 2];
-    const currentLevel = parseInt(studentRow[2]) || 0;
+    const currentLevel = parseInt(studentRow[3]) || 0;
     const nextLevel = String(currentLevel + 1);
     
-    await updateSheetData('학생정보', `C${studentRowIndex}`, [[nextLevel]]);
-    await updateSheetData('학생정보', `L${studentRowIndex}`, [[0]]);
+    await updateSheetData('학생정보', `D${studentRowIndex}`, [[nextLevel]]);
+    await updateSheetData('학생정보', `M${studentRowIndex}`, [[0]]);
     try {
       await deleteRows('커리큘럼', 1, name);
     } catch (e) {
@@ -496,48 +472,52 @@ export const studentApi = {
     return { success: true };
   },
   update: async (name: string, data: Partial<Student>) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:A');
-    const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[0]).trim() === name.trim()) + 2;
+    const studentsRaw = await getSheetData('학생정보', 'A2:B');
+    const studentRowIndex = studentsRaw.findIndex((row: any[]) => String(row[1]).trim() === name.trim()) + 2;
     if (studentRowIndex < 2) throw new Error(MESSAGES.api.studentNotFound);
 
+    if (data.isHidden !== undefined) {
+      await updateSheetData('학생정보', `A${studentRowIndex}`, [[data.isHidden ? 'TRUE' : 'FALSE']]);
+    }
     if (data.grade !== undefined) {
-      await updateSheetData('학생정보', `B${studentRowIndex}`, [[data.grade]]);
+      await updateSheetData('학생정보', `C${studentRowIndex}`, [[data.grade]]);
     }
     if (data.level !== undefined) {
-      await updateSheetData('학생정보', `C${studentRowIndex}`, [[data.level]]);
+      await updateSheetData('학생정보', `D${studentRowIndex}`, [[data.level]]);
     }
     if (data.subProgram !== undefined) {
-      await updateSheetData('학생정보', `D${studentRowIndex}`, [[data.subProgram]]);
+      await updateSheetData('학생정보', `E${studentRowIndex}`, [[data.subProgram]]);
     }
     if (data.attendanceDays !== undefined) {
-      await updateSheetData('학생정보', `E${studentRowIndex}`, [[data.attendanceDays]]);
+      await updateSheetData('학생정보', `F${studentRowIndex}`, [[data.attendanceDays]]);
     }
     if (data.noHomework !== undefined) {
-      await updateSheetData('학생정보', `H${studentRowIndex}`, [[data.noHomework ? 'TRUE' : 'FALSE']]);
+      await updateSheetData('학생정보', `I${studentRowIndex}`, [[data.noHomework ? 'TRUE' : 'FALSE']]);
     }
     if (data.homeworkMissed !== undefined) {
-      await updateSheetData('학생정보', `K${studentRowIndex}`, [[data.homeworkMissed]]);
+      await updateSheetData('학생정보', `L${studentRowIndex}`, [[data.homeworkMissed]]);
     }
     if (data.booksCompleted !== undefined) {
-      await updateSheetData('학생정보', `L${studentRowIndex}`, [[data.booksCompleted]]);
+      await updateSheetData('학생정보', `M${studentRowIndex}`, [[data.booksCompleted]]);
     }
     if (data.lastResultDate !== undefined) {
-      await updateSheetData('학생정보', `M${studentRowIndex}`, [[data.lastResultDate]]);
+      await updateSheetData('학생정보', `N${studentRowIndex}`, [[data.lastResultDate]]);
     }
     if (data.studentMemo !== undefined) {
-      await updateSheetData('학생정보', `N${studentRowIndex}`, [[data.studentMemo]]);
+      await updateSheetData('학생정보', `O${studentRowIndex}`, [[data.studentMemo]]);
     }
     return { success: true };
   },
-  add: async (data: { name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number; lastResultDate?: string; studentMemo?: string }) => {
-    const studentsRaw = await getSheetData('학생정보', 'A2:A');
-    const exists = studentsRaw.some((row: any[]) => String(row[0] || '').trim() === data.name.trim());
+  add: async (data: { isHidden?: boolean; name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number; lastResultDate?: string; studentMemo?: string }) => {
+    const studentsRaw = await getSheetData('학생정보', 'A2:B');
+    const exists = studentsRaw.some((row: any[]) => String(row[1] || '').trim() === data.name.trim());
     if (exists) {
       throw new Error(MESSAGES.api.studentNameExists);
     }
 
     const nextEmptyRow = studentsRaw.length + 2;
     const newRow = [
+      data.isHidden ? 'TRUE' : 'FALSE',
       data.name,
       data.grade,
       data.level,
@@ -553,11 +533,11 @@ export const studentApi = {
       data.lastResultDate || '',
       data.studentMemo || ''
     ];
-    await updateSheetData('학생정보', `A${nextEmptyRow}:N${nextEmptyRow}`, [newRow]);
+    await updateSheetData('학생정보', `A${nextEmptyRow}:O${nextEmptyRow}`, [newRow]);
     return { success: true };
   },
   delete: async (name: string) => {
-    await deleteRows('학생정보', 1, name);
+    await deleteRows('학생정보', 2, name);
     try {
       await deleteRows('커리큘럼', 1, name);
     } catch (e) {
@@ -717,24 +697,12 @@ export const taskApi = {
 
 export const noteApi = {
   getRawText: async (): Promise<string> => {
-    if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error(MESSAGES.api.memoUrlRequiredForRead);
-    }
     try {
-      const response = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getRawText', spreadsheetId: SHEET_ID, documentId: DOCS_ID })
-      });
-      if (!response.ok) throw new Error(MESSAGES.api.gasGetMemoError(response.statusText));
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
-      }
-      
-      const res = await response.json();
-      if (res.error) throw new Error(res.error);
+      const res = await postToGas(
+        { action: 'getRawText', spreadsheetId: SHEET_ID, documentId: DOCS_ID },
+        'GAS getRawText',
+        MESSAGES.api.memoUrlRequiredForRead
+      );
       return res.text || '';
     } catch (e: any) {
       console.warn('GAS getRawText Failed (Using local/offline fallback):', e.message || e);
@@ -743,24 +711,12 @@ export const noteApi = {
   },
 
   saveRawText: async (text: string): Promise<{ success: boolean }> => {
-    if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error(MESSAGES.api.memoUrlRequiredForSave);
-    }
     try {
-      const response = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveRawText', text, spreadsheetId: SHEET_ID, documentId: DOCS_ID })
-      });
-      if (!response.ok) throw new Error(MESSAGES.api.gasSaveMemoError(response.statusText));
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
-      }
-
-      const res = await response.json();
-      if (res.error) throw new Error(res.error);
+      const res = await postToGas(
+        { action: 'saveRawText', text, spreadsheetId: SHEET_ID, documentId: DOCS_ID },
+        'GAS saveRawText',
+        MESSAGES.api.memoUrlRequiredForSave
+      );
       return { success: !!res.success };
     } catch (e: any) {
       console.error('GAS saveRawText Failed:', e);
@@ -769,25 +725,13 @@ export const noteApi = {
   },
 
   getTabsData: async (customDocId?: string): Promise<any[]> => {
-    if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error(MESSAGES.api.memoUrlRequiredForRead);
-    }
     const documentId = customDocId || DOCS_ID;
     try {
-      const response = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getTabsData', spreadsheetId: SHEET_ID, documentId })
-      });
-      if (!response.ok) throw new Error(MESSAGES.api.gasGetTabsError(response.statusText));
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
-      }
-      
-      const res = await response.json();
-      if (res.error) throw new Error(res.error);
+      const res = await postToGas(
+        { action: 'getTabsData', spreadsheetId: SHEET_ID, documentId },
+        'GAS getTabsData',
+        MESSAGES.api.memoUrlRequiredForRead
+      );
       return res.tabs || [];
     } catch (e: any) {
       console.error('GAS getTabsData Failed:', e);
@@ -796,25 +740,13 @@ export const noteApi = {
   },
 
   saveTabSpecification: async (tabId: string, text: string, customDocId?: string): Promise<{ success: boolean }> => {
-    if (!GAS_URL || !GAS_URL.startsWith('http')) {
-      throw new Error(MESSAGES.api.memoUrlRequiredForSave);
-    }
     const documentId = customDocId || DOCS_ID;
     try {
-      const response = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId })
-      });
-      if (!response.ok) throw new Error(MESSAGES.api.gasSaveTabError(response.statusText));
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(MESSAGES.api.gasResponseHtmlCheck);
-      }
-
-      const res = await response.json();
-      if (res.error) throw new Error(res.error);
+      const res = await postToGas(
+        { action: 'saveTabSpecification', tabId, text, spreadsheetId: SHEET_ID, documentId },
+        'GAS saveTabSpecification',
+        MESSAGES.api.memoUrlRequiredForSave
+      );
       return { success: !!res.success };
     } catch (e: any) {
       console.error('GAS saveTabSpecification Failed:', e);

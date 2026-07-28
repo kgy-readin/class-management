@@ -421,6 +421,7 @@ interface StudentEditInfoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: {
+    isHidden?: boolean;
     name: string;
     grade: string;
     level?: string;
@@ -432,6 +433,7 @@ interface StudentEditInfoDialogProps {
     noHomework?: boolean;
   } | null;
   onSave: (data: {
+    isHidden?: boolean;
     grade: string;
     level: string;
     subProgram: string;
@@ -446,6 +448,7 @@ interface StudentEditInfoDialogProps {
 }
 
 export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isSaving, onRefresh }: StudentEditInfoDialogProps) {
+  const [isHidden, setIsHidden] = useState(false);
   const [grade, setGrade] = useState('');
   const [level, setLevel] = useState('0');
   const [subProgram, setSubProgram] = useState('');
@@ -460,6 +463,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
 
   useEffect(() => {
     if (student) {
+      setIsHidden(student.isHidden || false);
       setGrade(student.grade || '');
       setLevel(student.level || '0');
       setSubProgram(student.subProgram || '');
@@ -563,6 +567,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
 
   const handleSave = () => {
     onSave({
+      isHidden,
       grade,
       level,
       subProgram,
@@ -578,8 +583,17 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-6 bg-white">
         <div className="space-y-5">
-          <div className="text-left border-b border-solid border-zinc-100 pb-3">
+          <div className="flex items-center justify-between border-b border-solid border-zinc-100 pb-3 text-left">
             <h3 className="text-[19px] font-bold text-zinc-800">{student?.name} 학생 정보 수정</h3>
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors select-none mr-3" title="목록에서 학생 숨기기">
+              <input
+                type="checkbox"
+                checked={isHidden}
+                onChange={(e) => setIsHidden(e.target.checked)}
+                className="w-3.5 h-3.5 text-primary focus:ring-primary border-neutral-300 rounded cursor-pointer"
+              />
+              숨김
+            </label>
           </div>
 
           <div className="space-y-4 pt-2">

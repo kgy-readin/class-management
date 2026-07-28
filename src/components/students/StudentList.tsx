@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { DashboardData, Student } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
-import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil, ListFilter } from 'lucide-react';
+import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil, ListFilter, Eye, EyeOff } from 'lucide-react';
 import { formatLevel, getWeeksSince, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, studentApi } from '@/src/services/api';
 import StudentMemoPopover from './StudentMemoPopover';
@@ -29,6 +29,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
   const [search, setSearch] = useState('');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [showDayFilter, setShowDayFilter] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
 
   // States for features
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -54,6 +55,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
   };
 
   const handleSaveEdit = async (formData: {
+    isHidden?: boolean;
     grade: string;
     level: string;
     subProgram: string;
@@ -67,6 +69,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     try {
       setIsSavingEdit(true);
       await studentApi.update(editingStudent.name, {
+        isHidden: formData.isHidden,
         grade: formData.grade,
         level: formData.level,
         subProgram: formData.subProgram.trim() || '-',
@@ -245,10 +248,17 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
 
   if (!data) return null;
 
-  const attendingStudentsCount = data.students.filter(s => s.isAttending).length;
+  const hiddenCount = data.students.filter(s => s.isHidden).length;
+  const attendingStudentsCount = data.students.filter(s => !s.isHidden && s.isAttending).length;
 
   const filteredStudents = data.students
     .filter(s => {
+      if (showHidden) {
+        if (!s.isHidden) return false;
+      } else {
+        if (s.isHidden) return false;
+      }
+
       if (selectedDay) {
         const matchesDay = (s.attendanceDays || '').includes(selectedDay);
         const isCurrentlyAttending = !!s.isAttending;
@@ -331,6 +341,11 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                 <ListFilter className="w-4 h-4 text-neutral-600" />
               </Button>
 
+              {/* 총 인원 수 표시 */}
+              <span className="text-xs md:text-sm font-medium text-neutral-600 select-none whitespace-nowrap">
+                {filteredStudents.length}명
+              </span>
+
               {/* 가로로 열리는 요일 필터 슬라이더 */}
               <AnimatePresence initial={false}>
                 {showDayFilter && (
@@ -370,6 +385,23 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
 
             {/* 버튼 묶음 (오른쪽 정렬) */}
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* 숨김 학생 보기/숨기기 토글 버튼 */}
+              {hiddenCount > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowHidden(!showHidden)}
+                  title={showHidden ? "일반 학생 목록 보기" : "숨긴 학생 목록 보기"}
+                  className={`rounded-xl w-10 h-10 p-0 flex items-center justify-center shadow-sm transition-all ${
+                    showHidden
+                      ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                  }`}
+                >
+                  {showHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              )}
+
               {/* 일괄 하원 버튼 */}
               <Button 
                 variant="outline"

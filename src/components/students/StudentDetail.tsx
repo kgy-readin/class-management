@@ -204,7 +204,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       if (book) {
         bookId = book.id;
         bookLevel = book.level;
-        info = `${book.therapy} / ${book.difficulty}`;
+        info = [book.category, book.therapy, book.difficulty].filter(Boolean).join(' / ');
       }
     }
 

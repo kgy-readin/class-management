@@ -15,7 +15,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
   if (!data) return null;
 
   const attendingStudents = data.students
-    .filter(s => s.isAttending)
+    .filter(s => s.isAttending && !s.isHidden)
     .sort((a, b) => {
       const timeA = a.dismissalTime || '미설정';
       const timeB = b.dismissalTime || '미설정';

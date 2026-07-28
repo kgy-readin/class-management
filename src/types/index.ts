@@ -11,6 +11,7 @@ export interface Book {
 }
 
 export interface Student {
+  isHidden?: boolean;
   name: string;
   grade: string;
   level: string;
