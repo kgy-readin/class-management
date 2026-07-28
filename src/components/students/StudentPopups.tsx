@@ -585,7 +585,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
         <div className="space-y-5">
           <div className="flex items-center justify-between border-b border-solid border-zinc-100 pb-3 text-left">
             <h3 className="text-[19px] font-bold text-zinc-800">{student?.name} 학생 정보 수정</h3>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors select-none mr-3" title="목록에서 학생 숨기기">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors select-none mr-4" title="목록에서 학생 숨기기">
               <input
                 type="checkbox"
                 checked={isHidden}

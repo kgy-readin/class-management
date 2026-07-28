@@ -66,9 +66,38 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     noHomework?: boolean;
   }) => {
     if (!editingStudent) return;
+    const targetName = editingStudent.name;
+
+    // 1. Optimistic UI Update
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === targetName) {
+              return {
+                ...s,
+                isHidden: formData.isHidden ?? s.isHidden,
+                grade: formData.grade,
+                level: formData.level,
+                subProgram: formData.subProgram.trim() || '-',
+                attendanceDays: formData.attendanceDays.join(', '),
+                homeworkMissed: Number(formData.homeworkMissed) || 0,
+                booksCompleted: Number(formData.booksCompleted) || 0,
+                lastResultDate: formData.lastResultDate,
+                noHomework: formData.noHomework ?? s.noHomework
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
       setIsSavingEdit(true);
-      await studentApi.update(editingStudent.name, {
+      await studentApi.update(targetName, {
         isHidden: formData.isHidden,
         grade: formData.grade,
         level: formData.level,
@@ -79,12 +108,13 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
         lastResultDate: formData.lastResultDate,
         noHomework: formData.noHomework
       });
-      toast.success(MESSAGES.students.editSuccess(editingStudent.name));
+      toast.success(MESSAGES.students.editSuccess(targetName));
       setIsEditOpen(false);
       setEditingStudent(null);
       onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh();
     } finally {
       setIsSavingEdit(false);
     }
