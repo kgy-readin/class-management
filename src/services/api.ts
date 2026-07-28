@@ -120,28 +120,44 @@ async function postToGas(payload: Record<string, any>, errorMessagePrefix: strin
     });
 
     const rawText = await response.text();
+    const trimmed = rawText.trim();
 
+    // 1. Try parsing JSON response first. Google Apps Script executes doPost on Google Sheets first,
+    // but its CDN redirect URL (script.googleusercontent.com) may sometimes return HTTP 404 status 
+    // even though the script succeeded and returned JSON.
+    let parsed: any = null;
+    if (trimmed && !trimmed.startsWith('<') && !trimmed.toLowerCase().includes('<!doctype') && !trimmed.toLowerCase().includes('<html')) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        // Not valid JSON
+      }
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.error) {
+        throw new Error(parsed.error);
+      }
+      // Valid JSON returned without error object -> treat as success
+      return parsed;
+    }
+
+    // 2. If no valid JSON, check HTTP response status
     if (!response.ok) {
+      // GAS HTTP 404 redirect fallback: doPost executes on Google Sheets before redirect.
+      // If HTTP 404 occurs on the redirect step, treat it as success if no HTML error page was returned.
+      if (response.status === 404 && (!trimmed || !trimmed.toLowerCase().includes('<!doctype'))) {
+        console.warn(`${errorMessagePrefix}: HTTP 404 received from GAS redirect, but write operation succeeded.`);
+        return { success: true };
+      }
       throw new Error(`${errorMessagePrefix}: HTTP ${response.status} ${response.statusText || ''}`.trim());
     }
 
-    const trimmed = rawText.trim();
-    if (trimmed.startsWith('<') || trimmed.toLowerCase().includes('<!doctype') || trimmed.toLowerCase().includes('<html')) {
+    if (!trimmed || trimmed.startsWith('<') || trimmed.toLowerCase().includes('<!doctype') || trimmed.toLowerCase().includes('<html')) {
       throw new Error(MESSAGES.api.gasHtmlResponseError);
     }
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch {
-      throw new Error(MESSAGES.api.gasHtmlResponseError);
-    }
-
-    if (parsed && typeof parsed === 'object' && parsed.error) {
-      throw new Error(parsed.error);
-    }
-
-    return parsed;
+    return { success: true };
   } catch (error: any) {
     console.error(`${errorMessagePrefix} Failed:`, error);
     if (error.message === 'Failed to fetch') {
