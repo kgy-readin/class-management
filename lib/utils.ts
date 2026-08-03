@@ -6,10 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatLevel = (level: any) => {
-  const l = String(level);
-  if (l === '0' || l === '0.0' || l === '' || l === 'null' || l === 'undefined') return '기초';
-  if (l === '11') return '구연동화';
+  const l = String(level ?? '').trim();
+  if (l === '0' || l === '0.0' || l === '' || l === 'null' || l === 'undefined' || l === '기초') return '기초';
+  if (l === '11' || l === '구연동화') return '구연동화';
   return `Lv.${l}`;
+};
+
+export const normalizeLevelKey = (level: any): string => {
+  const l = String(level ?? '').trim();
+  if (l === '0' || l === '0.0' || l === '' || l === 'null' || l === 'undefined' || l === '기초') return '0';
+  if (l === '11' || l === '구연동화') return '11';
+  return l;
 };
 
 export function getWeeksSince(dateStr: string | null | undefined): number | '-' {

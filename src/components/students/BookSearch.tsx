@@ -4,12 +4,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Book } from '../../types';
 import { Search, Hash, ChevronDown } from 'lucide-react';
-import { formatLevel } from '@/lib/utils';
+import { formatLevel, normalizeLevelKey } from '@/lib/utils';
 
 interface BookSearchProps {
   books: Book[];
   existingBookIds: string[];
-  onSelect: (title: string) => void;
+  onSelect: (book: Book) => void;
 }
 
 interface MultiSelectPopoverProps {
@@ -129,8 +129,13 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
   const [careerOnly, setCareerOnly] = useState(false);
 
   const levels = useMemo(() => {
-    const uniqueLevels = Array.from(new Set(books.map(b => String(b.level)))).filter(l => l !== 'undefined' && l !== 'null');
-    return uniqueLevels.sort((a, b) => Number(a) - Number(b));
+    const keySet = new Set<string>();
+    books.forEach(b => {
+      if (b.level !== undefined && b.level !== null) {
+        keySet.add(normalizeLevelKey(b.level));
+      }
+    });
+    return Array.from(keySet).sort((a, b) => Number(a) - Number(b));
   }, [books]);
 
   const difficulties = useMemo(() => {
@@ -184,7 +189,7 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
     }
 
     if (levelFilter !== 'all') {
-      result = result.filter(book => String(book.level) === levelFilter);
+      result = result.filter(book => normalizeLevelKey(book.level) === normalizeLevelKey(levelFilter));
     }
 
     if (difficultyFilters.length > 0) {
@@ -295,7 +300,7 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
               return (
                 <button
                   key={`${book.id}-${book.title}-${idx}`}
-                  onClick={() => onSelect(book.title)}
+                  onClick={() => onSelect(book)}
                   className={`w-full text-left p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all group border border-transparent hover:border-neutral-200 ${
                     isExisting ? 'bg-primary/5 opacity-80' : ''
                   }`}

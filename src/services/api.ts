@@ -385,7 +385,7 @@ export const curriculumApi = {
 
     return { success: true };
   },
-  add: async (data: { studentName: string; bookTitle?: string; isWriting: boolean }) => {
+  add: async (data: { studentName: string; bookTitle?: string; bookId?: string; bookLevel?: string; info?: string; isWriting: boolean }) => {
     const cachedBooksStr = localStorage.getItem('cachedBooks');
     let books: Book[] = cachedBooksStr ? JSON.parse(cachedBooksStr) : [];
     
@@ -417,6 +417,10 @@ export const curriculumApi = {
       bookLevel = '';
       bookId = '';
       info = '';
+    } else if (data.bookId && data.bookLevel !== undefined) {
+      bookId = data.bookId;
+      bookLevel = data.bookLevel;
+      info = data.info !== undefined ? data.info : '';
     } else {
       const book = books.find(b => b.title === data.bookTitle);
       if (!book) throw new Error(MESSAGES.api.bookNotFound);

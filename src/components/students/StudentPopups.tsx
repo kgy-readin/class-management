@@ -934,7 +934,7 @@ interface AddCurriculumDialogProps {
   studentName: string;
   books: any[];
   existingBookIds: string[];
-  onSelect: (bookTitle: string) => void;
+  onSelect: (book: any) => void;
 }
 
 export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookIds, onSelect }: AddCurriculumDialogProps) {
@@ -948,8 +948,8 @@ export function AddCurriculumDialog({ open, onOpenChange, studentName, books, ex
           <BookSearch 
             books={books} 
             existingBookIds={existingBookIds}
-            onSelect={(bookTitle) => {
-              onSelect(bookTitle);
+            onSelect={(selectedBook) => {
+              onSelect(selectedBook);
             }} 
           />
         </div>

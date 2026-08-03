@@ -193,14 +193,23 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     }
   };
 
-  const handleAddCurriculum = async (bookTitle?: string, isWriting: boolean = false) => {
+  const handleAddCurriculum = async (selectedBookOrTitle?: Book | string, isWriting: boolean = false) => {
     const nextIndex = (optimisticCurriculum.length > 0 ? Math.max(...optimisticCurriculum.map(c => c.index)) : 0) + 1;
     let bookId = '';
     let bookLevel = '';
+    let bookTitle = '';
     let info = '';
 
-    if (!isWriting && bookTitle && data?.books) {
-      const book = data.books.find(b => b.title === bookTitle);
+    if (isWriting) {
+      bookTitle = '글쓰기';
+    } else if (typeof selectedBookOrTitle === 'object' && selectedBookOrTitle) {
+      bookTitle = selectedBookOrTitle.title;
+      bookId = selectedBookOrTitle.id;
+      bookLevel = selectedBookOrTitle.level;
+      info = [selectedBookOrTitle.category, selectedBookOrTitle.therapy, selectedBookOrTitle.difficulty].filter(Boolean).join(' / ');
+    } else if (typeof selectedBookOrTitle === 'string' && selectedBookOrTitle && data?.books) {
+      bookTitle = selectedBookOrTitle;
+      const book = data.books.find(b => b.title === selectedBookOrTitle);
       if (book) {
         bookId = book.id;
         bookLevel = book.level;
@@ -211,7 +220,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     const tempItem = {
       studentName,
       index: nextIndex,
-      bookTitle: isWriting ? '글쓰기' : (bookTitle || ''),
+      bookTitle,
       bookLevel,
       info,
       bookId,
@@ -221,7 +230,14 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     startTransition(async () => {
       setOptimisticCurriculum({ type: 'add', payload: tempItem });
       try {
-        const response = await curriculumApi.add({ studentName, bookTitle, isWriting });
+        const response = await curriculumApi.add({ 
+          studentName, 
+          bookTitle, 
+          bookId, 
+          bookLevel, 
+          info, 
+          isWriting 
+        });
         toast.success(MESSAGES.students.curriculumAdded(isWriting));
         
         if (setData) {
@@ -747,7 +763,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         studentName={studentName}
         books={data.books}
         existingBookIds={optimisticCurriculum.map(c => c.bookId)}
-        onSelect={(bookTitle) => handleAddCurriculum(bookTitle)}
+        onSelect={(selectedBook) => handleAddCurriculum(selectedBook)}
       />
 
       {isEditOpen && student && (
