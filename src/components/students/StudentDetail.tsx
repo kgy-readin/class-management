@@ -425,7 +425,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       isHidden: formData.isHidden ?? student.isHidden,
       grade: formData.grade,
       level: formData.level,
-      subProgram: formData.subProgram.trim() || '-',
+      subProgram: formData.subProgram.trim(),
       attendanceDays: formData.attendanceDays.join(', '),
       homeworkMissed: Number(formData.homeworkMissed) || 0,
       booksCompleted: Number(formData.booksCompleted) || 0,

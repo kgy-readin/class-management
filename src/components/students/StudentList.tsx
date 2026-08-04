@@ -72,7 +72,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       isHidden: formData.isHidden ?? editingStudent.isHidden,
       grade: formData.grade,
       level: formData.level,
-      subProgram: formData.subProgram.trim() || '-',
+      subProgram: formData.subProgram.trim(),
       attendanceDays: formData.attendanceDays.join(', '),
       homeworkMissed: Number(formData.homeworkMissed) || 0,
       booksCompleted: Number(formData.booksCompleted) || 0,
