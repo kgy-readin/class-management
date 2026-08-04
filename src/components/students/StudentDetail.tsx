@@ -409,6 +409,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
   };
 
   const handleSaveEdit = async (formData: {
+    isHidden?: boolean;
     grade: string;
     level: string;
     subProgram: string;
@@ -419,23 +420,46 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     noHomework?: boolean;
   }) => {
     if (!student) return;
+
+    const updatedData = {
+      isHidden: formData.isHidden ?? student.isHidden,
+      grade: formData.grade,
+      level: formData.level,
+      subProgram: formData.subProgram.trim() || '-',
+      attendanceDays: formData.attendanceDays.join(', '),
+      homeworkMissed: Number(formData.homeworkMissed) || 0,
+      booksCompleted: Number(formData.booksCompleted) || 0,
+      lastResultDate: formData.lastResultDate,
+      noHomework: formData.noHomework ?? student.noHomework
+    };
+
+    // 1. Optimistic UI Update
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              return {
+                ...s,
+                ...updatedData
+              };
+            }
+            return s;
+          })
+        };
+      });
+    }
+
     try {
       setIsSavingEdit(true);
-      await studentApi.update(student.name, {
-        grade: formData.grade,
-        level: formData.level,
-        subProgram: formData.subProgram.trim() || '-',
-        attendanceDays: formData.attendanceDays.join(', '),
-        homeworkMissed: Number(formData.homeworkMissed) || 0,
-        booksCompleted: Number(formData.booksCompleted) || 0,
-        lastResultDate: formData.lastResultDate,
-        noHomework: formData.noHomework
-      });
+      await studentApi.update(student.name, updatedData);
       toast.success(MESSAGES.students.editSuccess(student.name));
       setIsEditOpen(false);
-      onRefresh();
     } catch (error: any) {
       toast.error(error.message);
+      onRefresh();
     } finally {
       setIsSavingEdit(false);
     }

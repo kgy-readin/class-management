@@ -502,22 +502,36 @@ export const studentApi = {
     }
 
     if (data.isHidden !== undefined) currentRow[0] = data.isHidden ? 'TRUE' : 'FALSE';
+    else currentRow[0] = (currentRow[0] === true || currentRow[0] === 'TRUE') ? 'TRUE' : 'FALSE';
+
     if (data.name !== undefined) currentRow[1] = data.name;
     if (data.grade !== undefined) currentRow[2] = data.grade;
     if (data.level !== undefined) currentRow[3] = data.level;
     if (data.subProgram !== undefined) currentRow[4] = data.subProgram;
     if (data.attendanceDays !== undefined) currentRow[5] = data.attendanceDays;
-    if (data.isAttending !== undefined) currentRow[6] = data.isAttending ? 'TRUE' : 'FALSE';
-    if (data.dismissalTime !== undefined) currentRow[7] = data.dismissalTime;
-    if (data.noHomework !== undefined) currentRow[8] = data.noHomework ? 'TRUE' : 'FALSE';
-    if (data.homeworkChecked !== undefined) currentRow[9] = data.homeworkChecked ? 'TRUE' : 'FALSE';
-    if (data.homeworkMissedToday !== undefined) currentRow[10] = data.homeworkMissedToday ? 'TRUE' : 'FALSE';
-    if (data.homeworkMissed !== undefined) currentRow[11] = data.homeworkMissed;
-    if (data.booksCompleted !== undefined) currentRow[12] = data.booksCompleted;
-    if (data.lastResultDate !== undefined) currentRow[13] = data.lastResultDate;
-    if (data.studentMemo !== undefined) currentRow[14] = data.studentMemo;
 
-    await updateSheetData('학생정보', `A${studentRowIndex}:O${studentRowIndex}`, [currentRow]);
+    if (data.isAttending !== undefined) currentRow[6] = data.isAttending ? 'TRUE' : 'FALSE';
+    else currentRow[6] = (currentRow[6] === true || currentRow[6] === 'TRUE') ? 'TRUE' : 'FALSE';
+
+    if (data.dismissalTime !== undefined) currentRow[7] = data.dismissalTime ?? '';
+
+    if (data.noHomework !== undefined) currentRow[8] = data.noHomework ? 'TRUE' : 'FALSE';
+    else currentRow[8] = (currentRow[8] === true || currentRow[8] === 'TRUE') ? 'TRUE' : 'FALSE';
+
+    if (data.homeworkChecked !== undefined) currentRow[9] = data.homeworkChecked ? 'TRUE' : 'FALSE';
+    else currentRow[9] = (currentRow[9] === true || currentRow[9] === 'TRUE') ? 'TRUE' : 'FALSE';
+
+    if (data.homeworkMissedToday !== undefined) currentRow[10] = data.homeworkMissedToday ? 'TRUE' : 'FALSE';
+    else currentRow[10] = (currentRow[10] === true || currentRow[10] === 'TRUE') ? 'TRUE' : 'FALSE';
+
+    if (data.homeworkMissed !== undefined) currentRow[11] = Number(data.homeworkMissed) || 0;
+    if (data.booksCompleted !== undefined) currentRow[12] = Number(data.booksCompleted) || 0;
+    if (data.lastResultDate !== undefined) currentRow[13] = data.lastResultDate ?? '';
+    if (data.studentMemo !== undefined) currentRow[14] = data.studentMemo ?? '';
+
+    const sanitizedRow = currentRow.map(v => (v === null || v === undefined) ? '' : v);
+
+    await updateSheetData('학생정보', `A${studentRowIndex}:O${studentRowIndex}`, [sanitizedRow]);
     return { success: true };
   },
   add: async (data: { isHidden?: boolean; name: string; grade: string; level: string; subProgram: string; attendanceDays: string; booksCompleted: number; lastResultDate?: string; studentMemo?: string }) => {

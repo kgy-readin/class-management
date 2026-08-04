@@ -68,6 +68,18 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     if (!editingStudent) return;
     const targetName = editingStudent.name;
 
+    const updatedData = {
+      isHidden: formData.isHidden ?? editingStudent.isHidden,
+      grade: formData.grade,
+      level: formData.level,
+      subProgram: formData.subProgram.trim() || '-',
+      attendanceDays: formData.attendanceDays.join(', '),
+      homeworkMissed: Number(formData.homeworkMissed) || 0,
+      booksCompleted: Number(formData.booksCompleted) || 0,
+      lastResultDate: formData.lastResultDate,
+      noHomework: formData.noHomework ?? editingStudent.noHomework
+    };
+
     // 1. Optimistic UI Update
     if (setData) {
       setData(prev => {
@@ -78,15 +90,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
             if (s.name === targetName) {
               return {
                 ...s,
-                isHidden: formData.isHidden ?? s.isHidden,
-                grade: formData.grade,
-                level: formData.level,
-                subProgram: formData.subProgram.trim() || '-',
-                attendanceDays: formData.attendanceDays.join(', '),
-                homeworkMissed: Number(formData.homeworkMissed) || 0,
-                booksCompleted: Number(formData.booksCompleted) || 0,
-                lastResultDate: formData.lastResultDate,
-                noHomework: formData.noHomework ?? s.noHomework
+                ...updatedData
               };
             }
             return s;
@@ -97,21 +101,10 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
 
     try {
       setIsSavingEdit(true);
-      await studentApi.update(targetName, {
-        isHidden: formData.isHidden,
-        grade: formData.grade,
-        level: formData.level,
-        subProgram: formData.subProgram.trim() || '-',
-        attendanceDays: formData.attendanceDays.join(', '),
-        homeworkMissed: Number(formData.homeworkMissed) || 0,
-        booksCompleted: Number(formData.booksCompleted) || 0,
-        lastResultDate: formData.lastResultDate,
-        noHomework: formData.noHomework
-      });
+      await studentApi.update(targetName, updatedData);
       toast.success(MESSAGES.students.editSuccess(targetName));
       setIsEditOpen(false);
       setEditingStudent(null);
-      onRefresh();
     } catch (error: any) {
       toast.error(error.message);
       onRefresh();

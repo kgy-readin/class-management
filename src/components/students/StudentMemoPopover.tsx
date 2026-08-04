@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquareMore, MessageSquareText, Pencil, Check, X, Loader2, Save } from 'lucide-react';
-import { Student } from '../../types';
+import { Student, DashboardData } from '../../types';
 import { studentApi } from '../../services/api';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 interface StudentMemoPopoverProps {
   student: Student;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
   onRefresh?: () => void;
   iconOnly?: boolean;
   onlyIfNotEmpty?: boolean;
@@ -20,6 +21,7 @@ interface StudentMemoPopoverProps {
 
 export default function StudentMemoPopover({
   student,
+  setData,
   onRefresh,
   iconOnly = false,
   onlyIfNotEmpty = false,
@@ -116,16 +118,28 @@ export default function StudentMemoPopover({
   const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsSaving(true);
+    if (setData) {
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          students: prev.students.map(s => {
+            if (s.name === student.name) {
+              return { ...s, studentMemo: memoText };
+            }
+            return s;
+          })
+        };
+      });
+    }
     try {
       await studentApi.update(student.name, { studentMemo: memoText });
       toast.success(`${student.name} 학생의 메모를 저장했습니다.`);
       setIsOpen(false);
       setIsEditing(false);
-      if (onRefresh) {
-        onRefresh();
-      }
     } catch (error: any) {
       toast.error('메모 저장에 실패했습니다: ' + error.message);
+      if (onRefresh) onRefresh();
     } finally {
       setIsSaving(false);
     }

@@ -85,9 +85,6 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
 
     // Background call
     studentApi.update(student.name, { subProgram: subProgramValue })
-      .then(() => {
-        onRefresh();
-      })
       .catch((error: any) => {
         toast.error(`세부프로그램 저장 실패: ${error.message}`);
         onRefresh(); // rollback/resync on error
