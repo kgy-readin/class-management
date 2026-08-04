@@ -631,6 +631,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
           student={editingStudent}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
+          setData={setData}
           onRefresh={onRefresh}
         />
       )}

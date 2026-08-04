@@ -797,6 +797,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           student={student}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
+          setData={setData}
           onRefresh={onRefresh}
         />
       )}

@@ -8,6 +8,7 @@ import BookSearch from './BookSearch';
 import { toast } from 'sonner';
 import { studentApi, taskApi } from '@/src/services/api';
 import { MESSAGES } from '@/src/constants/messages';
+import { Student, DashboardData } from '../../types';
 
 const getCurrentTimeHHMM = () => {
   const now = new Date();
@@ -417,6 +418,7 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
 // ----------------------------------------------------
 // 5. 학생정보 수정 팝업 (통합 팝업)
 // ----------------------------------------------------
+
 interface StudentEditInfoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -444,10 +446,11 @@ interface StudentEditInfoDialogProps {
     noHomework?: boolean;
   }) => Promise<void>;
   isSaving: boolean;
+  setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
   onRefresh?: () => void;
 }
 
-export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isSaving, onRefresh }: StudentEditInfoDialogProps) {
+export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isSaving, setData, onRefresh }: StudentEditInfoDialogProps) {
   const [isHidden, setIsHidden] = useState(false);
   const [grade, setGrade] = useState('');
   const [level, setLevel] = useState('0');
@@ -488,10 +491,27 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       const offset = today.getTimezoneOffset() * 60000;
       const todayLocalDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
 
-      // 2. Fetch tasks
+      // 2. Local/Optimistic UI state update
+      setLastResultDate(todayLocalDate);
+      if (setData) {
+        setData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            students: prev.students.map(s => {
+              if (s.name === student.name) {
+                return { ...s, lastResultDate: todayLocalDate };
+              }
+              return s;
+            })
+          };
+        });
+      }
+
+      // 3. Fetch tasks
       const tasks = await taskApi.get();
 
-      // 3. Find matching task: category === '결과물' && name === student.name && status === '예정'
+      // 4. Find matching task: category === '결과물' && name === student.name && status === '예정'
       const matchingTask = tasks.find(t => 
         String(t.category).trim() === '결과물' && 
         String(t.name).trim() === student.name.trim() && 
@@ -523,18 +543,15 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
         });
       }
 
-      // 4. Update student's lastResultDate in database immediately
+      // 5. Update student's lastResultDate in sheet database
       await studentApi.update(student.name, {
         lastResultDate: todayLocalDate
       });
 
-      // 5. Update local state
-      setLastResultDate(todayLocalDate);
-
       // 6. Show success toast notification
       toast.success(MESSAGES.students.resultDistributionSuccess(student.name));
 
-      // 7. Call onRefresh callback if present to synchronize other parts of the dashboard
+      // 7. Call onRefresh callback if present
       if (onRefresh) {
         onRefresh();
       }
@@ -549,11 +566,28 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
   const handleLevelUpConfirm = async () => {
     if (!student) return;
     setIsLevelingUp(true);
+    const nextLevel = String((parseInt(level) || 0) + 1);
     try {
+      // Local/Optimistic update
+      setLevel(nextLevel);
+      setBooksCompleted(0);
+      if (setData) {
+        setData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            students: prev.students.map(s => {
+              if (s.name === student.name) {
+                return { ...s, level: nextLevel, booksCompleted: 0 };
+              }
+              return s;
+            })
+          };
+        });
+      }
+
       await studentApi.levelUp(student.name);
       toast.success(MESSAGES.students.levelUpSuccess(student.name));
-      setLevel(String((parseInt(level) || 0) + 1));
-      setBooksCompleted(0);
       setIsLevelUpConfirmOpen(false);
       if (onRefresh) {
         onRefresh();
