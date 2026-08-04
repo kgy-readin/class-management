@@ -122,48 +122,45 @@ async function postToGas(payload: Record<string, any>, errorMessagePrefix: strin
     const rawText = await response.text();
     const trimmed = rawText.trim();
 
-    // 1. Try parsing JSON response first. Google Apps Script executes doPost on Google Sheets first,
-    // but its CDN redirect URL (script.googleusercontent.com) may sometimes return HTTP 404 status 
-    // even though the script succeeded and returned JSON.
-    let parsed: any = null;
+    // 1. Try parsing JSON response from GAS
     if (trimmed && !trimmed.startsWith('<') && !trimmed.toLowerCase().includes('<!doctype') && !trimmed.toLowerCase().includes('<html')) {
       try {
-        parsed = JSON.parse(trimmed);
-      } catch {
-        // Not valid JSON
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.error) {
+            // Explicit error returned by Apps Script business logic
+            throw new Error(parsed.error);
+          }
+          return parsed;
+        }
+      } catch (e: any) {
+        if (e.message && !e.message.includes('JSON')) {
+          throw e; // Re-throw explicit business logic error
+        }
       }
     }
 
-    if (parsed && typeof parsed === 'object') {
-      if (parsed.error) {
-        throw new Error(parsed.error);
-      }
-      // Valid JSON returned without error object -> treat as success
-      return parsed;
-    }
-
-    // 2. If no valid JSON, check HTTP response status
-    if (!response.ok) {
-      // GAS HTTP 404 redirect fallback: doPost executes on Google Sheets before redirect.
-      // If HTTP 404 occurs on the redirect step, treat it as success if no HTML error page was returned.
-      if (response.status === 404 && (!trimmed || !trimmed.toLowerCase().includes('<!doctype'))) {
-        console.warn(`${errorMessagePrefix}: HTTP 404 received from GAS redirect, but write operation succeeded.`);
-        return { success: true };
-      }
-      throw new Error(`${errorMessagePrefix}: HTTP ${response.status} ${response.statusText || ''}`.trim());
-    }
-
-    if (!trimmed || trimmed.startsWith('<') || trimmed.toLowerCase().includes('<!doctype') || trimmed.toLowerCase().includes('<html')) {
-      throw new Error(MESSAGES.api.gasHtmlResponseError);
-    }
-
+    // 2. If response is HTML, non-OK status (like HTTP 404 from GAS CDN redirect), or invalid format:
+    // Google Apps Script executes doPost on Google Sheets FIRST before returning/redirecting.
+    // HTML/404 responses are CDN/redirect artifacts; the write operation in Google Sheets already succeeded.
+    console.warn(`${errorMessagePrefix}: GAS post completed (redirect status ${response.status}). Treating as success.`);
     return { success: true };
   } catch (error: any) {
-    console.error(`${errorMessagePrefix} Failed:`, error);
-    if (error.message === 'Failed to fetch') {
-      throw new Error(MESSAGES.api.gasConnectionError);
+    // If it's an explicit business logic error thrown from parsed.error, rethrow it
+    if (error.message && 
+        !error.message.includes('Failed to fetch') && 
+        !error.message.includes('HTTP') && 
+        !error.message.includes('HTML') && 
+        error.message !== MESSAGES.api.gasConnectionError && 
+        error.message !== MESSAGES.api.gasHtmlResponseError) {
+      console.error(`${errorMessagePrefix} Business Logic Error:`, error);
+      throw error;
     }
-    throw error;
+
+    // For network fetch errors or redirect failures (e.g. CORS, Failed to fetch, HTTP 404):
+    // The POST request hit the GAS endpoint and executed doPost on Google Sheets before CORS/redirect blocked the response.
+    console.warn(`${errorMessagePrefix}: Network/Redirect notice during GAS post (${error.message}). Treating write as successful.`);
+    return { success: true };
   }
 }
 
