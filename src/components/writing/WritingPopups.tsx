@@ -61,7 +61,7 @@ export function AddWritingDialog({
                   students={students}
                   value={addForm.name}
                   onChange={(val) => setAddForm(prev => ({ ...prev, name: val }))}
-                  placeholder="학생 선택 또는 직접 입력"
+                  placeholder="학생명"
                   inputClassName="bg-zinc-50 border-neutral-200/80 text-[14px]"
                 />
               </div>
