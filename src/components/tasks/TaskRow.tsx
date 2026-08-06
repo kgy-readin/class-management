@@ -75,36 +75,38 @@ export default function TaskRow({
             <option value="반복">반복</option>
           </select>
 
-          {/* Todo field - seamless input */}
+          {/* Todo field - white background and border matching student name dropdown */}
           <input
             type="text"
             placeholder="할 일 수정"
             value={editForm.todo}
             onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-            className="h-7 flex-1 min-w-[150px] px-1 bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] text-zinc-800 font-normal rounded font-sans"
+            className="h-7 flex-1 min-w-[140px] px-2 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] text-zinc-800 font-normal rounded font-sans transition-all"
           />
 
-          {/* Date Picker Input - seamless input */}
-          <input
-            type="date"
-            value={editForm.date}
-            onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-            className={`h-7 w-[120px] bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-primary text-[13px] rounded font-normal text-right pr-1 ${isOverdue ? 'text-red-600 font-medium' : 'text-zinc-650'}`}
-          />
+          {/* Date Picker Input & Status Choice Container - side-by-side */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <input
+              type="date"
+              value={editForm.date}
+              onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+              className={`h-7 w-[125px] px-1.5 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] rounded font-normal text-right transition-all ${isOverdue ? 'text-red-600 font-medium' : 'text-zinc-650'}`}
+            />
 
-          {/* Status Choice - styled like the dynamic status badge */}
-          <select
-            value={editForm.status}
-            onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-            className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
-          >
-            <option value="예정">예정</option>
-            <option value="진행">진행</option>
-            <option value="대기">대기</option>
-            <option value="보류">보류</option>
-            <option value="완료">완료</option>
-            <option value="취소">취소</option>
-          </select>
+            {/* Status Choice - styled like the dynamic status badge */}
+            <select
+              value={editForm.status}
+              onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
+            >
+              <option value="예정">예정</option>
+              <option value="진행">진행</option>
+              <option value="대기">대기</option>
+              <option value="보류">보류</option>
+              <option value="완료">완료</option>
+              <option value="취소">취소</option>
+            </select>
+          </div>
         </div>
 
         {/* Memo Input directly under category-todo line but above the dotted line */}
