@@ -15,7 +15,7 @@ import {
   MobileEditCurriculumDialog
 } from './StudentPopups';
 import React, { useState, useEffect, useOptimistic, useTransition } from 'react';
-import { curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
+import { curriculumApi, writingStatusApi, studentApi, bookApi } from '@/src/services/api';
 import { getWeeksSince } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 
@@ -190,6 +190,13 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     } finally {
       setAddingWriting(null);
       setWritingConfirmItem(null);
+    }
+  };
+
+  const handleRefreshBooks = async () => {
+    const updatedBooks = await bookApi.get(true);
+    if (setData) {
+      setData(prev => prev ? { ...prev, books: updatedBooks } : prev);
     }
   };
 
@@ -785,9 +792,10 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         open={isAddBookOpen}
         onOpenChange={setIsAddBookOpen}
         studentName={studentName}
-        books={data.books}
+        books={data?.books || []}
         existingBookIds={optimisticCurriculum.map(c => c.bookId)}
         onSelect={(selectedBook) => handleAddCurriculum(selectedBook)}
+        onRefreshBooks={handleRefreshBooks}
       />
 
       {isEditOpen && student && (

@@ -178,40 +178,39 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
   }, [books]);
 
   const filteredBooks = useMemo(() => {
-    let result = books;
+    let result = books || [];
     
     if (search.trim()) {
       const normalizedSearch = search.replace(/\s/g, '').toLowerCase();
       result = result.filter(book => {
-        const normalizedTitle = book.title.replace(/\s/g, '').toLowerCase();
+        const titleStr = book && book.title ? String(book.title) : '';
+        const normalizedTitle = titleStr.replace(/\s/g, '').toLowerCase();
         return normalizedTitle.includes(normalizedSearch);
       });
     }
 
     if (levelFilter !== 'all') {
-      result = result.filter(book => normalizeLevelKey(book.level) === normalizeLevelKey(levelFilter));
+      result = result.filter(book => book && normalizeLevelKey(book.level) === normalizeLevelKey(levelFilter));
     }
 
     if (difficultyFilters.length > 0) {
-      result = result.filter(book => book.difficulty && difficultyFilters.includes(book.difficulty));
+      result = result.filter(book => book && book.difficulty && difficultyFilters.includes(book.difficulty));
     }
 
     if (categoryFilters.length > 0) {
-      result = result.filter(book => book.category && categoryFilters.includes(book.category));
+      result = result.filter(book => book && book.category && categoryFilters.includes(book.category));
     }
 
     if (therapyFilters.length > 0) {
-      result = result.filter(book => book.therapy && therapyFilters.includes(book.therapy));
+      result = result.filter(book => book && book.therapy && therapyFilters.includes(book.therapy));
     }
 
     if (requiredOnly) {
-      result = result.filter(book => book.type && book.type.includes('필독'));
+      result = result.filter(book => book && book.type && book.type.includes('필독'));
     }
 
     if (careerOnly) {
-      result = result.filter(book => book.career && book.career.trim() !== '');
-    } else {
-      result = result.filter(book => !book.career || book.career.trim() === '');
+      result = result.filter(book => book && book.career && book.career.trim() !== '');
     }
 
     return result.slice(0, 50); // Limit to 50 results for utility while scrolled
@@ -223,7 +222,7 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <Input
-            placeholder="도서명을 입력하세요 (공백 무관)"
+            placeholder="도서명을 입력하세요"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 h-12 rounded-xl border-neutral-200 focus:ring-neutral-900"
@@ -354,15 +353,12 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
               </button>
             );
           })
-        ) : (search.trim() || levelFilter !== 'all' || difficultyFilters.length > 0 || categoryFilters.length > 0 || therapyFilters.length > 0) ? (
-            <div className="py-10 text-center text-neutral-400">
-              <p className="text-sm">검색 결과가 없습니다.</p>
-            </div>
-          ) : (
-            <div className="py-10 text-center text-neutral-400">
-              <p className="text-sm">도서명 입력 또는 필터를 선택하세요.</p>
-            </div>
-          )}
+        ) : (
+          <div className="py-12 text-center text-neutral-400 space-y-1">
+            <p className="text-sm font-medium text-neutral-600">검색 결과가 없습니다.</p>
+            <p className="text-xs text-neutral-400">새로 추가한 도서가 보이지 않는다면 우측 상단 동기화(새로고침) 버튼을 눌러주세요.</p>
+          </div>
+        )}
         </div>
       </ScrollArea>
     </div>

@@ -892,3 +892,46 @@ export const meetingNoteApi = {
     return { success: true };
   }
 };
+
+export const bookApi = {
+  get: async (refresh = false): Promise<Book[]> => {
+    if (refresh) {
+      localStorage.removeItem('cachedBooks');
+      localStorage.removeItem('lastCacheTime');
+    }
+    const cachedBooksStr = localStorage.getItem('cachedBooks');
+    const lastCacheTime = Number(localStorage.getItem('lastCacheTime') || 0);
+    const CACHE_TTL = 30 * 60 * 1000;
+    const now = Date.now();
+
+    if (!refresh && cachedBooksStr && (now - lastCacheTime <= CACHE_TTL)) {
+      try {
+        const parsed = JSON.parse(cachedBooksStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse cached books', e);
+      }
+    }
+
+    const booksRaw = await getSheetData('도서목록', 'A2:I');
+    const books: Book[] = (booksRaw || [])
+      .filter((row: any[]) => row && row[1])
+      .map((row: any[]) => ({
+        level: row[0] || '',
+        title: row[1] || '',
+        id: row[2] || '',
+        difficulty: row[3] || '',
+        category: row[4] || '',
+        therapy: row[5] || '',
+        career: row[6] || '',
+        audio: row[7] || '',
+        type: row[8] || '',
+      }));
+    localStorage.setItem('cachedBooks', JSON.stringify(books));
+    localStorage.setItem('lastCacheTime', String(now));
+    return books;
+  }
+};
+

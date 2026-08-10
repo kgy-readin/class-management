@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog, SquareCheckBig, Loader2 } from 'lucide-react';
+import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog, SquareCheckBig, Loader2, RefreshCw } from 'lucide-react';
 import { getWeeksSince } from '@/lib/utils';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
-import { studentApi, taskApi } from '@/src/services/api';
+import { studentApi, taskApi, bookApi } from '@/src/services/api';
 import { MESSAGES } from '@/src/constants/messages';
 import { Student, DashboardData } from '../../types';
 
@@ -969,14 +969,44 @@ interface AddCurriculumDialogProps {
   books: any[];
   existingBookIds: string[];
   onSelect: (book: any) => void;
+  onRefreshBooks?: () => Promise<void>;
 }
 
-export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookIds, onSelect }: AddCurriculumDialogProps) {
+export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookIds, onSelect, onRefreshBooks }: AddCurriculumDialogProps) {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      if (onRefreshBooks) {
+        await onRefreshBooks();
+      } else {
+        await bookApi.get(true);
+      }
+      toast.success('도서 목록이 구글 시트와 동기화되었습니다.');
+    } catch (error) {
+      console.error('Failed to sync books:', error);
+      toast.error('도서 목록 동기화에 실패했습니다.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl bg-white p-6">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between pr-6">
           <DialogTitle className="text-[21px] font-bold mt-2 ml-1">{studentName} 학생 도서 추가</DialogTitle>
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={isSyncing}
+            title="구글 시트 도서목록 동기화"
+            aria-label="구글 시트 도서목록 동기화"
+            className="p-2 rounded-xl border border-neutral-200 hover:border-neutral-300 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-900 transition-all disabled:opacity-50 mt-1 cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-primary' : ''}`} />
+          </button>
         </DialogHeader>
         <div className="pt-2">
           <BookSearch 
