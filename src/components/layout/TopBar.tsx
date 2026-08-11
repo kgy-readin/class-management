@@ -16,8 +16,12 @@ import {
   BriefcaseBusiness,
   Star,
   AtSign,
-  Link
+  Link,
+  Heart,
+  FileText
 } from 'lucide-react';
+import { noteApi } from '@/src/services/api';
+import MarkdownRenderer from '@/src/components/common/MarkdownRenderer';
 
 
 const tabToPath: Record<string, string> = {
@@ -48,6 +52,28 @@ export default function TopBar({
   onSetSelectedStudent
 }: TopBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMemoOpen, setIsMemoOpen] = useState(false);
+  const [memoText, setMemoText] = useState<string>(() => {
+    return localStorage.getItem('webapp_note_data_backup') || '';
+  });
+  const [loadingMemo, setLoadingMemo] = useState(false);
+
+  const fetchMemo = async () => {
+    const cached = localStorage.getItem('webapp_note_data_backup') || '';
+    if (cached) setMemoText(cached);
+    try {
+      if (!cached) setLoadingMemo(true);
+      const remote = await noteApi.getRawText();
+      const val = remote || '';
+      setMemoText(val);
+      localStorage.setItem('webapp_note_data_backup', val);
+    } catch (e) {
+      console.warn('Failed to fetch memo in TopBar popover:', e);
+    } finally {
+      setLoadingMemo(false);
+    }
+  };
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -152,16 +178,36 @@ export default function TopBar({
     <header className="sticky top-0 z-50 w-full bg-white/75 backdrop-blur-xl shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl relative">
         
-        {/* Left side: Menu / Hammer button and floating menu */}
+        {/* Left side: Menu / Bookmark buttons and floating menus */}
         <div className="flex items-center gap-2 relative">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {
+              setIsMenuOpen(!isMenuOpen);
+              if (isMemoOpen) setIsMemoOpen(false);
+            }}
             className="h-9 w-9 p-0 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100 rounded-full cursor-pointer transition-colors"
             title="Menu"
           >
             <Menu className="w-5.5 h-5.5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const nextState = !isMemoOpen;
+              setIsMemoOpen(nextState);
+              if (isMenuOpen) setIsMenuOpen(false);
+              if (nextState) {
+                fetchMemo();
+              }
+            }}
+            className="h-9 w-9 p-0 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100 rounded-full cursor-pointer transition-colors"
+            title="메모"
+          >
+            <Heart className="w-5 h-5" />
           </Button>
 
           {/* Left-aligned page title for mobile portrait screens (8px gap is automatically provided by parent's gap-2) */}
@@ -189,7 +235,7 @@ export default function TopBar({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.88, y: -10 }}
                   transition={{ type: 'spring', damping: 18, stiffness: 240 }}
-                  className="absolute left-0 top-11.5 z-[100] w-48 bg-white border border-zinc-200/75 rounded-2xl shadow-xl p-2 flex flex-col gap-0.5 mt-2 origin-top-left"
+                  className="absolute left-0 top-11.5 z-[100] w-44 bg-white border border-neutral-100 rounded-xl shadow-xl p-2 flex flex-col gap-0.5 mt-2 origin-top-left"
                 >
                   <div className="relative z-10 flex flex-col">
                     {menuItems.map((item) => {
@@ -204,7 +250,7 @@ export default function TopBar({
                             onSetSelectedStudent(null);
                             setIsMenuOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-zinc-50 text-primary font-semibold text-left'
                               : 'text-zinc-650 hover:bg-zinc-50 hover:text-zinc-900 text-left'
@@ -218,6 +264,45 @@ export default function TopBar({
                         </button>
                       );
                     })}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* Floating Memo Popover */}
+          <AnimatePresence>
+            {isMemoOpen && (
+              <>
+                {/* Invisible Backdrop to capture clicks and close memo popover */}
+                <div 
+                  className="fixed inset-0 z-[99] bg-transparent cursor-default" 
+                  onClick={() => setIsMemoOpen(false)}
+                />
+
+                {/* Popover Card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.88, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: -10 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 240 }}
+                  className="absolute left-11 top-11.5 z-[100] w-72 sm:w-[345px] max-w-[calc(100vw-2rem)] bg-white border border-neutral-100 rounded-xl shadow-xl p-4 mt-2 origin-top-left max-h-[70vh] overflow-y-auto custom-scrollbar"
+                >
+                  <div className="relative z-10">
+                    {loadingMemo && !memoText ? (
+                      <div className="py-6 text-center text-xs text-zinc-400 select-none">
+                        <span>불러오는 중...</span>
+                      </div>
+                    ) : !memoText || !memoText.trim() ? (
+                      <div className="py-8 text-center text-xs text-zinc-400 flex flex-col items-center justify-center gap-2 select-none">
+                        <FileText className="w-7 h-7 text-zinc-300" />
+                        <span>등록된 메모가 없습니다.</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 font-normal text-zinc-700 leading-relaxed text-[14px]">
+                        <MarkdownRenderer text={memoText} />
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </>

@@ -64,6 +64,7 @@ export default function InlineAddForm({
               <option value="정기">정기</option>
               <option value="첫날">첫날</option>
               <option value="한달">한달</option>
+              <option value="방학">방학</option>
               <option value="중등">중등</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />

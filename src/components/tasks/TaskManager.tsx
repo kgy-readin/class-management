@@ -320,8 +320,9 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
   const familyClassRank: Record<string, number> = {
     '첫날': 1,
     '한달': 2,
-    '정기': 3,
-    '중등': 4
+    '방학': 3,
+    '정기': 4,
+    '중등': 5
   };
 
   // Base logic to filter and sort Basic View
@@ -344,11 +345,11 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       const rule1 = isThisW && category !== '가통';
       const rule2 = isThisW && category === '가통' && isCompleted;
       const rule3 = (familyClass === '정기' || familyClass === '중등') && (status === '진행' || status === '대기' || status === '보류');
-      const rule4 = isThisW && (familyClass === '첫날' || familyClass === '한달');
+      const rule4 = isThisW && (familyClass === '첫날' || familyClass === '한달' || familyClass === '방학');
       const rule5 = !isCompleted && (category === '중요' || category === '긴급');
       const rule6 = isOverdue && !isCompleted && category !== '가통';
       // rule7 is removed
-      const rule8 = isOverdue && !isCompleted && category === '가통' && (familyClass === '첫날' || familyClass === '한달');
+      const rule8 = isOverdue && !isCompleted && category === '가통' && (familyClass === '첫날' || familyClass === '한달' || familyClass === '방학');
 
       return rule1 || rule2 || rule3 || rule4 || rule5 || rule6 || rule8;
     }).sort((a, b) => {
@@ -746,6 +747,8 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
         return getTagColor('초록색');
       case '한달':
         return getTagColor('파란색');
+      case '방학':
+        return getTagColor('보라색');
       case '중등':
         return getTagColor('주황색');
       case '정기':

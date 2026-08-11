@@ -45,7 +45,7 @@ export default function FamilyTaskRow({
     return (
       <div 
         key={task.sheetRowIndex} 
-        className={`px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 flex flex-col gap-2 rounded-none transition-colors font-sans ${isLast ? 'border-b-0' : 'border-b border-zinc-100/70'}`}
+        className={`px-2.5 py-2.5 bg-zinc-50 hover:bg-zinc-100/70 flex flex-col gap-2 rounded-sm transition-colors font-sans ${isLast ? 'border-b-0' : 'border-b border-zinc-100/70'}`}
       >
         {/* Row 1: Looks identical to static viewer row (No student name, contains familyClass badge, todo, memo, date, status) */}
         <div className="flex-1 flex flex-wrap items-center gap-1.5">
@@ -53,11 +53,12 @@ export default function FamilyTaskRow({
           <select
              value={editForm.familyClass}
              onChange={(e) => setEditForm(prev => ({ ...prev, familyClass: e.target.value }))}
-             className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getFamilyClassBadgeClass(editForm.familyClass)}`}
+             className={`h-7 px-1.5 rounded-sm text-[13px] font-normal border border-zinc-200/80 cursor-pointer focus:ring-1 focus:ring-primary leading-none ${getFamilyClassBadgeClass(editForm.familyClass)}`}
           >
             <option value="정기">정기</option>
             <option value="첫날">첫날</option>
             <option value="한달">한달</option>
+            <option value="방학">방학</option>
             <option value="중등">중등</option>
           </select>
 
@@ -67,7 +68,7 @@ export default function FamilyTaskRow({
             placeholder="할 일 수정"
             value={editForm.todo}
             onChange={(e) => setEditForm(prev => ({ ...prev, todo: e.target.value }))}
-            className="h-7 flex-1 min-w-[140px] px-2 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] text-zinc-800 font-normal rounded font-sans transition-all"
+            className="h-7 flex-1 min-w-[140px] px-2 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] text-zinc-800 font-normal rounded-sm font-sans transition-all leading-none"
           />
 
           {/* Date Picker Input & Status Choice Container - side-by-side */}
@@ -76,14 +77,14 @@ export default function FamilyTaskRow({
               type="date"
               value={editForm.date}
               onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-              className={`h-7 w-[125px] px-1.5 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] rounded font-normal text-right transition-all ${getFamilyTaskDateClass(editForm.date)}`}
+              className={`h-7 w-[125px] px-1.5 bg-white border border-neutral-200 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 text-[13px] rounded-sm font-normal text-right transition-all leading-none ${getFamilyTaskDateClass(editForm.date)}`}
             />
 
             {/* Status Choice - styled like the dynamic status badge */}
             <select
               value={editForm.status}
               onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className={`h-7 px-1.5 rounded text-[13px] font-normal border-0 bg-transparent cursor-pointer focus:ring-1 focus:ring-primary ${getStatusBadgeClass(editForm.status)}`}
+              className={`h-7 px-1.5 rounded-sm text-[13px] font-normal border border-zinc-200/80 cursor-pointer focus:ring-1 focus:ring-primary leading-none ${getStatusBadgeClass(editForm.status)}`}
             >
               <option value="예정">예정</option>
               <option value="진행">진행</option>
@@ -103,9 +104,10 @@ export default function FamilyTaskRow({
               students={students}
               value={editForm.name || ''}
               onChange={(val) => setEditForm(prev => ({ ...prev, name: val }))}
-              placeholder="학생명 입력"
+              placeholder="학생명"
+              showClearButton={false}
               className="!w-28 font-sans"
-              inputClassName="bg-white text-zinc-850 text-xs !h-6 !rounded"
+              inputClassName="bg-white text-zinc-850 !text-[13px] !h-7 !rounded-sm leading-none"
             />
 
             {/* Editable Category Class mapping hidden inside family View */}
@@ -119,7 +121,7 @@ export default function FamilyTaskRow({
                   familyClass: cat === '가통' ? prev.familyClass || '정기' : ''
                 }));
               }}
-              className={`h-6 px-1.5 border border-zinc-200 rounded text-[13px] font-normal cursor-pointer font-sans ${getCategoryBadgeClass(editForm.category)}`}
+              className={`h-7 px-1.5 border border-zinc-200 rounded-sm text-[13px] font-normal cursor-pointer font-sans leading-none ${getCategoryBadgeClass(editForm.category)}`}
             >
               <option value="가통">가통</option>
               <option value="기타">기타</option>
@@ -147,7 +149,7 @@ export default function FamilyTaskRow({
                 }
                 setReservingTask({ ...task, name: studentName });
               }}
-              className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
+              className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
               title="가정통신문 예약하기"
             >
               예약
@@ -159,7 +161,7 @@ export default function FamilyTaskRow({
               variant="outline"
               disabled={submitting}
               onClick={() => handleQuickComplete(task.sheetRowIndex!)}
-              className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-400 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
+              className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
               title="오늘 완료 처리 후 바로 저장"
             >
               완료

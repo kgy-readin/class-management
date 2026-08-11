@@ -50,7 +50,7 @@ export interface Task {
   date: string;       // 날짜
   name: string;       // 이름 (학생명)
   category: string;   // 카테고리 (긴급, 중요, 가통, 알림장, 결과물, 보고, 반복, 기타)
-  familyClass: string;// 가통분류 (첫날, 한달, 정기, 중등)
+  familyClass: string;// 가통분류 (첫날, 한달, 방학, 정기, 중등)
   todo: string;       // 할일
   status: string;     // 상태 (예정, 진행, 보류, 대기, 완료, 취소)
   memo: string;       // 메모

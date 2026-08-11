@@ -61,6 +61,8 @@ export const getFamilyClassBadgeClass = (familyClass: string) => {
       return getTagColor('초록색');
     case '한달':
       return getTagColor('파란색');
+    case '방학':
+      return getTagColor('보라색');
     case '중등':
       return getTagColor('주황색');
     case '정기':

@@ -15,6 +15,7 @@ interface StudentComboboxProps {
   className?: string;
   inputClassName?: string;
   size?: 'sm' | 'md' | 'lg';
+  showClearButton?: boolean;
 }
 
 export default function StudentCombobox({
@@ -24,7 +25,8 @@ export default function StudentCombobox({
   placeholder = '학생 선택 또는 직접 입력',
   className = '',
   inputClassName = '',
-  size = 'md'
+  size = 'md',
+  showClearButton = true
 }: StudentComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value);
@@ -147,12 +149,12 @@ export default function StudentCombobox({
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           onClick={() => setIsOpen(true)}
-          className={`w-full bg-white border border-neutral-200 text-zinc-850 font-medium focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 transition-all pr-12 ${sizeClasses[size]} ${inputClassName}`}
+          className={`w-full bg-white border border-neutral-200 text-zinc-850 font-medium focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 hover:border-neutral-300 transition-all ${showClearButton ? 'pr-12' : 'pr-7'} ${sizeClasses[size]} ${inputClassName}`}
         />
         
         {/* Actions inside input area */}
-        <div className="absolute right-2.5 flex items-center gap-1">
-          {searchTerm && (
+        <div className="absolute right-2 flex items-center gap-0.5">
+          {showClearButton && searchTerm && (
             <button
               type="button"
               onClick={handleClear}
@@ -166,7 +168,7 @@ export default function StudentCombobox({
             onClick={() => setIsOpen(!isOpen)}
             className="p-1 text-zinc-400 hover:text-zinc-650 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
           >
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
