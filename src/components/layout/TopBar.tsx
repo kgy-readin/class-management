@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { 
   BookOpen, 
@@ -18,7 +19,11 @@ import {
   AtSign,
   Link,
   Heart,
-  FileText
+  FileText,
+  Pencil,
+  Loader2,
+  X,
+  Check
 } from 'lucide-react';
 import { noteApi } from '@/src/services/api';
 import MarkdownRenderer from '@/src/components/common/MarkdownRenderer';
@@ -57,6 +62,9 @@ export default function TopBar({
     return localStorage.getItem('webapp_note_data_backup') || '';
   });
   const [loadingMemo, setLoadingMemo] = useState(false);
+  const [isEditingMemo, setIsEditingMemo] = useState(false);
+  const [editingText, setEditingText] = useState('');
+  const [isSavingMemo, setIsSavingMemo] = useState(false);
 
   const fetchMemo = async () => {
     const cached = localStorage.getItem('webapp_note_data_backup') || '';
@@ -65,12 +73,35 @@ export default function TopBar({
       if (!cached) setLoadingMemo(true);
       const remote = await noteApi.getRawText();
       const val = remote || '';
-      setMemoText(val);
-      localStorage.setItem('webapp_note_data_backup', val);
+      if (val || !cached) {
+        setMemoText(val);
+        if (val) {
+          localStorage.setItem('webapp_note_data_backup', val);
+        }
+      }
     } catch (e) {
       console.warn('Failed to fetch memo in TopBar popover:', e);
+      const fallback = localStorage.getItem('webapp_note_data_backup') || '';
+      if (fallback) setMemoText(fallback);
     } finally {
       setLoadingMemo(false);
+    }
+  };
+
+  const handleSaveMemo = async () => {
+    setIsSavingMemo(true);
+    try {
+      const textToSave = editingText;
+      await noteApi.saveRawText(textToSave);
+      setMemoText(textToSave);
+      localStorage.setItem('webapp_note_data_backup', textToSave);
+      setIsEditingMemo(false);
+      toast.success('메모가 저장되었습니다.');
+    } catch (e: any) {
+      console.error('Failed to save memo in popover:', e);
+      toast.error(`메모 저장 실패: ${e.message || e}`);
+    } finally {
+      setIsSavingMemo(false);
     }
   };
 
@@ -199,6 +230,7 @@ export default function TopBar({
             onClick={() => {
               const nextState = !isMemoOpen;
               setIsMemoOpen(nextState);
+              if (!nextState) setIsEditingMemo(false);
               if (isMenuOpen) setIsMenuOpen(false);
               if (nextState) {
                 fetchMemo();
@@ -277,7 +309,10 @@ export default function TopBar({
                 {/* Invisible Backdrop to capture clicks and close memo popover */}
                 <div 
                   className="fixed inset-0 z-[99] bg-transparent cursor-default" 
-                  onClick={() => setIsMemoOpen(false)}
+                  onClick={() => {
+                    setIsMemoOpen(false);
+                    setIsEditingMemo(false);
+                  }}
                 />
 
                 {/* Popover Card */}
@@ -286,23 +321,77 @@ export default function TopBar({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.88, y: -10 }}
                   transition={{ type: 'spring', damping: 18, stiffness: 240 }}
-                  className="absolute left-11 top-11.5 z-[100] w-72 sm:w-[345px] max-w-[calc(100vw-2rem)] bg-white border border-neutral-100 rounded-xl shadow-xl p-4 mt-2 origin-top-left max-h-[70vh] overflow-y-auto custom-scrollbar"
+                  className="absolute left-11 top-11.5 origin-top-left w-88 portrait:max-sm:fixed portrait:max-sm:left-1/2 portrait:max-sm:-translate-x-1/2 portrait:max-sm:top-16 portrait:max-sm:mt-1 portrait:max-sm:origin-top portrait:max-sm:w-84 portrait:max-sm:h-88 portrait:max-sm:max-h-88 max-w-[calc(100vw-2rem)] z-[100] bg-white border border-neutral-100 rounded-xl shadow-xl p-4 mt-2 min-h-40 max-h-[70vh] flex flex-col"
                 >
-                  <div className="relative z-10">
-                    {loadingMemo && !memoText ? (
-                      <div className="py-6 text-center text-xs text-zinc-400 select-none">
-                        <span>불러오는 중...</span>
-                      </div>
-                    ) : !memoText || !memoText.trim() ? (
-                      <div className="py-8 text-center text-xs text-zinc-400 flex flex-col items-center justify-center gap-2 select-none">
-                        <FileText className="w-7 h-7 text-zinc-300" />
-                        <span>등록된 메모가 없습니다.</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 font-normal text-zinc-700 leading-relaxed text-[14px]">
-                        <MarkdownRenderer text={memoText} />
-                      </div>
-                    )}
+                  <div className="relative z-10 flex flex-col h-full min-h-0">
+                    {/* Header - Fixed */}
+                    <div className="flex items-center justify-between pb-2 mb-[2px] border-b border-border/40 select-none shrink-0">
+                      <span className="text-[15px] font-semibold text-zinc-800 pl-[4px]">
+                        메모
+                      </span>
+                      {isEditingMemo ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isSavingMemo}
+                            onClick={() => setIsEditingMemo(false)}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors cursor-pointer"
+                            title="편집 취소"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isSavingMemo}
+                            onClick={handleSaveMemo}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800 text-white hover:bg-zinc-900 transition-colors cursor-pointer"
+                            title="편집 완료"
+                          >
+                            {isSavingMemo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingText(memoText);
+                            setIsEditingMemo(true);
+                          }}
+                          className="text-neutral-400 hover:text-zinc-700 transition-colors cursor-pointer p-1 rounded-md hover:bg-neutral-50 flex items-center justify-center"
+                          title="메모 수정"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Body - Scrollable */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 pr-0.5 pt-[10px] -mb-2">
+                      {isEditingMemo ? (
+                        <div className="flex flex-col h-full min-h-[160px]">
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            placeholder="메모를 입력하세요..."
+                            className="w-full h-full min-h-[180px] p-2.5 text-[14px] text-zinc-800 bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:bg-white resize-y font-normal custom-scrollbar"
+                            autoFocus
+                          />
+                        </div>
+                      ) : loadingMemo && !memoText ? (
+                        <div className="py-6 text-center text-xs text-zinc-400 select-none">
+                          <span>불러오는 중...</span>
+                        </div>
+                      ) : !memoText || !memoText.trim() ? (
+                        <div className="py-6 text-center text-xs text-zinc-400 flex flex-col items-center justify-center gap-2 select-none">
+                          <FileText className="w-6 h-6 text-zinc-300" />
+                          <span>등록된 메모가 없습니다.</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 font-normal text-zinc-700 leading-relaxed text-[14px]">
+                          <MarkdownRenderer text={memoText} />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               </>

@@ -26,7 +26,8 @@ export default function NotesPanel() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const fetchNotes = async (isBackground = false) => {
-    const hasCache = !!rawText;
+    const cachedText = localStorage.getItem('webapp_note_data_backup') || rawText || '';
+    const hasCache = !!cachedText;
     
     try {
       if (!isBackground && !hasCache) {
@@ -35,17 +36,22 @@ export default function NotesPanel() {
       
       const text = await noteApi.getRawText();
       const normalizedRemote = text || '';
-      const cachedText = localStorage.getItem('webapp_note_data_backup') || '';
       
-      // Only update react state if there is an actual diff on remote
-      if (normalizedRemote !== cachedText || !hasCache) {
+      // Only update state and cache if remote returned content, OR if we had no cache at all
+      if (normalizedRemote || !hasCache) {
         setRawText(normalizedRemote);
         setLastSavedText(normalizedRemote);
-        localStorage.setItem('webapp_note_data_backup', normalizedRemote);
+        if (normalizedRemote) {
+          localStorage.setItem('webapp_note_data_backup', normalizedRemote);
+        }
       }
     } catch (error: any) {
       console.warn('Background memo sync failed (Using local fallback):', error.message || error);
-      if (!hasCache) {
+      const fallback = localStorage.getItem('webapp_note_data_backup') || rawText || '';
+      if (fallback) {
+        setRawText(fallback);
+        setLastSavedText(fallback);
+      } else if (!hasCache) {
         toast.error(MESSAGES.notes.loadError(error.message));
       }
     } finally {

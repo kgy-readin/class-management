@@ -283,5 +283,12 @@ input[type="text"].fixed-date-input {
   box-sizing: border-box !important;
 }
 
+/* Force mobile toast notifications to render right below the sticky TopBar */
+@media (max-width: 639px) {
+  [data-sonner-toaster][data-position^="top"] {
+    top: 70px !important;
+  }
+}
+
 
 

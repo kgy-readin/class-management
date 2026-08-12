@@ -2,11 +2,26 @@ import * as React from "react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ position: propPosition, ...props }: ToasterProps) => {
+  const [position, setPosition] = React.useState<ToasterProps['position']>('bottom-right');
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 640) {
+        setPosition('top-center');
+      } else {
+        setPosition('bottom-right');
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <Sonner
       theme="light"
-      position="bottom-right"
+      position={propPosition || position}
       expand={true}
       className="toaster group"
       icons={{

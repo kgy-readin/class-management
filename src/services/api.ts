@@ -112,6 +112,8 @@ async function postToGas(payload: Record<string, any>, errorMessagePrefix: strin
     throw new Error(urlRequiredErrorMsg || MESSAGES.api.gasUrlRequiredForUpdate);
   }
 
+  const isReadAction = payload?.action === 'getRawText' || payload?.action === 'getTabsData';
+
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
@@ -140,12 +142,20 @@ async function postToGas(payload: Record<string, any>, errorMessagePrefix: strin
       }
     }
 
-    // 2. If response is HTML, non-OK status (like HTTP 404 from GAS CDN redirect), or invalid format:
+    if (isReadAction) {
+      throw new Error(`GAS ${payload.action} failed: non-JSON or HTML response returned (${response.status})`);
+    }
+
+    // 2. If response is HTML, non-OK status (like HTTP 404 from GAS CDN redirect), or invalid format for write operations:
     // Google Apps Script executes doPost on Google Sheets FIRST before returning/redirecting.
     // HTML/404 responses are CDN/redirect artifacts; the write operation in Google Sheets already succeeded.
-    console.warn(`${errorMessagePrefix}: GAS post completed (redirect status ${response.status}). Treating as success.`);
+    console.warn(`${errorMessagePrefix}: GAS post completed (redirect status ${response.status}). Treating write as success.`);
     return { success: true };
   } catch (error: any) {
+    if (isReadAction) {
+      throw error;
+    }
+
     // If it's an explicit business logic error thrown from parsed.error, rethrow it
     if (error.message && 
         !error.message.includes('Failed to fetch') && 
@@ -159,7 +169,7 @@ async function postToGas(payload: Record<string, any>, errorMessagePrefix: strin
 
     // For network fetch errors or redirect failures (e.g. CORS, Failed to fetch, HTTP 404):
     // The POST request hit the GAS endpoint and executed doPost on Google Sheets before CORS/redirect blocked the response.
-    console.warn(`${errorMessagePrefix}: Network/Redirect notice during GAS post (${error.message}). Treating write as successful.`);
+    console.warn(`${errorMessagePrefix}: Network/Redirect notice during GAS write (${error.message}). Treating write as successful.`);
     return { success: true };
   }
 }
@@ -721,20 +731,66 @@ export const taskApi = {
 export const noteApi = {
   getRawText: async (): Promise<string> => {
     try {
+      // 1. Try getTabsData to fetch document tabs and retrieve ONLY the first tab's body text
+      try {
+        const tabs = await noteApi.getTabsData();
+        if (Array.isArray(tabs) && tabs.length > 0) {
+          const firstTab = tabs[0];
+          if (firstTab && firstTab.id) {
+            localStorage.setItem('webapp_note_first_tab_id', firstTab.id);
+          }
+          if (firstTab && typeof firstTab.text === 'string') {
+            return firstTab.text;
+          }
+        }
+      } catch (tabsErr) {
+        console.warn('GAS getTabsData for first tab memo failed, falling back to getRawText:', tabsErr);
+      }
+
+      // 2. Fallback to getRawText if getTabsData is not supported or returned no tabs
       const res = await postToGas(
         { action: 'getRawText', spreadsheetId: SHEET_ID, documentId: DOCS_ID },
         'GAS getRawText',
         MESSAGES.api.memoUrlRequiredForRead
       );
-      return res.text || '';
+      if (res && typeof res.text === 'string') {
+        return res.text;
+      }
+      throw new Error('GAS getRawText response missing text property');
     } catch (e: any) {
-      console.warn('GAS getRawText Failed (Using local/offline fallback):', e.message || e);
+      console.warn('GAS getRawText Failed (Trying direct Google Docs export fallback):', e.message || e);
+      if (DOCS_ID) {
+        try {
+          const docExportUrl = `https://docs.google.com/document/d/${DOCS_ID}/export?format=txt&t=${Date.now()}`;
+          const docRes = await fetch(docExportUrl);
+          if (docRes.ok) {
+            const docText = await docRes.text();
+            if (docText && !docText.includes('<!DOCTYPE') && !docText.includes('<html')) {
+              return docText;
+            }
+          }
+        } catch (docErr) {
+          console.warn('Direct Google Docs text export fallback failed:', docErr);
+        }
+      }
       throw e;
     }
   },
 
   saveRawText: async (text: string): Promise<{ success: boolean }> => {
     try {
+      const firstTabId = localStorage.getItem('webapp_note_first_tab_id');
+      if (firstTabId) {
+        try {
+          const res = await noteApi.saveTabSpecification(firstTabId, text);
+          if (res && res.success) {
+            return res;
+          }
+        } catch (tabSaveErr) {
+          console.warn('saveTabSpecification failed for first tab, falling back to saveRawText:', tabSaveErr);
+        }
+      }
+
       const res = await postToGas(
         { action: 'saveRawText', text, spreadsheetId: SHEET_ID, documentId: DOCS_ID },
         'GAS saveRawText',
@@ -755,7 +811,10 @@ export const noteApi = {
         'GAS getTabsData',
         MESSAGES.api.memoUrlRequiredForRead
       );
-      return res.tabs || [];
+      if (res && Array.isArray(res.tabs)) {
+        return res.tabs;
+      }
+      throw new Error('GAS getTabsData response missing tabs array');
     } catch (e: any) {
       console.error('GAS getTabsData Failed:', e);
       throw e;
