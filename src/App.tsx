@@ -299,7 +299,7 @@ export default function App() {
           sessionStorage.setItem('site_login_timestamp', Date.now().toString());
           setIsLoggedIn(true);
         }} />
-        <Toaster position="top-center" />
+        <Toaster position="bottom-right" expand={true} />
       </>
     );
   }
@@ -435,7 +435,7 @@ export default function App() {
         </div>
       </Tabs>
 
-      <Toaster position="top-center" />
+      <Toaster position="bottom-right" expand={true} />
     </div>
   );
 }
