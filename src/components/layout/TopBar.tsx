@@ -210,7 +210,7 @@ export default function TopBar({
       <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl relative">
         
         {/* Left side: Menu / Bookmark buttons and floating menus */}
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 portrait:max-sm:gap-0 relative">
           <Button
             variant="ghost"
             size="icon"
@@ -242,10 +242,10 @@ export default function TopBar({
             <Heart className="w-5 h-5" />
           </Button>
 
-          {/* Left-aligned page title for mobile portrait screens (8px gap is automatically provided by parent's gap-2) */}
+          {/* Left-aligned page title for mobile portrait screens */}
           <button 
             onClick={handleTitleClick}
-            className="hidden portrait:max-sm:block text-[16px] font-semibold text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight"
+            className="hidden portrait:max-sm:block text-[16px] font-semibold text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight portrait:max-sm:ml-[12px]"
             title="새로고침"
           >
             {getPageTitle(activeTab)}
@@ -417,7 +417,7 @@ export default function TopBar({
               href={quickLinkUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-700 hover:text-blue-600 cursor-pointer transition-all shadow-sm shrink-0"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-700 hover:text-blue-600 cursor-pointer transition-all shadow-sm shrink-0 portrait:max-sm:hidden"
               title="바로가기 링크 열기"
             >
               <Link className="w-4 h-4" />
