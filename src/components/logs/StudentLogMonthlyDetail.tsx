@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DeleteLogDialog } from './LogPopups';
@@ -90,7 +90,7 @@ export default function StudentLogMonthlyDetail({
 }: StudentLogMonthlyDetailProps) {
   
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   // Edit Log State
   const [editingLog, setEditingLog] = useState<StudentLogEntry | null>(null);
@@ -111,6 +111,10 @@ export default function StudentLogMonthlyDetail({
   // Get logs for the clicked date
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
   const selectedDateLogs = logs.filter(log => String(log.date).split('T')[0] === selectedDateStr);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDateStr]);
 
   // Pagination calculation
   const totalPages = Math.ceil(selectedDateLogs.length / itemsPerPage) || 1;
@@ -474,7 +478,7 @@ export default function StudentLogMonthlyDetail({
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-150/50 rounded-lg cursor-pointer"
+                              className="h-[22px] w-[22px] text-zinc-400 hover:text-zinc-700 hover:bg-zinc-150/50 rounded-md cursor-pointer"
                               onClick={() => {
                                 setEditingLog(log);
                                 setEditForm({
@@ -486,16 +490,16 @@ export default function StudentLogMonthlyDetail({
                               }}
                               title="수정"
                             >
-                              <Pencil className="w-4 h-4" />
+                              <Pencil className="w-3.5 h-3.5" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-zinc-400 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              className="h-[22px] w-[22px] text-zinc-400 hover:text-destructive hover:bg-destructive/10 rounded-md cursor-pointer"
                               onClick={() => setDeletingItem(log)}
                               title="삭제"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </td>
@@ -506,55 +510,58 @@ export default function StudentLogMonthlyDetail({
               </tbody>
             </table>
           </div>
-
-          {/* Pagination bar */}
-          {totalPages > 1 && (
-            <div className="px-8 py-5 border-t border-zinc-100 bg-white flex items-center justify-center gap-1.5 select-none">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg cursor-pointer text-zinc-500"
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-
-              {getPageNumbers().map((pageNum, idx) => {
-                const isEllipsis = pageNum === '...';
-                const isActive = pageNum === currentPage;
-                return isEllipsis ? (
-                  <span key={`ell-${idx}`} className="w-8 text-center text-zinc-400 text-xs font-bold leading-8 select-none">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={`page-${pageNum}`}
-                    type="button"
-                    onClick={() => handlePageChange(pageNum as number)}
-                    className={`h-8 min-w-[32px] px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-primary text-white font-extrabold shadow-sm shadow-primary/20'
-                        : 'text-zinc-650 hover:bg-zinc-100 hover:text-zinc-900'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg cursor-pointer text-zinc-500"
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(currentPage + 1)}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
         </div>
+
+        {/* Centered Pagination Bar (Outside the table block) */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-[20px] select-none">
+            {/* Prev page */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl bg-transparent border-0 shadow-none text-zinc-500 hover:bg-zinc-100/80 hover:text-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:text-zinc-500 cursor-pointer transition-all"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            {/* Interconnected page numbers */}
+            {getPageNumbers().map((pageNum, idx) => {
+              const isEllipsis = pageNum === '...';
+              const isActive = pageNum === currentPage;
+              return isEllipsis ? (
+                <span key={`ell-${idx}`} className="w-8 text-center text-zinc-400 text-[13px] font-medium leading-8 select-none">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={`page-${pageNum}`}
+                  type="button"
+                  onClick={() => handlePageChange(pageNum as number)}
+                  className={`h-9 min-w-[36px] px-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-white border border-zinc-200/80 text-zinc-800 shadow-xs'
+                      : 'bg-transparent text-zinc-500 hover:bg-zinc-100/70 hover:text-zinc-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            {/* Next page */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl bg-transparent border-0 shadow-none text-zinc-500 hover:bg-zinc-100/80 hover:text-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:text-zinc-500 cursor-pointer transition-all"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* --- CONFIRM DELETE DIALOG --- */}

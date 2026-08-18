@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Student, Curriculum, DashboardData } from '../../types';
+import { Student, Curriculum, DashboardData, getShortHash } from '../../types';
 import { toast } from 'sonner';
 import { MESSAGES } from '@/src/constants/messages';
 import { LogOut, Save, Star, User, BookA, FilePlus, X, Smile, Check, Circle, Pencil } from 'lucide-react';
@@ -20,6 +21,7 @@ interface StudentCardProps {
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefresh, onSelectStudent, setData }) => {
+  const navigate = useNavigate();
   const [updating, setUpdating] = useState<string | null>(null);
   const [localStatuses, setLocalStatuses] = useState<Record<string, { status?: string }>>({});
   const [writingConfirmItem, setWritingConfirmItem] = useState<Curriculum | null>(null);
@@ -270,7 +272,14 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       <div className="px-6 py-2 w-full mb-[-8px]">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h3 className="text-[19px] font-bold text-foreground translate-x-[4px] translate-y-[1px]">{student.name}</h3>
+            <button
+              type="button"
+              onClick={() => navigate(`/logs/students/${getShortHash(student.name)}`)}
+              className="text-[19px] font-bold text-foreground hover:text-primary transition-colors cursor-pointer text-left translate-x-[4px] translate-y-[1px] select-none"
+              title={`${student.name} 교무기록 보기`}
+            >
+              {student.name}
+            </button>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
               <span 
                 onClick={() => setIsAttendanceOpen(true)}
