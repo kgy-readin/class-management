@@ -35,6 +35,13 @@ export default function MarkdownGuidePopup({ open, onClose }: MarkdownGuidePopup
       ],
     },
     {
+      category: '인라인 링크',
+      items: [
+        { syntax: '[텍스트](주소)', preview: 'link-text' },
+        { syntax: '[](주소)', preview: 'link-url' },
+      ],
+    },
+    {
       category: '기타 스타일',
       items: [
         { syntax: '> 콜아웃', preview: 'callout' },
@@ -139,6 +146,12 @@ export default function MarkdownGuidePopup({ open, onClose }: MarkdownGuidePopup
                               )}
                               {item.preview === 'italic' && (
                                 <span className="italic text-blue-500">파란색 기울임 텍스트</span>
+                              )}
+                              {item.preview === 'link-text' && (
+                                <span className="text-[#4a71e0] underline font-medium">텍스트 (새 탭 링크)</span>
+                              )}
+                              {item.preview === 'link-url' && (
+                                <span className="text-[#4a71e0] underline font-medium break-all">https://주소 (새 탭 링크)</span>
                               )}
                               {item.preview === 'callout' && (
                                 <div className="bg-zinc-100 text-[11px] text-zinc-600 rounded px-2 py-0.5 border-l-2 border-zinc-400 inline-block">

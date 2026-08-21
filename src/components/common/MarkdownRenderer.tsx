@@ -17,6 +17,18 @@ export interface DocTab {
 }
 
 /**
+ * Helper to normalize URLs ensuring valid external protocol
+ */
+export const normalizeUrl = (url: string): string => {
+  const trimmed = url.trim();
+  if (!trimmed) return '#';
+  if (/^(https?:\/\/|mailto:|tel:|\/\/)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+/**
  * Strips markdown-like markup characters helper to copy clean text to clipboard safely
  */
 export const stripMarkdown = (text: string): string => {
@@ -52,6 +64,12 @@ export const stripMarkdown = (text: string): string => {
       if (processedLine.startsWith('- ') || processedLine.startsWith('* ') || processedLine.startsWith('+ ')) {
         processedLine = processedLine.slice(2);
       }
+
+      // Strip inline links: [text](url) or [](url) -> text (or url if empty)
+      processedLine = processedLine.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (_, label, url) => {
+        const trimmedLabel = label.trim();
+        return trimmedLabel ? trimmedLabel : url.trim();
+      });
 
       // Remove inline markup: **, __, _
       let result = '';
@@ -231,7 +249,7 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (closingIndex !== -1) {
         const content = text.slice(currentIndex + 2, closingIndex);
         parts.push(
-          <span key={currentIndex} className="font-semibold text-neutral-800">
+          <span key={`bold-${currentIndex}`} className="font-semibold text-neutral-800">
             {parseInlineStyles(content)}
           </span>
         );
@@ -245,7 +263,7 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (closingIndex !== -1) {
         const content = text.slice(currentIndex + 2, closingIndex);
         parts.push(
-          <span key={currentIndex} className="underline decoration-neutral-400">
+          <span key={`underline-${currentIndex}`} className="underline decoration-neutral-400">
             {parseInlineStyles(content)}
           </span>
         );
@@ -259,12 +277,40 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (closingIndex !== -1) {
         const content = text.slice(currentIndex + 1, closingIndex);
         parts.push(
-          <span key={currentIndex} className="italic text-blue-700/90">
+          <span key={`italic-${currentIndex}`} className="italic text-blue-700/90">
             {parseInlineStyles(content)}
           </span>
         );
         currentIndex = closingIndex + 1;
         matched = true;
+      }
+    }
+    // Inline Link: [text](url) or [](url)
+    else if (text.startsWith('[', currentIndex)) {
+      const closingBracket = text.indexOf(']', currentIndex + 1);
+      if (closingBracket !== -1 && text.startsWith('(', closingBracket + 1)) {
+        const closingParen = text.indexOf(')', closingBracket + 2);
+        if (closingParen !== -1) {
+          const rawLabel = text.slice(currentIndex + 1, closingBracket);
+          const rawUrl = text.slice(closingBracket + 2, closingParen).trim();
+          const displayLabel = rawLabel.length > 0 ? rawLabel : rawUrl;
+          const targetUrl = normalizeUrl(rawUrl);
+
+          parts.push(
+            <a
+              key={`link-${currentIndex}`}
+              href={targetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#4a71e0] underline hover:text-[#1d4ed8] transition-colors cursor-pointer break-all font-medium inline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {rawLabel.length > 0 ? parseInlineStyles(displayLabel) : displayLabel}
+            </a>
+          );
+          currentIndex = closingParen + 1;
+          matched = true;
+        }
       }
     }
 
@@ -276,6 +322,8 @@ export const parseInlineStyles = (text: string): ReactNode => {
       if (uIdx !== -1) nextSpecial.push(uIdx);
       const iIdx = text.indexOf('_', currentIndex + 1);
       if (iIdx !== -1) nextSpecial.push(iIdx);
+      const lIdx = text.indexOf('[', currentIndex + 1);
+      if (lIdx !== -1) nextSpecial.push(lIdx);
 
       const nextIndex = nextSpecial.length > 0 ? Math.min(...nextSpecial) : text.length;
       const plainText = text.slice(currentIndex, nextIndex);
