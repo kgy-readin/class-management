@@ -770,7 +770,33 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
 
   const todoGroup = basicTasks.filter(t => t.status === '예정');
   const inProgressGroup = basicTasks.filter(t => t.status === '진행' || t.status === '대기' || t.status === '보류');
-  const completedGroup = basicTasks.filter(t => t.status === '완료' || t.status === '취소');
+  const completedGroup = basicTasks
+    .filter(t => t.status === '완료' || t.status === '취소')
+    .sort((a, b) => {
+      // 날짜 기준 내림차순 정렬 (최신 날짜가 위로)
+      const dateA = parseTaskDate(a.date);
+      const dateB = parseTaskDate(b.date);
+
+      if (dateA && dateB) {
+        const diff = dateB.getTime() - dateA.getTime();
+        if (diff !== 0) return diff;
+      } else if (dateA && !dateB) {
+        return -1;
+      } else if (!dateA && dateB) {
+        return 1;
+      } else if (a.date && b.date) {
+        const strDiff = b.date.localeCompare(a.date);
+        if (strDiff !== 0) return strDiff;
+      }
+
+      const rankCatA = categoryRank[a.category] || 9;
+      const rankCatB = categoryRank[b.category] || 9;
+      if (rankCatA !== rankCatB) return rankCatA - rankCatB;
+
+      const rankStatusA = statusRank[a.status] || 7;
+      const rankStatusB = statusRank[b.status] || 7;
+      return rankStatusA - rankStatusB;
+    });
 
   const toggleGroup = (group: 'todo' | 'inProgress' | 'completed') => {
     setExpandedGroups(prev => ({
