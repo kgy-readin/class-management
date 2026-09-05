@@ -267,6 +267,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
       });
   };
 
+  const isNaesin = Boolean(student.subProgram && student.subProgram.includes('내신'));
+  const hasVisibleCurriculum = !isNaesin && progressList.length > 0;
+
   return (
     <Card className="relative shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-white group flex flex-col pt-3 pb-2 border-none ring-0">
       <div className="px-6 py-2 w-full mb-[-8px]">
@@ -322,10 +325,10 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         </div>
       </div>
 
-      <CardContent className="pt-2 px-5 pb-2 flex flex-col flex-1 border-t border-zinc-100/70">
-        <div className="flex flex-col divide-y divide-zinc-100/70">
+      <CardContent className={`pt-2 px-5 ${!hasVisibleCurriculum ? 'pb-3' : 'pb-2'} flex flex-col flex-1 border-t border-zinc-100/70`}>
+        <div className="flex flex-col flex-1 divide-y divide-zinc-100/70">
           {/* Homework row */}
-          <div className="flex items-center gap-3 h-11">
+          <div className="flex items-center gap-3 h-11 shrink-0">
             <div className="w-8 h-8 flex items-center justify-center shrink-0">
               <Smile className="w-[18px] h-[18px] text-primary stroke-[2.5]" />
             </div>
@@ -373,7 +376,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
           </div>
 
           {/* Sub-program row */}
-          <div className="flex items-center gap-3 h-11">
+          <div className="flex items-center gap-3 h-11 shrink-0">
             <div className="w-8 h-8 flex items-center justify-center shrink-0">
               <Star className="w-4 h-4 text-primary stroke-[2.5]" />
             </div>
@@ -435,122 +438,126 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
             </div>
           </div>
 
-          {/* Curriculum rows */}
-          {progressList.map((item, idx) => {
-            const key = `${student.name}-${item.bookId}-${item.index}`;
-            const currentStatus = localStatuses[key] || { status: item.status };
-            const isWriting = item.bookTitle === '글쓰기';
-            const isProgressing = currentStatus.status === '진행';
-            const isCompleted = currentStatus.status === '통과';
+          {/* Curriculum rows / Empty state / Naesin state */}
+          {isNaesin ? (
+            <div className="flex-1 flex items-center justify-center min-h-[44px] bg-transparent">
+              <p className="text-[13px] font-medium text-zinc-600">내신 대비 집중 학습</p>
+            </div>
+          ) : progressList.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center min-h-[44px] bg-transparent">
+              <p className="text-xs font-medium text-zinc-500">커리큘럼을 추가해 주세요.</p>
+            </div>
+          ) : (
+            progressList.map((item, idx) => {
+              const key = `${student.name}-${item.bookId}-${item.index}`;
+              const currentStatus = localStatuses[key] || { status: item.status };
+              const isWriting = item.bookTitle === '글쓰기';
+              const isProgressing = currentStatus.status === '진행';
+              const isCompleted = currentStatus.status === '통과';
 
-            return (
-              <div 
-                key={`${key}-${idx}`} 
-                className="flex items-center gap-3 h-11"
-              >
-                <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
-                      updating === key 
-                        ? 'animate-pulse' 
-                        : isCompleted
-                          ? 'text-emerald-600 bg-emerald-50 border border-emerald-100 font-semibold'
-                          : isWriting 
-                            ? 'text-purple-600 hover:bg-purple-50'
-                            : isProgressing
-                              ? 'text-blue-600 hover:bg-blue-50'
-                              : 'text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50'
-                    }`}
-                    onClick={() => handleStatusUpdate(item.bookId, item.index, '통과')}
-                    disabled={updating === key}
-                    title="통과로 바로 저장"
-                  >
-                    <Check className="w-4 h-4 stroke-[3]" />
-                  </Button>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">
-                    <span className={`font-medium ${
-                      isWriting 
-                        ? 'text-purple-900 font-medium' 
-                        : 'text-zinc-800'
-                    }`}>{item.bookTitle}</span>
-                    {!isWriting && (
-                      <span className="font-medium ml-1.5 text-primary">{item.bookId}</span>
-                    )}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
-                  {editingCurriculumKeys[key] ? (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
-                        onClick={() => handleStatusUpdate(item.bookId, item.index)}
-                        disabled={updating === key}
-                        title="저장"
-                      >
-                        <Save className="w-3.5 h-3.5 stroke-[2]" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
-                        onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }))}
-                        title="취소"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                      <select 
-                        className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
-                          isProgressing
-                            ? 'ring-amber-400 text-amber-900 border-amber-200'
+              return (
+                <div 
+                  key={`${key}-${idx}`} 
+                  className="flex items-center gap-3 h-11 shrink-0"
+                >
+                  <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                        updating === key 
+                          ? 'animate-pulse' 
+                          : isCompleted
+                            ? 'text-emerald-600 bg-emerald-50 border border-emerald-100 font-semibold'
                             : isWriting 
-                              ? 'ring-purple-400 text-purple-900 border-purple-200' 
-                              : 'ring-primary/20 text-foreground border-zinc-200'
-                        }`}
-                        value={currentStatus.status}
-                        onChange={(e) => setLocalStatuses(prev => ({
-                          ...prev,
-                          [key]: { ...currentStatus, status: e.target.value }
-                        }))}
-                      >
-                        {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                  ) : (
-                    <span 
-                      onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
-                      className={`px-2.5 py-0.5 rounded-full text-[12px] font-medium cursor-pointer select-none transition-all hover:opacity-80 shadow-sm ${
-                        currentStatus.status === '진행'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : currentStatus.status === '통과'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : currentStatus.status === '불통'
-                              ? 'bg-red-50 text-red-700 border border-red-200'
-                              : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                              ? 'text-purple-600 hover:bg-purple-50'
+                              : isProgressing
+                                ? 'text-blue-600 hover:bg-blue-50'
+                                : 'text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50'
                       }`}
+                      onClick={() => handleStatusUpdate(item.bookId, item.index, '통과')}
+                      disabled={updating === key}
+                      title="통과로 바로 저장"
                     >
-                      {currentStatus.status}
-                    </span>
-                  )}
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </Button>
+                  </div>
                   
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      <span className={`font-medium ${
+                        isWriting 
+                          ? 'text-purple-900 font-medium' 
+                          : 'text-zinc-800'
+                      }`}>{item.bookTitle}</span>
+                      {!isWriting && (
+                        <span className="font-medium ml-1.5 text-primary">{item.bookId}</span>
+                      )}
+                    </p>
+                  </div>
 
-        {progressList.length === 0 && (
-          <div className="text-center py-4 border border-dashed border-zinc-150 rounded-2xl mt-2">
-            <p className="text-xs font-semibold text-muted-foreground">커리큘럼을 추가해 주세요.</p>
-          </div>
-        )}
+                  <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
+                    {editingCurriculumKeys[key] ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                          onClick={() => handleStatusUpdate(item.bookId, item.index)}
+                          disabled={updating === key}
+                          title="저장"
+                        >
+                          <Save className="w-3.5 h-3.5 stroke-[2]" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                          onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }))}
+                          title="취소"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                        <select 
+                          className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
+                            isProgressing
+                              ? 'ring-amber-400 text-amber-900 border-amber-200'
+                              : isWriting 
+                                ? 'ring-purple-400 text-purple-900 border-purple-200' 
+                                : 'ring-primary/20 text-foreground border-zinc-200'
+                          }`}
+                          value={currentStatus.status}
+                          onChange={(e) => setLocalStatuses(prev => ({
+                            ...prev,
+                            [key]: { ...currentStatus, status: e.target.value }
+                          }))}
+                        >
+                          {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <span 
+                        onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
+                        className={`px-2.5 py-0.5 rounded-full text-[12px] font-medium cursor-pointer select-none transition-all hover:opacity-80 shadow-sm ${
+                          currentStatus.status === '진행'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : currentStatus.status === '통과'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : currentStatus.status === '불통'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                        }`}
+                      >
+                        {currentStatus.status}
+                      </span>
+                    )}
+                    
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </CardContent>
 
       <AttendanceDialog

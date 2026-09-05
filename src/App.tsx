@@ -338,70 +338,80 @@ export default function App() {
 
           <TabsContent value="dashboard" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             {activeTab === 'dashboard' && (selectedStudent ? (
-              <StudentDetail 
-                studentName={selectedStudent} 
-                data={data} 
-                setData={setData}
-                onBack={() => {
-                  setSelectedStudent(null);
-                  if (studentEntrySource === 'students') {
-                    navigate('/students');
-                  } else if (appMode === 'work') {
-                    selectTab('tasks');
-                  } else if (appMode === 'sub') {
-                    selectTab('logs');
-                  } else {
-                    navigate('/');
-                  }
-                }} 
-                onRefresh={fetchData} 
-              />
+              <div key={`detail-${selectedStudent}`} className="animate-in fade-in slide-in-from-bottom-2 duration-550">
+                <StudentDetail 
+                  studentName={selectedStudent} 
+                  data={data} 
+                  setData={setData}
+                  onBack={() => {
+                    setSelectedStudent(null);
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    if (studentEntrySource === 'students') {
+                      navigate('/students');
+                    } else if (appMode === 'work') {
+                      selectTab('tasks');
+                    } else if (appMode === 'sub') {
+                      selectTab('logs');
+                    } else {
+                      navigate('/');
+                    }
+                  }} 
+                  onRefresh={fetchData} 
+                />
+              </div>
             ) : (
-              <Dashboard 
-                data={data} 
-                onRefresh={fetchData} 
-                onSelectStudent={(name) => {
-                  setStudentEntrySource('dashboard');
-                  const targetPath = getStudentPath(name, data?.students || []);
-                  navigate(targetPath);
-                }}
-                onNavigateToStudents={() => selectTab('students')}
-                setData={setData}
-              />
+              <div key="dashboard-main" className="animate-in fade-in slide-in-from-bottom-2 duration-550">
+                <Dashboard 
+                  data={data} 
+                  onRefresh={fetchData} 
+                  onSelectStudent={(name) => {
+                    setStudentEntrySource('dashboard');
+                    const targetPath = getStudentPath(name, data?.students || []);
+                    navigate(targetPath);
+                  }}
+                  onNavigateToStudents={() => selectTab('students')}
+                  setData={setData}
+                />
+              </div>
             ))}
           </TabsContent>
           
           <TabsContent value="students" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-550 mt-0">
             {activeTab === 'students' && (selectedStudent ? (
-              <StudentDetail 
-                studentName={selectedStudent} 
-                data={data} 
-                setData={setData}
-                onBack={() => {
-                  setSelectedStudent(null);
-                  if (studentEntrySource === 'students') {
-                    navigate('/students');
-                  } else if (appMode === 'work') {
-                    selectTab('tasks');
-                  } else if (appMode === 'sub') {
-                    selectTab('logs');
-                  } else {
-                    navigate('/');
-                  }
-                }} 
-                onRefresh={fetchData} 
-              />
+              <div key={`detail-${selectedStudent}`} className="animate-in fade-in slide-in-from-bottom-2 duration-550">
+                <StudentDetail 
+                  studentName={selectedStudent} 
+                  data={data} 
+                  setData={setData}
+                  onBack={() => {
+                    setSelectedStudent(null);
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    if (studentEntrySource === 'students') {
+                      navigate('/students');
+                    } else if (appMode === 'work') {
+                      selectTab('tasks');
+                    } else if (appMode === 'sub') {
+                      selectTab('logs');
+                    } else {
+                      navigate('/');
+                    }
+                  }} 
+                  onRefresh={fetchData} 
+                />
+              </div>
             ) : (
-              <StudentList 
-                data={data} 
-                onRefresh={fetchData} 
-                onSelectStudent={(name) => {
-                  setStudentEntrySource('students');
-                  const targetPath = getStudentPath(name, data?.students || []);
-                  navigate(targetPath);
-                }} 
-                setData={setData}
-              />
+              <div key="student-list-main" className="animate-in fade-in slide-in-from-bottom-2 duration-550">
+                <StudentList 
+                  data={data} 
+                  onRefresh={fetchData} 
+                  onSelectStudent={(name) => {
+                    setStudentEntrySource('students');
+                    const targetPath = getStudentPath(name, data?.students || []);
+                    navigate(targetPath);
+                  }} 
+                  setData={setData}
+                />
+              </div>
             ))}
           </TabsContent>
           

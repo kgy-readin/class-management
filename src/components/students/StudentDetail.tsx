@@ -62,7 +62,19 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         });
       }
     }, 150);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant'
+      });
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'instant'
+        });
+      });
+    };
   }, [studentName]);
 
   if (!data) return null;
