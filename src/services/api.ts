@@ -337,7 +337,7 @@ export const curriculumApi = {
   update: async (data: { 
     studentName: string; 
     bookId: string; 
-    status: string; 
+    status?: string; 
     index?: number; 
     bookTitle?: string;
     originalIndex?: number;

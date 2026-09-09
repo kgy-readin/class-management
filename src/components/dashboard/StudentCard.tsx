@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,23 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
   const [subProgramValue, setSubProgramValue] = useState(student.subProgram || '');
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [editingCurriculumKeys, setEditingCurriculumKeys] = useState<Record<string, boolean>>({});
+  const statusEditContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const hasEditing = Object.values(editingCurriculumKeys).some(Boolean);
+    if (!hasEditing) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusEditContainerRef.current && !statusEditContainerRef.current.contains(e.target as Node)) {
+        setEditingCurriculumKeys({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingCurriculumKeys]);
 
   const handleAttendanceConfirm = async (isAttending: boolean, dismissalTime: string) => {
     // 1. Optimistically update local state immediately
@@ -269,6 +286,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
 
   const isNaesin = Boolean(student.subProgram && student.subProgram.includes('내신'));
   const hasVisibleCurriculum = !isNaesin && progressList.length > 0;
+  const hasBusMemo = Boolean(student.studentMemo && (student.studentMemo.includes('🚍') || student.studentMemo.includes('차량')));
 
   return (
     <Card className="relative shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem] bg-white group flex flex-col pt-3 pb-2 border-none ring-0">
@@ -284,13 +302,20 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
               {student.name}
             </button>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
-              <span 
-                onClick={() => setIsAttendanceOpen(true)}
-                className="text-sm font-semibold text-foreground/60 hover:text-primary transition-colors cursor-pointer hover:underline decoration-dotted decoration-primary/50 underline-offset-4"
-                title="하원 예정시간 변경"
-              >
-                {formatTime(student.dismissalTime)}
-              </span>
+              <div className="flex items-center gap-0.5">
+                {hasBusMemo && (
+                  <span title="차량" className="inline-flex items-center text-[13px] leading-none select-none -translate-y-[1px]">
+                    🚍
+                  </span>
+                )}
+                <span 
+                  onClick={() => setIsAttendanceOpen(true)}
+                  className="text-sm font-semibold text-foreground/60 hover:text-primary transition-colors cursor-pointer hover:underline decoration-dotted decoration-primary/50 underline-offset-4"
+                  title="하원 예정시간 변경"
+                >
+                  {formatTime(student.dismissalTime)}
+                </span>
+              </div>
               {isResultDelayed(student.level, student.lastResultDate) && (
                 <span className="text-sm font-medium text-red-600/90 text-left">결과물</span>
               )}
@@ -498,11 +523,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
 
                   <div className="flex items-center gap-1.5 shrink-0 pr-[1.5px]">
                     {editingCurriculumKeys[key] ? (
-                      <div className="flex items-center gap-1">
+                      <div ref={statusEditContainerRef} className="flex items-center gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                          className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border-0 shadow-none"
                           onClick={() => handleStatusUpdate(item.bookId, item.index)}
                           disabled={updating === key}
                           title="저장"
@@ -512,14 +537,14 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border border-zinc-100/75"
+                          className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border-0 shadow-none"
                           onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }))}
                           title="취소"
                         >
                           <X className="w-3.5 h-3.5" />
                         </Button>
                         <select 
-                          className={`bg-white border rounded-full px-2 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
+                          className={`bg-white border rounded-full px-1.5 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
                             isProgressing
                               ? 'ring-amber-400 text-amber-900 border-amber-200'
                               : isWriting 
@@ -537,7 +562,8 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                       </div>
                     ) : (
                       <span 
-                        onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
+                        onDoubleClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
+                        title="더블클릭하여 상태 수정"
                         className={`px-2.5 py-0.5 rounded-full text-[12px] font-medium cursor-pointer select-none transition-all hover:opacity-80 shadow-sm ${
                           currentStatus.status === '진행'
                             ? 'bg-amber-50 text-amber-700 border border-amber-200'

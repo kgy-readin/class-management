@@ -14,7 +14,7 @@ import {
   StudentEditInfoDialog,
   MobileEditCurriculumDialog
 } from './StudentPopups';
-import React, { useState, useEffect, useOptimistic, useTransition } from 'react';
+import React, { useState, useEffect, useRef, useOptimistic, useTransition } from 'react';
 import { curriculumApi, writingStatusApi, studentApi, bookApi } from '@/src/services/api';
 import { getWeeksSince } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,15 @@ interface StudentDetailProps {
 }
 
 export default function StudentDetail({ studentName, data, setData, onBack, onRefresh }: StudentDetailProps) {
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ status: string; index: number; bookTitle: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{
+    index: number;
+    field: 'index' | 'bookTitle' | 'status';
+  } | null>(null);
+  const [editValues, setEditValues] = useState<{
+    status?: string;
+    index?: number;
+    bookTitle?: string;
+  } | null>(null);
   const [addingWriting, setAddingWriting] = useState<string | null>(null);
   const [writingConfirmItem, setWritingConfirmItem] = useState<any | null>(null);
   const [deletingItem, setDeletingItem] = useState<any | null>(null);
@@ -99,9 +106,9 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
               if (item.bookId === action.payload.bookId && item.index === action.payload.originalIndex) {
                 return {
                   ...item,
-                  status: action.payload.status,
-                  index: action.payload.index,
-                  bookTitle: action.payload.bookTitle,
+                  status: action.payload.status !== undefined ? action.payload.status : item.status,
+                  index: action.payload.index !== undefined ? action.payload.index : item.index,
+                  bookTitle: action.payload.bookTitle !== undefined ? action.payload.bookTitle : item.bookTitle,
                 };
               }
               return item;
@@ -116,25 +123,48 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
   );
 
   const handleUpdate = async (bookId: string) => {
-    if (!editValues) return;
-    const originalIndex = editingIndex!;
-    const { status, index, bookTitle } = editValues;
+    if (!editValues || !editingCell) return;
+    const originalIndex = editingCell.index;
+    const { field } = editingCell;
+
+    // 해당 정보만 payload에 담아서 GAS로 전송
+    const updatePayload: {
+      studentName: string;
+      bookId: string;
+      originalIndex: number;
+      index?: number;
+      bookTitle?: string;
+      status?: string;
+    } = {
+      studentName,
+      bookId,
+      originalIndex
+    };
+
+    if (field === 'index' && editValues.index !== undefined) {
+      updatePayload.index = editValues.index;
+    } else if (field === 'bookTitle' && editValues.bookTitle !== undefined) {
+      updatePayload.bookTitle = editValues.bookTitle;
+    } else if (field === 'status' && editValues.status !== undefined) {
+      updatePayload.status = editValues.status;
+    }
 
     startTransition(async () => {
       setOptimisticCurriculum({ 
         type: 'update', 
-        payload: { bookId, originalIndex, status, index, bookTitle } 
-      });
-      setEditingIndex(null);
-      try {
-        await curriculumApi.update({ 
-          studentName, 
+        payload: { 
           bookId, 
-          status,
-          index,
-          bookTitle,
-          originalIndex
-        });
+          originalIndex, 
+          status: updatePayload.status, 
+          index: updatePayload.index, 
+          bookTitle: updatePayload.bookTitle 
+        } 
+      });
+      setEditingCell(null);
+      setEditValues(null);
+
+      try {
+        await curriculumApi.update(updatePayload);
         toast.success(MESSAGES.students.updateSuccess(studentName));
         
         if (setData) {
@@ -144,14 +174,14 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
             let updatedStudents = prev.students;
             const previousItem = prev.curriculums.find(c => c.studentName === studentName && c.bookId === bookId && c.index === originalIndex);
             
-            if (previousItem && previousItem.status !== status) {
+            if (field === 'status' && updatePayload.status && previousItem && previousItem.status !== updatePayload.status) {
               const isBook = bookId && bookId.trim() !== '' && bookId.trim() !== '-';
               if (isBook) {
                 updatedStudents = prev.students.map(s => {
                   if (s.name === studentName) {
                     let diff = 0;
-                    if (status === '통과' && previousItem.status !== '통과') diff = 1;
-                    else if (previousItem.status === '통과' && status !== '통과') diff = -1;
+                    if (updatePayload.status === '통과' && previousItem.status !== '통과') diff = 1;
+                    else if (previousItem.status === '통과' && updatePayload.status !== '통과') diff = -1;
                     
                     return {
                       ...s,
@@ -167,9 +197,9 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
               if (c.studentName === studentName && c.bookId === bookId && c.index === originalIndex) {
                 return {
                   ...c,
-                  status: status as any,
-                  index,
-                  bookTitle
+                  status: (updatePayload.status !== undefined ? updatePayload.status : c.status) as any,
+                  index: updatePayload.index !== undefined ? updatePayload.index : c.index,
+                  bookTitle: updatePayload.bookTitle !== undefined ? updatePayload.bookTitle : c.bookTitle
                 };
               }
               return c;
@@ -187,6 +217,28 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       }
     });
   };
+
+  const handleCancelEdit = () => {
+    setEditingCell(null);
+    setEditValues(null);
+  };
+
+  const editingRowRef = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    if (!editingCell) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (editingRowRef.current && !editingRowRef.current.contains(e.target as Node)) {
+        handleCancelEdit();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingCell]);
 
   const handleAddToWritingStatus = async (item: any) => {
     setAddingWriting(item.bookId);
@@ -562,8 +614,10 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                 <TableHead className="h-[38px] pb-[6px] font-semibold uppercase tracking-widest px-3">도서명</TableHead>
                 <TableHead className="h-[38px] pb-[6px] w-[100px] lg:w-[130px] text-center font-semibold uppercase tracking-widest px-1">정보</TableHead>
                 <TableHead className="h-[38px] pb-[6px] w-[80px] lg:w-[114px] text-center font-semibold uppercase tracking-widest px-1">학원번호</TableHead>
-                <TableHead className="h-[38px] pb-[6px] w-[94px] lg:w-[124px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
-                <TableHead className="h-[38px] pb-[6px] w-[98px] lg:w-[130px] text-center font-semibold uppercase tracking-widest pl-1 pr-1">관리</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[82px] lg:w-[108px] text-center font-semibold uppercase tracking-widest px-1">상태</TableHead>
+                <TableHead className="h-[38px] pb-[6px] w-[75px] lg:w-[100px] text-center font-semibold uppercase tracking-widest px-1">
+                  <span className="inline-block md:-translate-x-1">관리</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -582,30 +636,62 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
               ) : (
                 optimisticCurriculum.map((item, idx) => {
                   const isLast = idx === optimisticCurriculum.length - 1;
+                  const isRowEditing = editingCell?.index === item.index;
+
                   return (
-                    <TableRow key={`${item.index}-${item.bookTitle}-${idx}`} className="border-border/20 hover:bg-secondary/10 transition-colors">
+                    <TableRow 
+                      key={`${item.index}-${item.bookTitle}-${idx}`} 
+                      ref={isRowEditing ? editingRowRef : undefined}
+                      className="border-border/20 hover:bg-secondary/10 transition-colors"
+                    >
                     <TableCell className={`text-center pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
-                    {editingIndex === item.index ? (
+                    {isRowEditing && editingCell?.field === 'index' ? (
                       <input 
                         type="number"
-                        className="w-10 bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal text-center focus:ring-2 ring-primary/20 outline-none"
-                        value={editValues?.index}
-                        onChange={(e) => setEditValues(prev => prev ? { ...prev, index: parseInt(e.target.value) || 0 } : null)}
+                        className="w-10 bg-white border border-border/50 rounded-lg px-1 py-1 text-sm font-normal text-center focus:ring-2 ring-primary/20 outline-none"
+                        value={editValues?.index ?? item.index}
+                        autoFocus
+                        onChange={(e) => setEditValues(prev => ({ ...prev, index: parseInt(e.target.value) || 0 }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(item.bookId);
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
                       />
                     ) : (
-                      <span className="font-normal text-zinc-600 text-xs sm:text-sm">{item.index}</span>
+                      <span 
+                        className="font-normal text-zinc-600 text-xs sm:text-sm cursor-pointer hover:text-primary transition-colors select-none"
+                        title="더블클릭하여 순서 수정"
+                        onDoubleClick={() => {
+                          setEditingCell({ index: item.index, field: 'index' });
+                          setEditValues({ index: item.index });
+                        }}
+                      >
+                        {item.index}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className={`px-3 ${isLast ? 'pb-1' : ''}`}>
-                    {editingIndex === item.index ? (
+                    {isRowEditing && editingCell?.field === 'bookTitle' ? (
                       <input 
-                        className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
-                        value={editValues?.bookTitle}
-                        onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)}
+                        className="w-full bg-white border border-border/50 rounded-lg px-2 py-1 text-sm font-normal focus:ring-2 ring-primary/20 outline-none"
+                        value={editValues?.bookTitle ?? item.bookTitle}
+                        autoFocus
+                        onChange={(e) => setEditValues(prev => ({ ...prev, bookTitle: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(item.bookId);
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
                       />
                     ) : (
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground text-xs sm:text-sm">{item.bookTitle}</span>
+                      <div 
+                        className="flex flex-col cursor-pointer select-none group"
+                        title="더블클릭하여 도서명 수정"
+                        onDoubleClick={() => {
+                          setEditingCell({ index: item.index, field: 'bookTitle' });
+                          setEditValues({ bookTitle: item.bookTitle });
+                        }}
+                      >
+                        <span className="font-medium text-foreground text-xs sm:text-sm group-hover:text-primary transition-colors">{item.bookTitle}</span>
                       </div>
                     )}
                   </TableCell>
@@ -620,33 +706,48 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                     </span>
                   </TableCell>
                   <TableCell className={`text-center px-1 ${isLast ? 'pb-1' : ''}`}>
-                    {editingIndex === item.index ? (
+                    {isRowEditing && editingCell?.field === 'status' ? (
                       <select 
-                        className="w-full bg-white border border-border/50 rounded-lg px-1 py-1 text-xs font-normal focus:ring-2 ring-primary/20 outline-none"
-                        value={editValues?.status}
-                        onChange={(e) => setEditValues(prev => prev ? { ...prev, status: e.target.value } : null)}
+                        className="w-[60px] mx-auto block bg-white border border-border/50 rounded-lg px-1 py-1 text-sm font-normal focus:ring-2 ring-primary/20 outline-none text-center cursor-pointer"
+                        value={editValues?.status ?? item.status}
+                        autoFocus
+                        onChange={(e) => setEditValues(prev => ({ ...prev, status: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(item.bookId);
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
                       >
                         {['예정', '진행', '통과', '불통'].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     ) : (
-                      <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                        item.status === '통과' ? getTagColor('파란색') :
-                        item.status === '진행' ? getTagColor('노란색') :
-                        item.status === '불통' ? getTagColor('빨간색') :
-                        getTagColor('기본')
-                      }`}>
-                        {item.status}
-                      </Badge>
+                      <div 
+                        className="cursor-pointer inline-block select-none"
+                        title="더블클릭하여 상태 수정"
+                        onDoubleClick={() => {
+                          setEditingCell({ index: item.index, field: 'status' });
+                          setEditValues({ status: item.status });
+                        }}
+                      >
+                        <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 transition-transform hover:scale-105 ${
+                          item.status === '통과' ? getTagColor('파란색') :
+                          item.status === '진행' ? getTagColor('노란색') :
+                          item.status === '불통' ? getTagColor('빨간색') :
+                          getTagColor('기본')
+                        }`}>
+                          {item.status}
+                        </Badge>
+                      </div>
                     )}
                   </TableCell>
-                  <TableCell className={`text-left pl-1 pr-1 ${isLast ? 'pb-1' : ''}`}>
-                    {editingIndex === item.index ? (
-                      <div className="flex items-center justify-start gap-1">
+                  <TableCell className={`text-left pl-1 sm:pl-2 pr-1 ${isLast ? 'pb-1' : ''}`}>
+                    {isRowEditing ? (
+                      <div className="flex items-center justify-start gap-0.5 md:pl-1">
                         <Button 
                           size="icon" 
                           variant="ghost" 
                           className="h-8 w-8 text-primary hover:bg-primary/10"
                           onClick={() => handleUpdate(item.bookId)}
+                          title="저장"
                         >
                           <Save className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                         </Button>
@@ -654,100 +755,38 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                           size="icon" 
                           variant="ghost" 
                           className="h-8 w-8 text-muted-foreground hover:bg-secondary"
-                          onClick={() => setEditingIndex(null)}
+                          onClick={handleCancelEdit}
+                          title="취소"
                         >
                           <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4 rotate-45" />
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-start gap-0">
-                        {/* Desktop actions (shown on medium and larger screens) */}
-                        <div className="hidden md:flex items-center justify-start gap-0">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="수정"
-                            className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                            onClick={() => {
-                              setEditingIndex(item.index);
-                              setEditValues({ 
-                                status: item.status,
-                                index: item.index,
-                                bookTitle: item.bookTitle
-                              });
-                            }}
-                          >
-                            <Pencil className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                          </Button>
-                          {item.bookTitle !== '글쓰기' && (
-                            <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
-                              <DialogTrigger render={
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className={`h-8 w-8 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 ${addingWriting === item.bookId ? 'animate-pulse' : ''}`}
-                                  onClick={() => setWritingConfirmItem(item)}
-                                  disabled={addingWriting === item.bookId}
-                                  title="글쓰기 현황 추가"
-                                >
-                                  <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
-                                </Button>
-                              } />
-                              <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                                <div className="p-8 text-center space-y-6">
-                                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                                    <FilePlus className="w-8 h-8 text-primary" />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
-                                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                      <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
-                                      글쓰기 현황을 추가하시겠습니까?
-                                    </p>
-                                  </div>
-                                  <div className="flex gap-3">
-                                    <DialogClose render={
-                                      <Button 
-                                        variant="secondary" 
-                                        className="flex-1 h-12 rounded-2xl font-bold"
-                                      >
-                                        취소
-                                      </Button>
-                                    } />
-                                    <Button 
-                                      className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
-                                      onClick={() => handleAddToWritingStatus(item)}
-                                    >
-                                      추가
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          )}
-                          
-                          <Dialog open={deletingItem?.bookId === item.bookId && deletingItem?.index === item.index} onOpenChange={(open) => !open && setDeletingItem(null)}>
+                      <div className="flex items-center justify-start gap-0 md:pl-1">
+                        {item.bookTitle !== '글쓰기' && (
+                          <Dialog open={writingConfirmItem?.bookId === item.bookId} onOpenChange={(open) => !open && setWritingConfirmItem(null)}>
                             <DialogTrigger render={
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeletingItem(item)}
-                                title="삭제"
+                                className={`h-8 w-8 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 ${addingWriting === item.bookId ? 'animate-pulse' : ''}`}
+                                onClick={() => setWritingConfirmItem(item)}
+                                disabled={addingWriting === item.bookId}
+                                title="글쓰기 현황 추가"
                               >
-                                <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                                <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                               </Button>
                             } />
                             <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
                               <div className="p-8 text-center space-y-6">
-                                <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-                                  <Trash2 className="w-8 h-8 text-destructive" />
+                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                                  <FilePlus className="w-8 h-8 text-primary" />
                                 </div>
                                 <div className="space-y-2">
-                                  <h3 className="text-lg font-extrabold text-foreground">항목 삭제</h3>
+                                  <h3 className="text-lg font-extrabold text-foreground">글쓰기 추가</h3>
                                   <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                    <span className="text-destructive font-bold">'{item.bookTitle}'</span> 항목을<br />
-                                    목록에서 삭제하시겠습니까?
+                                    <span className="text-primary font-bold">'{item.bookTitle}'</span> 도서로<br />
+                                    글쓰기 현황을 추가하시겠습니까?
                                   </p>
                                 </div>
                                 <div className="flex gap-3">
@@ -760,33 +799,62 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                                     </Button>
                                   } />
                                   <Button 
-                                    variant="destructive"
-                                    className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
-                                    onClick={() => handleDeleteCurriculum(item)}
-                                    disabled={isDeleting}
+                                    className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-extrabold shadow-lg shadow-primary/20"
+                                    onClick={() => handleAddToWritingStatus(item)}
                                   >
-                                    {isDeleting ? '삭제 중...' : '삭제'}
+                                    추가
                                   </Button>
                                 </div>
                               </div>
                             </DialogContent>
                           </Dialog>
-                        </div>
-
-                        {/* Mobile actions (shown only on mobile/tablet portrait under md breakpoint) */}
-                        <div className="flex md:hidden items-center justify-start">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="수정"
-                            className="h-8 w-8 rounded-xl text-neutral-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                            onClick={() => {
-                              setMobileEditItem(item);
-                            }}
-                          >
-                            <Pencil className="w-[15px] h-[15px]" />
-                          </Button>
-                        </div>
+                        )}
+                        
+                        <Dialog open={deletingItem?.bookId === item.bookId && deletingItem?.index === item.index} onOpenChange={(open) => !open && setDeletingItem(null)}>
+                          <DialogTrigger render={
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeletingItem(item)}
+                              title="삭제"
+                            >
+                              <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+                            </Button>
+                          } />
+                          <DialogContent className="sm:max-w-[360px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+                            <div className="p-8 text-center space-y-6">
+                              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                                <Trash2 className="w-8 h-8 text-destructive" />
+                              </div>
+                              <div className="space-y-2">
+                                <h3 className="text-lg font-extrabold text-foreground">항목 삭제</h3>
+                                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                                  <span className="text-destructive font-bold">'{item.bookTitle}'</span> 항목을<br />
+                                  목록에서 삭제하시겠습니까?
+                                </p>
+                              </div>
+                              <div className="flex gap-3">
+                                <DialogClose render={
+                                  <Button 
+                                    variant="secondary" 
+                                    className="flex-1 h-12 rounded-2xl font-bold"
+                                  >
+                                    취소
+                                  </Button>
+                                } />
+                                <Button 
+                                  variant="destructive"
+                                  className="flex-1 h-12 rounded-2xl font-extrabold shadow-lg shadow-destructive/20"
+                                  onClick={() => handleDeleteCurriculum(item)}
+                                  disabled={isDeleting}
+                                >
+                                  {isDeleting ? '삭제 중...' : '삭제'}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     )}
                   </TableCell>
