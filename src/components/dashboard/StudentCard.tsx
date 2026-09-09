@@ -534,15 +534,6 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                         >
                           <Save className="w-3.5 h-3.5 stroke-[2]" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all flex items-center justify-center cursor-pointer border-0 shadow-none"
-                          onClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }))}
-                          title="취소"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
                         <select 
                           className={`bg-white border rounded-full px-1.5 py-0.5 text-[12px] font-medium focus:ring-1 outline-none shadow-sm ${
                             isProgressing
@@ -552,6 +543,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                                 : 'ring-primary/20 text-foreground border-zinc-200'
                           }`}
                           value={currentStatus.status}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleStatusUpdate(item.bookId, item.index);
+                            if (e.key === 'Escape') setEditingCurriculumKeys(prev => ({ ...prev, [key]: false }));
+                          }}
                           onChange={(e) => setLocalStatuses(prev => ({
                             ...prev,
                             [key]: { ...currentStatus, status: e.target.value }
