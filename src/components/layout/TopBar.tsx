@@ -282,7 +282,7 @@ export default function TopBar({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.88, y: -10 }}
                   transition={{ type: 'spring', damping: 18, stiffness: 240 }}
-                  className="absolute left-0 top-11.5 z-[100] w-[200px] bg-white border border-neutral-100 rounded-xl shadow-xl px-[12px] pt-[18px] pb-[14px] flex flex-col mt-2 origin-top-left"
+                  className="absolute left-0 top-11.5 z-[100] w-[180px] max-w-[90vw] bg-white border border-neutral-100 rounded-xl shadow-xl px-[12px] pt-[18px] pb-[14px] flex flex-col mt-2 origin-top-left"
                 >
                   <div className="relative z-10 flex flex-col">
                     {menuCategories.map((group, groupIdx) => (
