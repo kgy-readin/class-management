@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -9,10 +9,10 @@ import {
   Feather,
   Archive, 
   Menu, 
-  LayoutDashboard, 
+  House, 
   SquareCheckBig, 
   Sparkles, 
-  ScrollText, 
+  Newspaper, 
   MessagesSquare, 
   BriefcaseBusiness,
   Star,
@@ -182,27 +182,42 @@ export default function TopBar({
     switch (tab) {
       case 'dashboard': return 'Dashboard';
       case 'students': return 'Students';
-      case 'writing': return 'Writing';
+      case 'writing': return 'Writings';
       case 'tasks': return 'Tasks';
       case 'logs': return 'Logs';
       case 'meeting': return 'Meeting';
       case 'noticeForm': return 'Notice Form';
       case 'beginners': return 'Beginners';
-      case 'familyLetters': return 'Family Letters';
+      case 'familyLetters': return 'Reports';
       default: return 'Dashboard';
     }
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'students', label: 'Students', icon: UsersRound },
-    { id: 'writing', label: 'Writing', icon: Feather },
-    { id: 'logs', label: 'Logs', icon: Archive },
-    { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
-    { id: 'meeting', label: 'Meeting', icon: MessagesSquare },
-    { id: 'noticeForm', label: 'Notice Form', icon: AtSign },
-    { id: 'beginners', label: 'Beginners', icon: Sparkles },
-    { id: 'familyLetters', label: 'Family Letters', icon: ScrollText },
+  const menuCategories = [
+    {
+      category: 'CLASS',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: House },
+        { id: 'students', label: 'Students', icon: UsersRound },
+        { id: 'writing', label: 'Writings', icon: Feather },
+      ],
+    },
+    {
+      category: 'WORK',
+      items: [
+        { id: 'tasks', label: 'Tasks', icon: SquareCheckBig },
+        { id: 'familyLetters', label: 'Reports', icon: Newspaper },
+      ],
+    },
+    {
+      category: 'ASSISTANCE',
+      items: [
+        { id: 'logs', label: 'Logs', icon: Archive },
+        { id: 'meeting', label: 'Meeting', icon: MessagesSquare },
+        { id: 'noticeForm', label: 'Notice Form', icon: AtSign },
+        { id: 'beginners', label: 'Beginners', icon: Sparkles },
+      ],
+    },
   ];
 
   return (
@@ -267,35 +282,43 @@ export default function TopBar({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.88, y: -10 }}
                   transition={{ type: 'spring', damping: 18, stiffness: 240 }}
-                  className="absolute left-0 top-11.5 z-[100] w-44 bg-white border border-neutral-100 rounded-xl shadow-xl p-2 flex flex-col gap-0.5 mt-2 origin-top-left"
+                  className="absolute left-0 top-11.5 z-[100] w-[200px] bg-white border border-neutral-100 rounded-xl shadow-xl px-[12px] pt-[18px] pb-[14px] flex flex-col mt-2 origin-top-left"
                 >
                   <div className="relative z-10 flex flex-col">
-                    {menuItems.map((item) => {
-                      const Icon = item.icon;
-                      const isSelected = activeTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectTab(item.id);
-                            onSetSelectedStudent(null);
-                            setIsMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-zinc-50 text-primary font-semibold text-left'
-                              : 'text-zinc-650 hover:bg-zinc-50 hover:text-zinc-900 text-left'
-                          }`}
-                        >
-                          <Icon 
-                            className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-400'}`} 
-                            strokeWidth={item.id === 'familyLetters' ? 2.4 : undefined} 
-                          />
-                          <span>{item.label}</span>
-                        </button>
-                      );
-                    })}
+                    {menuCategories.map((group, groupIdx) => (
+                      <div key={group.category} className={`flex flex-col ${groupIdx > 0 ? 'mt-3.5' : ''}`}>
+                        <div className="px-3 pt-[2px] pb-[4px] text-[10px] md:text-[11px] font-semibold text-zinc-400 uppercase tracking-wider select-none">
+                          {group.category}
+                        </div>
+                        <div className="flex flex-col">
+                          {group.items.map((item) => {
+                            const Icon = item.icon;
+                            const isSelected = activeTab === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  onSelectTab(item.id);
+                                  onSetSelectedStudent(null);
+                                  setIsMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-[13px] md:text-[14px] font-medium transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-zinc-50 text-primary font-semibold text-left'
+                                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 text-left'
+                                }`}
+                              >
+                                <Icon 
+                                  className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-zinc-600'}`} 
+                                />
+                                <span className={isSelected ? 'text-primary font-semibold' : ''}>{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               </>
@@ -326,8 +349,8 @@ export default function TopBar({
                   <div className="relative z-10 flex flex-col h-full min-h-0">
                     {/* Header - Fixed */}
                     <div className="flex items-center justify-between pb-2 mb-[2px] border-b border-border/40 select-none shrink-0">
-                      <span className="text-[15px] font-semibold text-zinc-800 pl-[4px]">
-                        메모
+                      <span className="text-[10px] md:text-[11px] font-semibold text-zinc-400 uppercase tracking-wider pl-[4px]">
+                        MEMO
                       </span>
                       {isEditingMemo ? (
                         <div className="flex items-center gap-1.5">

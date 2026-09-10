@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { UsersRound } from 'lucide-react';
+import { UsersRound, Feather } from 'lucide-react';
 import { DashboardData } from '../../types';
 import StudentCard from './StudentCard';
 
@@ -8,10 +8,11 @@ interface DashboardProps {
   onRefresh: () => void;
   onSelectStudent: (name: string) => void;
   onNavigateToStudents?: () => void;
+  onNavigateToWriting?: () => void;
   setData?: React.Dispatch<React.SetStateAction<DashboardData | null>>;
 }
 
-export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigateToStudents, setData }: DashboardProps) {
+export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigateToStudents, onNavigateToWriting, setData }: DashboardProps) {
   if (!data) return null;
 
   const attendingStudents = data.students
@@ -52,13 +53,23 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
             {dateString}
           </span>
 
-          <button
-            onClick={onNavigateToStudents}
-            className="absolute right-4 md:right-5 flex items-center justify-center w-8.5 h-8.5 rounded-full border border-zinc-200/60 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-zinc-700 cursor-pointer"
-            title="Students"
-          >
-            <UsersRound className="w-4 h-4" />
-          </button>
+          <div className="absolute right-4 md:right-5 flex items-center gap-2">
+            <button
+              onClick={onNavigateToWriting}
+              className="flex items-center justify-center w-8.5 h-8.5 rounded-full border border-zinc-200/60 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-zinc-700 cursor-pointer"
+              title="Writing"
+            >
+              <Feather className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onNavigateToStudents}
+              className="flex items-center justify-center w-8.5 h-8.5 rounded-full border border-zinc-200/60 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-zinc-700 cursor-pointer"
+              title="Students"
+            >
+              <UsersRound className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

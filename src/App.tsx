@@ -130,10 +130,10 @@ export default function App() {
 
   // Helper to define mode categories
   const getModeByTab = (tab: string): 'sub' | 'class' | 'work' => {
-    if (['writing', 'logs', 'noticeForm', 'beginners'].includes(tab)) {
+    if (['logs', 'meeting', 'noticeForm', 'beginners'].includes(tab)) {
       return 'sub';
     }
-    if (['tasks', 'meeting', 'familyLetters'].includes(tab)) {
+    if (['tasks', 'familyLetters'].includes(tab)) {
       return 'work';
     }
     return 'class';
@@ -370,6 +370,7 @@ export default function App() {
                     navigate(targetPath);
                   }}
                   onNavigateToStudents={() => selectTab('students')}
+                  onNavigateToWriting={() => selectTab('writing')}
                   setData={setData}
                 />
               </div>

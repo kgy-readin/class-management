@@ -175,7 +175,7 @@ export default function FamilyLetters() {
         localStorage.setItem('webapp_family_letters_tabs_backup', JSON.stringify(data));
       }
     } catch (error: any) {
-      console.error('Failed to load family letter tabs data:', error);
+      console.warn('FamilyLetters fetchTabsData notice:', error?.message || error);
       if (!hasCache) {
         toast.error(MESSAGES.familyLetters.loadError(error.message));
       }

@@ -132,7 +132,7 @@ export default function NoticeForm() {
         localStorage.setItem('webapp_notice_form_tabs_backup', JSON.stringify(data));
       }
     } catch (error: any) {
-      console.error('Failed to load tabs data:', error);
+      console.warn('NoticeForm fetchTabsData notice:', error?.message || error);
       if (!hasCache) {
         toast.error(MESSAGES.noticeform.loadError(error.message));
       }

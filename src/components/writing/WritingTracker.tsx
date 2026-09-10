@@ -51,6 +51,86 @@ const parseMonthValue = (str: string): Date | null => {
   return null;
 };
 
+// Converts yyyy-MM-dd to MM.dd text display
+const formatDateToMMDD = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const clean = dateStr.trim();
+  if (clean.includes('-')) {
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const mm = parts[1].padStart(2, '0');
+      const dd = parts[2].padStart(2, '0');
+      return `${mm}.${dd}`;
+    }
+  }
+  if (clean.includes('/')) {
+    const parts = clean.split('/');
+    if (parts.length === 3) {
+      const mm = parts[1].padStart(2, '0');
+      const dd = parts[2].padStart(2, '0');
+      return `${mm}.${dd}`;
+    } else if (parts.length === 2) {
+      const mm = parts[0].padStart(2, '0');
+      const dd = parts[1].padStart(2, '0');
+      return `${mm}.${dd}`;
+    }
+  }
+  if (clean.includes('.')) {
+    const parts = clean.split('.');
+    if (parts.length === 3) {
+      const mm = parts[1].padStart(2, '0');
+      const dd = parts[2].padStart(2, '0');
+      return `${mm}.${dd}`;
+    } else if (parts.length === 2) {
+      const mm = parts[0].padStart(2, '0');
+      const dd = parts[1].padStart(2, '0');
+      return `${mm}.${dd}`;
+    }
+  }
+  try {
+    return format(parseISO(clean), 'MM.dd');
+  } catch {
+    return clean;
+  }
+};
+const formatDateToYYMMDD = formatDateToMMDD;
+
+// Parses user typed text (MM/dd, MM.dd, MMdd, yy/MM/dd, yyyy-MM-dd, etc.) back into standard yyyy-MM-dd
+const parseDateInputToDateStr = (text: string, originalDateStr: string): string => {
+  const clean = text.replace(/[^0-9]/g, '');
+  const now = new Date();
+  let baseYear = now.getFullYear();
+  if (originalDateStr && originalDateStr.includes('-')) {
+    const originalParts = originalDateStr.split('-');
+    if (originalParts[0] && originalParts[0].length === 4) {
+      baseYear = parseInt(originalParts[0], 10);
+    }
+  }
+  const currentCentury = Math.floor(baseYear / 100) * 100;
+
+  if (clean.length === 4) {
+    // MMdd (e.g. 0910 from "09/10" -> 2026-09-10)
+    const mm = clean.slice(0, 2);
+    const dd = clean.slice(2, 4);
+    return `${baseYear}-${mm}-${dd}`;
+  } else if (clean.length === 6) {
+    // yyMMdd (e.g. 260910 -> 2026-09-10)
+    const yy = parseInt(clean.slice(0, 2), 10);
+    const mm = clean.slice(2, 4);
+    const dd = clean.slice(4, 6);
+    const fullYear = currentCentury + yy;
+    return `${fullYear}-${mm}-${dd}`;
+  } else if (clean.length === 8) {
+    // yyyyMMdd (e.g. 20260910 -> 2026-09-10)
+    const yyyy = clean.slice(0, 4);
+    const mm = clean.slice(4, 6);
+    const dd = clean.slice(6, 8);
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return originalDateStr;
+};
+const parseYYMMDDToDateStr = parseDateInputToDateStr;
+
 export default function WritingTracker({ students = [] }: { students?: Student[] }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,7 +157,10 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   const [clearing, setClearing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ key: string; field: 'date' | 'bookTitle' | 'progress' } | null>(null);
   const [editValues, setEditValues] = useState<{ date: string; bookTitle: string; progress: string } | null>(null);
+  const [dateInputText, setDateInputText] = useState<string>('');
+  const editingRowRef = useRef<HTMLTableRowElement | HTMLDivElement | null>(null);
 
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
@@ -320,9 +403,55 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     }
   };
 
+  const handleCancelEdit = () => {
+    setEditingKey(null);
+    setEditingCell(null);
+    setEditValues(null);
+    setDateInputText('');
+  };
+
+  useEffect(() => {
+    if (!editingKey && !editingCell) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // If clicked inside the currently editing row/card, ignore
+      if (editingRowRef.current && editingRowRef.current.contains(target)) {
+        return;
+      }
+
+      // Safety check: if target is inside an input, select, option, or button, do not cancel
+      if (
+        target.closest('input') || 
+        target.closest('select') || 
+        target.closest('option') || 
+        target.closest('button') ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'SELECT' ||
+        target.tagName === 'OPTION'
+      ) {
+        return;
+      }
+
+      handleCancelEdit();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingKey, editingCell]);
+
   const handleStatusUpdate = (status: WritingStatus) => {
     if (!editValues) return;
     const key = `${status.name}-${status.bookTitle}-${status.date}`;
+
+    // Compute effective date if user was editing date
+    const finalDate = dateInputText.trim() 
+      ? parseYYMMDDToDateStr(dateInputText.trim(), editValues.date || status.date)
+      : (editValues.date || status.date);
 
     const oldStatuses = [...statuses];
 
@@ -333,7 +462,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
           ...s,
           bookTitle: editValues.bookTitle,
           progress: editValues.progress as any,
-          date: editValues.date
+          date: finalDate
         };
       }
       return s;
@@ -341,6 +470,9 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     setStatuses(updatedStatuses);
     localStorage.setItem('cachedWritingStatuses', JSON.stringify(updatedStatuses));
     setEditingKey(null);
+    setEditingCell(null);
+    setEditValues(null);
+    setDateInputText('');
     toast.success(MESSAGES.writing.updateSuccess);
 
     // Run update in background
@@ -348,7 +480,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       name: status.name, 
       bookTitle: editValues.bookTitle,
       progress: editValues.progress,
-      date: editValues.date,
+      date: finalDate,
       originalDate: status.date,
       originalBookTitle: status.bookTitle
     })
@@ -607,11 +739,11 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
             <table className="w-full text-left border-collapse table-fixed">
               <thead className="bg-zinc-50/70">
                 <tr className="bg-zinc-50/70 border-b border-solid border-zinc-100">
-                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">날짜</th>
-                  <th className="w-[13%] px-5 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
+                  <th className="w-[14%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">날짜</th>
+                  <th className="w-[14%] px-5 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">학생명</th>
                   <th className="w-[48%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest">도서명</th>
-                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
-                  <th className="w-[13%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
+                  <th className="w-[14%] px-6 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">상태</th>
+                  <th className="w-[10%] px-4 pr-8 py-4 text-[14px] font-semibold text-zinc-600 uppercase tracking-widest text-center">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
@@ -627,85 +759,172 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 ) : (
                   filteredStatuses.map((status, idx) => {
                     const key = `${status.name}-${status.bookTitle}-${status.date}`;
-                    const isEditing = editingKey === key;
+                    const isRowEditing = (editingKey === key) || (editingCell?.key === key);
+
                     return (
-                      <tr key={`${status.name}-${idx}`} className="hover:bg-secondary/5 transition-colors group">
+                      <tr 
+                        key={`${status.name}-${idx}`} 
+                        ref={isRowEditing ? (editingRowRef as React.RefObject<HTMLTableRowElement>) : undefined}
+                        className="hover:bg-secondary/5 transition-colors group"
+                      >
                         <td className="px-6 py-2.5 whitespace-nowrap text-center">
-                          {isEditing ? (
+                          {isRowEditing && (editingKey === key || editingCell?.field === 'date') ? (
+                            <div className="relative inline-flex items-center justify-between bg-white border border-neutral-300 rounded-md shadow-xs focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary h-7 px-2 w-[90px] max-w-[90px] mx-auto">
+                              <input 
+                                type="text"
+                                autoFocus={editingCell?.field === 'date'}
+                                placeholder="MM.DD"
+                                className="w-full text-[13px] md:text-[14px] bg-transparent border-0 outline-none text-center p-0 font-medium text-zinc-800"
+                                value={dateInputText}
+                                onChange={(e) => {
+                                  setDateInputText(e.target.value);
+                                  const parsed = parseYYMMDDToDateStr(e.target.value, editValues?.date || status.date);
+                                  setEditValues(prev => prev ? { ...prev, date: parsed } : null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleStatusUpdate(status);
+                                  if (e.key === 'Escape') handleCancelEdit();
+                                }}
+                              />
+                              <div className="relative flex items-center justify-center shrink-0 w-4 h-4 ml-1 cursor-pointer">
+                                <input
+                                  type="date"
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                  value={editValues?.date || status.date}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      setEditValues(prev => prev ? { ...prev, date: e.target.value } : null);
+                                      setDateInputText(formatDateToYYMMDD(e.target.value));
+                                    }
+                                  }}
+                                  title="달력으로 날짜 선택"
+                                />
+                                <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="cursor-pointer select-none inline-block hover:opacity-80"
+                              title="더블클릭하여 날짜 수정"
+                              onDoubleClick={() => {
+                                setEditingCell({ key, field: 'date' });
+                                setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                                setDateInputText(formatDateToYYMMDD(status.date));
+                              }}
+                            >
+                              <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{formatDateToYYMMDD(status.date)}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-5 py-2.5 whitespace-nowrap">
+                          <div
+                            className="cursor-pointer select-none inline-block hover:opacity-80"
+                            title="더블클릭하여 수정"
+                            onDoubleClick={() => {
+                              setEditingCell({ key, field: 'bookTitle' });
+                              setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                              setDateInputText(formatDateToYYMMDD(status.date));
+                            }}
+                          >
+                            <span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-2.5">
+                          {isRowEditing && (editingKey === key || editingCell?.field === 'bookTitle') ? (
                             <input 
-                              type="date"
-                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20 text-center cursor-pointer h-7"
-                              value={editValues?.date || ''}
-                              onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
-                              onClick={(e) => {
-                                try { e.currentTarget.showPicker(); } catch {}
+                              autoFocus={editingCell?.field === 'bookTitle'}
+                              className="w-full text-[13px] md:text-[15px] bg-white border border-neutral-300 rounded-md shadow-xs px-2.5 py-1 outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary"
+                              value={editValues?.bookTitle}
+                              onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleStatusUpdate(status);
+                                if (e.key === 'Escape') handleCancelEdit();
                               }}
                             />
                           ) : (
-                            <span className="text-[13px] md:text-[15px] font-normal text-muted-foreground">{format(parseISO(status.date), 'MM.dd')}</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-2.5 whitespace-nowrap"><span className="text-[13px] md:text-[15px] font-normal text-foreground">{status.name}</span></td>
-                        <td className="px-6 py-2.5">
-                          {isEditing ? (
-                            <input 
-                              className="w-full text-[13px] md:text-[15px] bg-white border border-border/50 rounded px-2 py-0.5 outline-none focus:ring-1 ring-primary/20"
-                              value={editValues?.bookTitle}
-                              onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)}
-                            />
-                          ) : (
-                            <span className="text-[13px] md:text-[15px] font-normal text-foreground line-clamp-1" title={status.bookTitle}>{status.bookTitle}</span>
+                            <div
+                              className="cursor-pointer select-none hover:opacity-80"
+                              title="더블클릭하여 도서명 수정"
+                              onDoubleClick={() => {
+                                setEditingCell({ key, field: 'bookTitle' });
+                                setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                                setDateInputText(formatDateToYYMMDD(status.date));
+                              }}
+                            >
+                              <span className="text-[13px] md:text-[15px] font-normal text-foreground line-clamp-1">{status.bookTitle}</span>
+                            </div>
                           )}
                         </td>
                         <td className="px-6 py-2.5 whitespace-nowrap">
                           <div className="flex justify-center">
-                            {isEditing ? (
+                            {isRowEditing && (editingKey === key || editingCell?.field === 'progress') ? (
                               <select
-                                className="text-[13px] md:text-[15px] font-normal bg-white border border-border/50 rounded px-1 py-0.5 outline-none focus:ring-1 ring-primary/20"
+                                autoFocus={editingCell?.field === 'progress'}
+                                className="text-[13px] md:text-[15px] font-normal bg-white border border-neutral-300 rounded-md shadow-xs px-2 py-1 outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary cursor-pointer"
                                 value={editValues?.progress}
                                 onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleStatusUpdate(status);
+                                  if (e.key === 'Escape') handleCancelEdit();
+                                }}
                               >
-                              {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
+                                {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                               </select>
                             ) : (
-                              <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
-                                ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
-                                status.progress === '진행' ? getTagColor('노란색') :
-                                getTagColor('기본')
-                              }`}>
-                                {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
-                              </Badge>
+                              <div
+                                className="cursor-pointer select-none hover:opacity-80 transition-transform hover:scale-105"
+                                title="더블클릭하여 상태 수정"
+                                onDoubleClick={() => {
+                                  setEditingCell({ key, field: 'progress' });
+                                  setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                                  setDateInputText(formatDateToYYMMDD(status.date));
+                                }}
+                              >
+                                <Badge className={`rounded-lg font-normal text-xs sm:text-sm px-1.5 lg:px-2 ${
+                                  ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
+                                  status.progress === '진행' ? getTagColor('노란색') :
+                                  getTagColor('기본')
+                                }`}>
+                                  {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
+                                </Badge>
+                              </div>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-2.5 whitespace-nowrap">
-                          <div className="flex justify-center gap-1.5">
-                            {isEditing ? (
-                              <>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key}><Save className="w-4 h-4" /></Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={() => setEditingKey(null)}><X className="w-4 h-4" /></Button>
-                              </>
-                            ) : (
+                        <td className="px-4 pr-8 py-2.5 whitespace-nowrap">
+                          <div className="flex justify-center gap-1">
+                            {isRowEditing ? (
                               <>
                                 <Button 
-                                  size="icon"
+                                  size="icon" 
                                   variant="ghost" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
-                                  onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
-                                  title="수정"
+                                  className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg" 
+                                  onClick={() => handleStatusUpdate(status)} 
+                                  disabled={updatingStatus === key}
+                                  title="저장"
                                 >
-                                  <Pencil className="w-4 h-4" />
+                                  <Save className="w-4 h-4" />
                                 </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                                  onClick={() => setDeletingItem(status)}
-                                  title="삭제"
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-8 w-8 text-muted-foreground hover:bg-secondary rounded-lg" 
+                                  onClick={handleCancelEdit}
+                                  title="취소"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <X className="w-4 h-4" />
                                 </Button>
                               </>
+                            ) : (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                                onClick={() => setDeletingItem(status)}
+                                title="삭제"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -728,52 +947,101 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
             ) : (
               filteredStatuses.map((status, idx) => {
                 const key = `${status.name}-${status.bookTitle}-${status.date}`;
-                const isEditing = editingKey === key;
+                const isRowEditing = (editingKey === key) || (editingCell?.key === key);
                 return (
-                  <div key={`${status.name}-${idx}`} className="p-6 space-y-4 hover:bg-secondary/5 transition-colors">
+                  <div 
+                    key={`${status.name}-${idx}`} 
+                    ref={isRowEditing ? (editingRowRef as React.RefObject<HTMLDivElement>) : undefined}
+                    className="p-6 space-y-4 hover:bg-secondary/5 transition-colors"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        {isEditing ? (
-                          <input 
-                            type="date"
-                            className="text-xs bg-white border border-border/50 rounded px-2 py-1 outline-none focus:ring-1 ring-primary/20 cursor-pointer h-7"
-                            value={editValues?.date || ''}
-                            onChange={(e) => setEditValues(prev => prev ? { ...prev, date: e.target.value } : null)}
-                            onClick={(e) => {
-                              try { e.currentTarget.showPicker(); } catch {}
-                            }}
-                          />
+                        {isRowEditing && (editingKey === key || editingCell?.field === 'date') ? (
+                          <div className="relative inline-flex items-center justify-between bg-white border border-neutral-300 rounded-md shadow-xs focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary h-7 px-2 w-[90px] max-w-[90px]">
+                            <input 
+                              type="text"
+                              autoFocus={editingCell?.field === 'date'}
+                              placeholder="MM.DD"
+                              className="w-full bg-transparent border-0 outline-none text-xs text-center p-0 font-medium text-zinc-800"
+                              value={dateInputText}
+                              onChange={(e) => {
+                                setDateInputText(e.target.value);
+                                const parsed = parseYYMMDDToDateStr(e.target.value, editValues?.date || status.date);
+                                setEditValues(prev => prev ? { ...prev, date: parsed } : null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleStatusUpdate(status);
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                            />
+                            <div className="relative flex items-center justify-center shrink-0 w-4 h-4 ml-1 cursor-pointer">
+                              <input
+                                type="date"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                value={editValues?.date || status.date}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setEditValues(prev => prev ? { ...prev, date: e.target.value } : null);
+                                    setDateInputText(formatDateToYYMMDD(e.target.value));
+                                  }
+                                }}
+                                title="달력으로 날짜 선택"
+                              />
+                              <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+                            </div>
+                          </div>
                         ) : (
-                          <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">{format(parseISO(status.date), 'M월 d일')}</span>
+                          <span 
+                            className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg cursor-pointer select-none"
+                            title="더블클릭하여 날짜 수정"
+                            onDoubleClick={() => {
+                              setEditingCell({ key, field: 'date' });
+                              setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                              setDateInputText(formatDateToYYMMDD(status.date));
+                            }}
+                          >
+                            {formatDateToYYMMDD(status.date)}
+                          </span>
                         )}
-                        <span className="text-sm font-normal text-foreground whitespace-nowrap shrink-0">{status.name}</span>
-                        {!isEditing && (
-                          <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
-                            ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
-                            status.progress === '진행' ? getTagColor('노란색') :
-                            getTagColor('기본')
-                          }`}>
-                            {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
-                          </Badge>
+                        <span 
+                          className="text-sm font-normal text-foreground whitespace-nowrap shrink-0 cursor-pointer select-none"
+                          title="더블클릭하여 수정"
+                          onDoubleClick={() => {
+                            setEditingCell({ key, field: 'bookTitle' });
+                            setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                            setDateInputText(formatDateToYYMMDD(status.date));
+                          }}
+                        >
+                          {status.name}
+                        </span>
+                        {(!isRowEditing || (editingCell && editingCell.field !== 'progress')) && (
+                          <div
+                            className="cursor-pointer select-none inline-block"
+                            title="더블클릭하여 상태 수정"
+                            onDoubleClick={() => {
+                              setEditingCell({ key, field: 'progress' });
+                              setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                              setDateInputText(formatDateToYYMMDD(status.date));
+                            }}
+                          >
+                            <Badge className={`rounded-lg font-normal text-[11px] px-1.5 py-0.5 ${
+                              ((status.progress as string) === '완료' || (status.progress as string) === '완성') ? getTagColor('파란색') :
+                              status.progress === '진행' ? getTagColor('노란색') :
+                              getTagColor('기본')
+                            }`}>
+                              {((status.progress as string) === '완료' || (status.progress as string) === '완성') ? '완료' : status.progress}
+                            </Badge>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {isEditing ? (
+                        {isRowEditing ? (
                           <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key}><Save className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={() => setEditingKey(null)}><X className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key} title="저장"><Save className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={handleCancelEdit} title="취소"><X className="w-4 h-4" /></Button>
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg" 
-                              onClick={() => { setEditingKey(key); setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress }); }}
-                              title="수정"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -788,18 +1056,47 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                       </div>
                     </div>
                     <div className="space-y-1">
-                      {isEditing ? (
+                      {isRowEditing && (editingKey === key || editingCell?.field === 'bookTitle' || editingCell?.field === 'progress') ? (
                         <div className="space-y-3">
-                          <input className="w-full text-sm bg-white border border-border/50 rounded-xl px-3 py-2 outline-none focus:ring-1 ring-primary/20" value={editValues?.bookTitle} onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)} placeholder="도서명" />
+                          <input 
+                            autoFocus={editingCell?.field === 'bookTitle'}
+                            className="w-full text-sm bg-white border border-neutral-300 rounded-lg shadow-xs px-3 py-1.5 outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary" 
+                            value={editValues?.bookTitle} 
+                            onChange={(e) => setEditValues(prev => prev ? { ...prev, bookTitle: e.target.value } : null)} 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleStatusUpdate(status);
+                              if (e.key === 'Escape') handleCancelEdit();
+                            }}
+                            placeholder="도서명" 
+                          />
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">상태 변경</span>
-                            <select className="text-xs font-normal bg-white border border-border/50 rounded-lg px-2 py-1 outline-none focus:ring-1 ring-primary/20" value={editValues?.progress} onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}>
+                            <select 
+                              autoFocus={editingCell?.field === 'progress'}
+                              className="text-xs font-normal bg-white border border-neutral-300 rounded-lg shadow-xs px-2.5 py-1 outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary cursor-pointer" 
+                              value={editValues?.progress} 
+                              onChange={(e) => setEditValues(prev => prev ? { ...prev, progress: e.target.value } : null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleStatusUpdate(status);
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                            >
                               {['진행', '완료'].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-[15px] font-normal text-foreground leading-tight">{status.bookTitle}</p>
+                        <p 
+                          className="text-[15px] font-normal text-foreground leading-tight cursor-pointer select-none"
+                          title="더블클릭하여 도서명 수정"
+                          onDoubleClick={() => {
+                            setEditingCell({ key, field: 'bookTitle' });
+                            setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
+                            setDateInputText(formatDateToYYMMDD(status.date));
+                          }}
+                        >
+                          {status.bookTitle}
+                        </p>
                       )}
                     </div>
                   </div>

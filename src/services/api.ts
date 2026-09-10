@@ -1,24 +1,35 @@
 import { Book, Student, Curriculum, WritingStatus, DashboardData, Task, StudentLogEntry, MeetingNote } from '../types';
 import { MESSAGES } from '../constants/messages';
 
-function cleanSpreadsheetId(idOrUrl: string | undefined): string {
+function cleanGoogleId(idOrUrl: string | undefined): string {
   if (!idOrUrl) return '';
   const trimmed = idOrUrl.trim();
-  const match = trimmed.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  const match = trimmed.match(/\/(?:spreadsheets|document|file)\/d\/([a-zA-Z0-9-_]+)/);
   if (match && match[1]) {
     return match[1];
   }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    const segments = trimmed.split('/');
+    const dIdx = segments.indexOf('d');
+    if (dIdx !== -1 && segments[dIdx + 1]) {
+      return segments[dIdx + 1].split(/[?#]/)[0];
+    }
+    const lastPart = segments.filter(s => s && !['edit', 'view', 'htmlview', 'export', 'usp=sharing'].includes(s)).pop();
+    if (lastPart && lastPart.length > 10) {
+      return lastPart.split(/[?#]/)[0];
+    }
+  }
   const firstSlash = trimmed.indexOf('/');
-  if (firstSlash !== -1) {
+  if (firstSlash !== -1 && !trimmed.startsWith('http')) {
     return trimmed.substring(0, firstSlash);
   }
-  return trimmed;
+  return trimmed.split(/[?#]/)[0];
 }
 
 const GAS_URL = import.meta.env.VITE_GAS_WEB_APP_URL;
-const SHEET_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_SHEETS_ID);
-export const DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_GOOGLE_DOCS_ID);
-export const RPN_DOCS_ID = cleanSpreadsheetId(import.meta.env.VITE_RPN_DOCS_ID);
+const SHEET_ID = cleanGoogleId(import.meta.env.VITE_GOOGLE_SHEETS_ID);
+export const DOCS_ID = cleanGoogleId(import.meta.env.VITE_GOOGLE_DOCS_ID);
+export const RPN_DOCS_ID = cleanGoogleId(import.meta.env.VITE_RPN_DOCS_ID);
 
 // Helper to get sheet data directly from Google Sheets (Read-only)
 // This bypasses GAS and works if the sheet is shared as "Anyone with the link can view"
@@ -805,18 +816,70 @@ export const noteApi = {
 
   getTabsData: async (customDocId?: string): Promise<any[]> => {
     const documentId = customDocId || DOCS_ID;
+    if (!documentId) {
+      console.warn('GAS getTabsData: No documentId configured');
+      return [];
+    }
     try {
-      const res = await postToGas(
-        { action: 'getTabsData', spreadsheetId: SHEET_ID, documentId },
-        'GAS getTabsData',
-        MESSAGES.api.memoUrlRequiredForRead
-      );
+      let res: any = null;
+      let lastErr: any = null;
+
+      // 1. Try POST to GAS
+      try {
+        res = await postToGas(
+          { action: 'getTabsData', spreadsheetId: SHEET_ID, documentId },
+          'GAS getTabsData',
+          MESSAGES.api.memoUrlRequiredForRead
+        );
+      } catch (postErr: any) {
+        lastErr = postErr;
+        // 2. Try GET to GAS if POST failed with 404 or redirect issues
+        if (GAS_URL && GAS_URL.startsWith('http')) {
+          try {
+            const getUrl = `${GAS_URL}?action=getTabsData&spreadsheetId=${encodeURIComponent(SHEET_ID || '')}&documentId=${encodeURIComponent(documentId)}&t=${Date.now()}`;
+            const getResp = await fetch(getUrl);
+            if (getResp.ok) {
+              const text = await getResp.text();
+              const trimmed = text.trim();
+              if (trimmed && !trimmed.startsWith('<') && !trimmed.toLowerCase().includes('<!doctype')) {
+                const parsed = JSON.parse(trimmed);
+                if (parsed && Array.isArray(parsed.tabs)) {
+                  res = parsed;
+                }
+              }
+            }
+          } catch (getErr) {
+            // Ignore GET attempt error
+          }
+        }
+      }
+
       if (res && Array.isArray(res.tabs)) {
         return res.tabs;
       }
+
+      // 3. If GAS returned 404 or missing tabs array, fallback to direct Google Docs text export
+      try {
+        const docExportUrl = `https://docs.google.com/document/d/${documentId}/export?format=txt&t=${Date.now()}`;
+        const docRes = await fetch(docExportUrl);
+        if (docRes.ok) {
+          const text = await docRes.text();
+          if (text && !text.includes('<!doctype html>')) {
+            console.warn('GAS getTabsData: GAS unavailable or returned 404; successfully fetched document via direct export');
+            return [{ id: 'tab-main', title: '메모', text }];
+          }
+        }
+      } catch (exportErr) {
+        // Ignore export fallback error
+      }
+
+      if (lastErr) {
+        console.warn('GAS getTabsData Notice:', lastErr.message || lastErr);
+        throw lastErr;
+      }
       throw new Error('GAS getTabsData response missing tabs array');
     } catch (e: any) {
-      console.error('GAS getTabsData Failed:', e);
+      console.warn('GAS getTabsData Failed:', e?.message || e);
       throw e;
     }
   },
