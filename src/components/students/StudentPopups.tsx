@@ -336,31 +336,31 @@ export function AttendanceDialog({ open, onOpenChange, studentName, onConfirm }:
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[calc(100%-1.5rem)] sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-        <div className="w-full p-5 min-h-0 min-[370px]:p-6 sm:p-10 flex flex-col items-center text-center space-y-5 sm:space-y-7">
+        <div className="w-full px-5 pt-4 pb-4 min-h-0 min-[370px]:px-6 min-[370px]:pt-5 min-[370px]:pb-5 sm:px-10 sm:pt-9 sm:pb-9 flex flex-col items-center text-center space-y-5 sm:space-y-7">
           <div className="space-y-2">
             <h3 className="text-xl min-[370px]:text-[22px] font-bold text-foreground tracking-tight">{studentName} 학생 등원</h3>
           </div>
           
           <div className="w-full space-y-4 min-[370px]:space-y-5 px-1 text-left">
-            <div className="flex items-center justify-center gap-3 min-[370px]:gap-4 w-full">
-              <div className="flex flex-col items-center">
+            <div className="grid grid-cols-2 gap-3 min-[370px]:gap-4 w-full items-center">
+              <div className="flex flex-col items-center w-full">
                 <Input 
                   type="time" 
                   value={arrivalTime}
                   onChange={(e) => handleArrivalTimeChange(e.target.value)}
-                  className="w-[110px] min-[370px]:w-[125px] rounded-2xl h-[60px] min-[370px]:h-[68px] border-border/40 bg-secondary/10 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-base min-[370px]:text-lg tracking-wide transition-all"
+                  className="w-full rounded-2xl h-[66px] min-[370px]:h-[72px] border-border/40 bg-secondary/10 focus:ring-4 focus:ring-primary/10 focus:bg-white text-center font-bold text-base min-[370px]:text-lg tracking-wide transition-all"
                 />
               </div>
 
-              <div className="flex flex-col items-center gap-1 flex-1 max-w-[180px]">
-                <div className="grid grid-cols-3 gap-1 w-full">
-                  {[15, 30, 60, 90, 120, 180].map((min) => (
+              <div className="flex flex-col items-center justify-center gap-1 w-full">
+                <div className="grid grid-cols-2 gap-1.5 w-full">
+                  {[15, 30, 60, 90].map((min) => (
                     <Button
                       key={min}
                       type="button"
                       variant="outline"
                       onClick={() => handleAddMinutes(min)}
-                      className="h-7 min-[370px]:h-8 text-[11px] min-[370px]:text-[13px] font-bold p-0 rounded-lg border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors"
+                      className="h-[30px] min-[370px]:h-[33px] text-[12px] min-[370px]:text-[13px] font-bold p-0 rounded-lg border-neutral-200 text-neutral-600 hover:bg-neutral-100 hover:text-black transition-colors"
                     >
                       {min}
                     </Button>
