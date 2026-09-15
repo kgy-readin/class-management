@@ -9,17 +9,19 @@ import {
   FileText,
   HelpCircle
 } from 'lucide-react';
-import { noteApi } from '@/src/services/api';
+import { noteApi, extractFirstTabBody } from '@/src/services/api';
 import MarkdownRenderer from '@/src/components/common/MarkdownRenderer';
 import MarkdownGuidePopup from './MarkdownGuidePopup';
 
 export default function NotesPanel() {
-  // Immediate Load from cache
+  // Immediate Load from cache with first tab extraction
   const [rawText, setRawText] = useState<string>(() => {
-    return localStorage.getItem('webapp_note_data_backup') || '';
+    const cached = localStorage.getItem('webapp_note_data_backup') || '';
+    return extractFirstTabBody(cached);
   });
   const [lastSavedText, setLastSavedText] = useState<string>(() => {
-    return localStorage.getItem('webapp_note_data_backup') || '';
+    const cached = localStorage.getItem('webapp_note_data_backup') || '';
+    return extractFirstTabBody(cached);
   });
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -35,7 +37,7 @@ export default function NotesPanel() {
       }
       
       const text = await noteApi.getRawText();
-      const normalizedRemote = text || '';
+      const normalizedRemote = extractFirstTabBody(text || '');
       
       // Only update state and cache if remote returned content, OR if we had no cache at all
       if (normalizedRemote || !hasCache) {
@@ -47,10 +49,11 @@ export default function NotesPanel() {
       }
     } catch (error: any) {
       console.warn('Background memo sync failed (Using local fallback):', error.message || error);
-      const fallback = localStorage.getItem('webapp_note_data_backup') || rawText || '';
+      const fallback = extractFirstTabBody(localStorage.getItem('webapp_note_data_backup') || rawText || '');
       if (fallback) {
         setRawText(fallback);
         setLastSavedText(fallback);
+        localStorage.setItem('webapp_note_data_backup', fallback);
       } else if (!hasCache) {
         toast.error(MESSAGES.notes.loadError(error.message));
       }

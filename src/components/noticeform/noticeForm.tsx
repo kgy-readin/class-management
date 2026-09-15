@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -51,7 +51,21 @@ export default function NoticeForm() {
 
   const [allTabs, setAllTabs] = useState<DocTab[]>(() => {
     const cached = localStorage.getItem('webapp_notice_form_tabs_backup');
-    return cached ? JSON.parse(cached) : [];
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Discard corrupt cache if it only has 1 tab or only has '메모'
+          const nonMemoTabs = parsed.filter((t: any, idx: number) => idx > 0 && t.title !== '메모');
+          if (nonMemoTabs.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [];
   });
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,8 +82,11 @@ export default function NoticeForm() {
   const [editText, setEditText] = useState('');
   const [savingTab, setSavingTab] = useState(false);
 
-  // Extract folder tabs (excluding the first tab '메모')
-  const folders = allTabs.length > 1 ? allTabs.slice(1) : allTabs;
+  // Notice Form starts strictly from the 2nd tab: 1st level tabs are folders, 2nd level tabs are documents
+  // The first tab ('메모') is reserved for Tasks/Notes and must NOT appear as a folder here.
+  const folders = useMemo(() => {
+    return allTabs.filter((tab, idx) => idx > 0 && tab.title !== '메모');
+  }, [allTabs]);
 
   // Sync state from URL with auto-expanding folders
   useEffect(() => {
@@ -78,7 +95,7 @@ export default function NoticeForm() {
 
     const parts = pathname.split('/').filter(Boolean); // ["noticeform", "hash"]
     if (parts[1]) {
-      const matched = findTabByHash(allTabs, parts[1]);
+      const matched = findTabByHash(folders, parts[1]);
       if (matched) {
         if (selectedTabId !== matched.id) {
           setSelectedTabId(matched.id);
@@ -95,7 +112,7 @@ export default function NoticeForm() {
     } else {
       setSelectedTabId(null);
     }
-  }, [location.pathname, allTabs]);
+  }, [location.pathname, folders]);
 
   // Find the currently selected sub-tab
   const findSelectedTab = (tabs: DocTab[], id: string | null): DocTab | null => {
@@ -110,7 +127,7 @@ export default function NoticeForm() {
     return null;
   };
 
-  const selectedTab = findSelectedTab(allTabs, selectedTabId);
+  const selectedTab = findSelectedTab(folders, selectedTabId);
 
   // Update editText whenever selected tab changes
   useEffect(() => {
@@ -121,15 +138,18 @@ export default function NoticeForm() {
   }, [selectedTabId]);
 
   const fetchTabsData = async (isBackground = false) => {
-    const hasCache = allTabs.length > 0;
+    const hasCache = folders.length > 0;
     try {
       if (!isBackground && !hasCache) {
         setLoading(true);
       }
       const data = await noteApi.getTabsData();
       if (data && data.length > 0) {
-        setAllTabs(data);
-        localStorage.setItem('webapp_notice_form_tabs_backup', JSON.stringify(data));
+        const validFolders = data.filter((t, idx) => idx > 0 && t.title !== '메모');
+        if (validFolders.length > 0) {
+          setAllTabs(data);
+          localStorage.setItem('webapp_notice_form_tabs_backup', JSON.stringify(data));
+        }
       }
     } catch (error: any) {
       console.warn('NoticeForm fetchTabsData notice:', error?.message || error);

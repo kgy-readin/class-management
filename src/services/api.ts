@@ -119,16 +119,43 @@ async function getSheetData(sheet: string, range: string) {
 
 // Helper to execute POST requests to Google Apps Script Web App
 async function postToGas(payload: Record<string, any>, errorMessagePrefix: string, urlRequiredErrorMsg?: string) {
+  const isReadAction = payload?.action === 'getRawText' || payload?.action === 'getTabsData';
+
+  // 1. Try server-side proxy (/api/gas) first to bypass browser CORS and redirect constraints
+  try {
+    const proxyRes = await fetch('/api/gas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    if (proxyRes.ok) {
+      const rawText = await proxyRes.text();
+      const trimmed = rawText.trim();
+      if (trimmed && !trimmed.startsWith('<') && !trimmed.toLowerCase().includes('<!doctype') && !trimmed.toLowerCase().includes('<html')) {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.error) {
+            throw new Error(parsed.error);
+          }
+          return parsed;
+        }
+      }
+    }
+  } catch (proxyErr: any) {
+    if (proxyErr.message && !proxyErr.message.includes('JSON') && !proxyErr.message.includes('fetch') && !proxyErr.message.includes('Proxy Error')) {
+      throw proxyErr;
+    }
+    // Continue to direct GAS_URL
+  }
+
   if (!GAS_URL || !GAS_URL.startsWith('http')) {
     throw new Error(urlRequiredErrorMsg || MESSAGES.api.gasUrlRequiredForUpdate);
   }
 
-  const isReadAction = payload?.action === 'getRawText' || payload?.action === 'getTabsData';
-
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
 
@@ -739,6 +766,103 @@ export const taskApi = {
   }
 };
 
+export function extractFirstTabBody(raw: string): string {
+  if (!raw) return '';
+  let text = raw.trim();
+  // Strip leading document/tab title if it starts with "메모"
+  if (text.startsWith('메모\n') || text.startsWith('메모\r\n')) {
+    text = text.replace(/^메모\r?\n+/, '');
+  } else if (text === '메모') {
+    return '';
+  }
+
+  // If text contains the subsequent folder/tab (e.g., "서브 프로그램" or other known 1단계 headers),
+  // cut it off strictly before the 2nd tab so only the 1st tab's body text is returned
+  const secondTabRegex = /\r?\n\s*(?:서브 프로그램|초등 숙제|중등 숙제|기타|가정통신문|가통 - 서브|가통 - 레벨|가통 - 코스|가통 - 테라피)(?:\r?\n|$)/;
+  const match = text.match(secondTabRegex);
+  if (match && match.index !== undefined) {
+    text = text.substring(0, match.index);
+  }
+  return text.trim();
+}
+
+const MAIN_DOC_STRUCTURE = [
+  { title: '메모', children: [] },
+  { title: '서브 프로그램', children: ['읽기 트레이닝', '독해 트레이닝', '듣기 트레이닝', '비문학 트레이닝', '15분 한국사', '읽쓰 문해력', '읽쓰 한글'] },
+  { title: '초등 숙제', children: ['어휘 숙제 신규', '어휘 교재 다음', '어휘 숙제 미수행', '맞춤법 + 받아쓰기', '맞춤법 고수 대작전', '뻔한 표현 탈출 사전'] },
+  { title: '중등 숙제', children: ['비문학 숙제 신규 - 예비 중1', '비문학 숙제 신규 - 중등 재학', '자이 숙제 다음 - 비문학', '자이 숙제 다음 - 문학', '자이 숙제 다음 - 문법', '비문학 숙제 미수행', '내신 숙제 미수행'] },
+  { title: '기타', children: ['결과물 배부', '가정통신문 미수신', '알림장 미수신', '독서목록 안내'] },
+  { title: '가정통신문', children: ['첫날 가통 안내문', '시작 - 첫날 가정통신문', '시작 - 한달 가정통신문', '시작 - 정기 가정통신문', '마무리', '마무리 - 독서력 낮음', '정기 6개월 간격 문구'] },
+  { title: '가통 - 서브', children: ['(가통) 읽기 트레이닝', '읽트 추가 문구', '(가통) ERI 독해', '(가통) 듣기 트레이닝', '(가통) 비문학 트레이닝', '(가통) 15분 한국사'] },
+  { title: '가통 - 레벨', children: ['기초 레벨', '1레벨', '2레벨', '3레벨', '4레벨', '5레벨', '6레벨'] },
+  { title: '가통 - 코스', children: ['독서 - 기초 레벨', '1코스', '2코스', '3코스', '4코스'] },
+  { title: '가통 - 테라피', children: ['어휘 테라피', '사실 테라피', '추론 테라피', '비판 테라피'] }
+];
+
+export function parseDocExportToTabs(text: string, documentId?: string): any[] {
+  if (!text) return [];
+
+  // Check if this text belongs to the main Google Doc (contains "서브 프로그램" or "메모")
+  if (text.includes('서브 프로그램') || text.includes('초등 숙제')) {
+    const allSections: { type: 'folder' | 'doc'; title: string; fIdx: number; cIdx?: number }[] = [];
+    MAIN_DOC_STRUCTURE.forEach((folder, fIdx) => {
+      allSections.push({ type: 'folder', title: folder.title, fIdx });
+      folder.children.forEach((docTitle, cIdx) => {
+        allSections.push({ type: 'doc', title: docTitle, fIdx, cIdx });
+      });
+    });
+
+    const lines = text.split(/\r?\n/);
+    const sectionPositions: { sec: typeof allSections[0]; line: number }[] = [];
+
+    let searchLine = 0;
+    for (const sec of allSections) {
+      let foundLine = -1;
+      for (let l = searchLine; l < lines.length; l++) {
+        if (lines[l].trim() === sec.title) {
+          foundLine = l;
+          break;
+        }
+      }
+      if (foundLine !== -1) {
+        sectionPositions.push({ sec, line: foundLine });
+        searchLine = foundLine + 1;
+      }
+    }
+
+    const parsedTabs = MAIN_DOC_STRUCTURE.map((f, i) => ({
+      id: i === 0 ? 't.0' : `t.f${i}`,
+      title: f.title,
+      text: '',
+      childTabs: f.children.map((c, ci) => ({
+        id: `t.f${i}.c${ci}`,
+        title: c,
+        text: '',
+        childTabs: []
+      }))
+    }));
+
+    for (let s = 0; s < sectionPositions.length; s++) {
+      const curr = sectionPositions[s];
+      const next = sectionPositions[s + 1];
+      const startLine = curr.line + 1;
+      const endLine = next ? next.line : lines.length;
+      const secText = lines.slice(startLine, endLine).join('\n').trim();
+
+      if (curr.sec.type === 'folder' && curr.sec.fIdx === 0) {
+        parsedTabs[0].text = secText;
+      } else if (curr.sec.type === 'doc' && curr.sec.cIdx !== undefined) {
+        parsedTabs[curr.sec.fIdx].childTabs[curr.sec.cIdx].text = secText;
+      }
+    }
+
+    return parsedTabs;
+  }
+
+  // Fallback for other documents: return as single tab
+  return [{ id: 'tab-main', title: '본문', text }];
+}
+
 export const noteApi = {
   getRawText: async (): Promise<string> => {
     try {
@@ -751,7 +875,7 @@ export const noteApi = {
             localStorage.setItem('webapp_note_first_tab_id', firstTab.id);
           }
           if (firstTab && typeof firstTab.text === 'string') {
-            return firstTab.text;
+            return extractFirstTabBody(firstTab.text);
           }
         }
       } catch (tabsErr) {
@@ -765,7 +889,7 @@ export const noteApi = {
         MESSAGES.api.memoUrlRequiredForRead
       );
       if (res && typeof res.text === 'string') {
-        return res.text;
+        return extractFirstTabBody(res.text);
       }
       throw new Error('GAS getRawText response missing text property');
     } catch (e: any) {
@@ -777,7 +901,7 @@ export const noteApi = {
           if (docRes.ok) {
             const docText = await docRes.text();
             if (docText && !docText.includes('<!DOCTYPE') && !docText.includes('<html')) {
-              return docText;
+              return extractFirstTabBody(docText);
             }
           }
         } catch (docErr) {
@@ -854,19 +978,26 @@ export const noteApi = {
         }
       }
 
-      if (res && Array.isArray(res.tabs)) {
+      if (res && Array.isArray(res.tabs) && res.tabs.length > 0) {
+        // Clean the first tab's text if it's the memo tab
+        if (res.tabs[0] && res.tabs[0].title === '메모' && res.tabs[0].text) {
+          res.tabs[0].text = extractFirstTabBody(res.tabs[0].text);
+        }
         return res.tabs;
       }
 
-      // 3. If GAS returned 404 or missing tabs array, fallback to direct Google Docs text export
+      // 3. If GAS returned 404, error, or missing tabs array, fallback to direct Google Docs text export with smart parser
       try {
         const docExportUrl = `https://docs.google.com/document/d/${documentId}/export?format=txt&t=${Date.now()}`;
         const docRes = await fetch(docExportUrl);
         if (docRes.ok) {
           const text = await docRes.text();
           if (text && !text.includes('<!doctype html>')) {
-            console.warn('GAS getTabsData: GAS unavailable or returned 404; successfully fetched document via direct export');
-            return [{ id: 'tab-main', title: '메모', text }];
+            console.warn('GAS getTabsData: fallback to direct Google Docs export with tabs parsing');
+            const parsed = parseDocExportToTabs(text, documentId);
+            if (parsed && parsed.length > 0) {
+              return parsed;
+            }
           }
         }
       } catch (exportErr) {
