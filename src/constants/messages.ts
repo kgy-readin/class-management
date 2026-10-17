@@ -101,7 +101,7 @@ export const MESSAGES = {
 
   // 9.5. Student Management (학생 관리 및 정보 수정) Messages
   students: {
-    updateSuccess: (name: string) => `${name} 학생 정보가 업데이트되었습니다.`,
+    updateSuccess: (name: string) => `${name} 학생 커리큘럼이 업데이트되었습니다.`,
     writingAdded: '글쓰기 현황에 추가되었습니다.',
     curriculumAdded: (isWriting: boolean) => isWriting ? '글쓰기가 추가되었습니다.' : '도서가 추가되었습니다.',
     itemDeleted: '항목이 삭제되었습니다.',
