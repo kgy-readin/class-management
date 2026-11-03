@@ -73,6 +73,7 @@ interface AddStudentDialogProps {
     name: string;
     grade: string;
     level: string;
+    readingMarathon?: string;
     subProgram: string;
     attendanceDays: string[];
     booksCompleted: number;
@@ -84,6 +85,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
   const [name, setName] = useState('');
   const [grade, setGrade] = useState('');
   const [level, setLevel] = useState('1');
+  const [readingMarathon, setReadingMarathon] = useState('');
   const [subProgram, setSubProgram] = useState('');
   const [attendanceDays, setAttendanceDays] = useState<string[]>([]);
   const [booksCompleted, setBooksCompleted] = useState<number>(0);
@@ -93,6 +95,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
       setName('');
       setGrade('');
       setLevel('1');
+      setReadingMarathon('');
       setSubProgram('');
       setAttendanceDays([]);
       setBooksCompleted(0);
@@ -104,6 +107,7 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
       name,
       grade,
       level,
+      readingMarathon,
       subProgram,
       attendanceDays,
       booksCompleted
@@ -169,6 +173,15 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
                   <option value="10">Lv.10</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Input
+                placeholder="독서마라톤"
+                value={readingMarathon}
+                onChange={(e) => setReadingMarathon(e.target.value)}
+                className="rounded-xl h-10 border-neutral-200 text-sm"
+              />
             </div>
 
             <div className="space-y-1">
@@ -427,6 +440,7 @@ interface StudentEditInfoDialogProps {
     name: string;
     grade: string;
     level?: string;
+    readingMarathon?: string;
     subProgram?: string;
     attendanceDays?: string;
     homeworkMissed?: number;
@@ -438,6 +452,7 @@ interface StudentEditInfoDialogProps {
     isHidden?: boolean;
     grade: string;
     level: string;
+    readingMarathon?: string;
     subProgram: string;
     attendanceDays: string[];
     homeworkMissed: number;
@@ -454,6 +469,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
   const [isHidden, setIsHidden] = useState(false);
   const [grade, setGrade] = useState('');
   const [level, setLevel] = useState('0');
+  const [readingMarathon, setReadingMarathon] = useState('');
   const [subProgram, setSubProgram] = useState('');
   const [attendanceDays, setAttendanceDays] = useState<string[]>([]);
   const [homeworkMissed, setHomeworkMissed] = useState<number>(0);
@@ -469,6 +485,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       setIsHidden(student.isHidden || false);
       setGrade(student.grade || '');
       setLevel(student.level || '0');
+      setReadingMarathon(student.readingMarathon || '');
       setSubProgram(student.subProgram || '');
       setAttendanceDays(
         student.attendanceDays
@@ -604,6 +621,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
       isHidden,
       grade,
       level,
+      readingMarathon,
       subProgram,
       attendanceDays,
       homeworkMissed,
@@ -672,6 +690,15 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                   <option value="10">Lv.10</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Input
+                placeholder="독서마라톤"
+                value={readingMarathon}
+                onChange={(e) => setReadingMarathon(e.target.value)}
+                className="rounded-xl h-10 border-neutral-200 text-sm"
+              />
             </div>
 
             <div className="space-y-1">
@@ -966,14 +993,41 @@ interface AddCurriculumDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   studentName: string;
+  level?: string;
+  readingMarathon?: string;
   books: any[];
   existingBookIds: string[];
   onSelect: (book: any) => void;
   onRefreshBooks?: () => Promise<void>;
 }
 
-export function AddCurriculumDialog({ open, onOpenChange, studentName, books, existingBookIds, onSelect, onRefreshBooks }: AddCurriculumDialogProps) {
+export function AddCurriculumDialog({ 
+  open, 
+  onOpenChange, 
+  studentName, 
+  level,
+  readingMarathon,
+  books, 
+  existingBookIds, 
+  onSelect, 
+  onRefreshBooks 
+}: AddCurriculumDialogProps) {
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const formatDisplayLevel = (lvl: any) => {
+    const l = String(lvl ?? '').trim();
+    if (!l || l === '0' || l === '0.0' || l === 'null' || l === 'undefined' || l === '기초') return '기초';
+    if (l === '11' || l === '구연동화') return '구연동화';
+    const digits = l.replace(/[^0-9.]/g, '');
+    if (digits) {
+      return `Lv.${digits}`;
+    }
+    return l;
+  };
+
+  const displayLevel = level !== undefined && level !== null && String(level).trim() !== '' ? formatDisplayLevel(level) : '';
+  const marathon = readingMarathon ? readingMarathon.trim() : '';
+  const badgeText = [displayLevel, marathon].filter(Boolean).join(' ');
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -996,7 +1050,14 @@ export function AddCurriculumDialog({ open, onOpenChange, studentName, books, ex
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl bg-white p-6">
         <DialogHeader className="flex flex-row items-center justify-between pr-6">
-          <DialogTitle className="text-[21px] font-bold mt-2 ml-1">{studentName} 학생 도서 추가</DialogTitle>
+          <div className="flex items-center gap-2 mt-2 ml-1 flex-wrap">
+            <DialogTitle className="text-[21px] font-bold leading-tight">{studentName} 학생 도서 추가</DialogTitle>
+            {badgeText && (
+              <span className="text-[16px] font-normal text-neutral-500 bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-flex items-center whitespace-nowrap">
+                {badgeText}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleSync}

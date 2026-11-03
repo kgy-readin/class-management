@@ -58,6 +58,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     isHidden?: boolean;
     grade: string;
     level: string;
+    readingMarathon?: string;
     subProgram: string;
     attendanceDays: string[];
     homeworkMissed: number;
@@ -72,6 +73,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       isHidden: formData.isHidden ?? editingStudent.isHidden,
       grade: formData.grade,
       level: formData.level,
+      readingMarathon: formData.readingMarathon?.trim() || '',
       subProgram: formData.subProgram.trim(),
       attendanceDays: formData.attendanceDays.join(', '),
       homeworkMissed: Number(formData.homeworkMissed) || 0,
@@ -117,6 +119,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
     name: string;
     grade: string;
     level: string;
+    readingMarathon?: string;
     subProgram: string;
     attendanceDays: string[];
     booksCompleted: number;
@@ -142,6 +145,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
         name: trimmedName,
         grade: trimmedGrade,
         level: formData.level,
+        readingMarathon: formData.readingMarathon?.trim() || '',
         subProgram: formData.subProgram.trim() || '-',
         attendanceDays: formData.attendanceDays.join(', '),
         booksCompleted: formData.booksCompleted || 0
@@ -321,9 +325,14 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
 
       const matchesLevel = levelStrings.some(lvlStr => lvlStr.toLowerCase().includes(searchLower));
 
+      const marathonLower = (s.readingMarathon || '').toLowerCase();
+      const subProgLower = (s.subProgram || '').toLowerCase();
+
       return (
         nameLower.includes(searchLower) ||
         gradeLower.includes(searchLower) ||
+        marathonLower.includes(searchLower) ||
+        subProgLower.includes(searchLower) ||
         matchesLevel
       );
     })

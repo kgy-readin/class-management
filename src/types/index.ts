@@ -15,6 +15,7 @@ export interface Student {
   name: string;
   grade: string;
   level: string;
+  readingMarathon?: string;
   subProgram: string;
   attendanceDays: string;
   isAttending: boolean;

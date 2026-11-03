@@ -12,6 +12,79 @@ interface BookSearchProps {
   onSelect: (book: Book) => void;
 }
 
+interface SingleSelectPopoverProps {
+  label: string;
+  options: { label: string; value: string }[];
+  selectedValue: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}
+
+function SingleSelectPopover({ options, selectedValue, onChange, placeholder }: SingleSelectPopoverProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const selectedOption = options.find((opt) => opt.value === selectedValue);
+  const buttonText = selectedOption ? selectedOption.label : placeholder;
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold focus:ring-1 ring-neutral-900 outline-none flex items-center justify-between text-left cursor-pointer w-full text-neutral-700 hover:border-neutral-300 transition-colors"
+      >
+        <span className="truncate">{buttonText}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-2xl p-1.5 max-h-[220px] overflow-y-auto">
+          {options.map((option) => {
+            const isChecked = selectedValue === option.value;
+            return (
+              <label
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center gap-2 px-2.5 py-1.5 hover:bg-neutral-50 rounded-xl cursor-pointer transition-colors text-[13px] font-medium select-none ${
+                  isChecked ? 'bg-neutral-50 text-neutral-900 font-semibold' : 'text-zinc-700'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="levelFilterOption"
+                  checked={isChecked}
+                  onChange={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className="w-4 h-4 rounded-full border-neutral-300 text-primary focus:ring-primary cursor-pointer shrink-0"
+                />
+                <span className="truncate">{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface MultiSelectPopoverProps {
   label: string;
   options: string[];
@@ -138,6 +211,13 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
     return Array.from(keySet).sort((a, b) => Number(a) - Number(b));
   }, [books]);
 
+  const levelOptions = useMemo(() => {
+    return [
+      { label: '모든 레벨', value: 'all' },
+      ...levels.map(l => ({ label: formatLevel(l), value: l }))
+    ];
+  }, [levels]);
+
   const difficulties = useMemo(() => {
     const uniqueDiffs = Array.from(new Set(books.map(b => b.difficulty))).filter(Boolean);
     const order = ['최상', '상', '중상', '중', '중하', '하', '최하'];
@@ -210,7 +290,11 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
     }
 
     if (careerOnly) {
-      result = result.filter(book => book && book.career && book.career.trim() !== '');
+      // 진로 체크박스 체크 시: 진로도서(G열이 비어있지 않은 행)만 표시
+      result = result.filter(book => Boolean(book && book.career && String(book.career).trim() !== ''));
+    } else {
+      // 진로 체크박스 미체크 시: 진로도서(G열이 비어있지 않은 행)는 뜨지 않음
+      result = result.filter(book => !book || !book.career || String(book.career).trim() === '');
     }
 
     return result.slice(0, 50); // Limit to 50 results for utility while scrolled
@@ -232,16 +316,13 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
         
         <div className="flex gap-4 items-start">
           <div className="grid grid-cols-2 gap-2 flex-1">
-            <select 
-              className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold focus:ring-1 ring-neutral-900 outline-none"
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
-            >
-              <option value="all">모든 레벨</option>
-              {levels.map(l => (
-                <option key={l} value={l}>{formatLevel(l)}</option>
-              ))}
-            </select>
+            <SingleSelectPopover
+              label="레벨"
+              options={levelOptions}
+              selectedValue={levelFilter}
+              onChange={setLevelFilter}
+              placeholder="모든 레벨"
+            />
             
             <MultiSelectPopover
               label="난이도"

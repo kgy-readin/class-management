@@ -471,6 +471,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
 
   const displayGrade = student ? getDisplayGrade(student.grade) : '';
   const displayLevel = student ? formatDisplayLevel(student.level) : '';
+  const readingMarathon = student?.readingMarathon ? student.readingMarathon.trim() : '';
   const attendance = student?.attendanceDays ? student.attendanceDays.replace(/[\s,]/g, '') : '';
   const subProg = student?.subProgram ? student.subProgram.trim() : '';
   const completedCount = `${student?.booksCompleted || 0}권`;
@@ -483,6 +484,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
     isHidden?: boolean;
     grade: string;
     level: string;
+    readingMarathon?: string;
     subProgram: string;
     attendanceDays: string[];
     homeworkMissed: number;
@@ -496,6 +498,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       isHidden: formData.isHidden ?? student.isHidden,
       grade: formData.grade,
       level: formData.level,
+      readingMarathon: formData.readingMarathon?.trim() || '',
       subProgram: formData.subProgram.trim(),
       attendanceDays: formData.attendanceDays.join(', '),
       homeworkMissed: Number(formData.homeworkMissed) || 0,
@@ -553,11 +556,11 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
 
               {/* Mobile/Tablet text in a rounded box */}
               <span className="xl:hidden text-[13px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-block">
-                {[displayGrade, displayLevel, completedCount, attendance].filter(Boolean).join(' · ')}
+                {[displayGrade, displayLevel, readingMarathon, completedCount, attendance].filter(Boolean).join(' · ')}
               </span>
               {/* Desktop text in a rounded box */}
               <span className="hidden xl:inline-block text-[15px] font-normal text-neutral-500 truncate bg-neutral-50 border border-neutral-200/80 rounded-xl px-3 py-1">
-                {[displayGrade, displayLevel, completedCount, attendance, subProg].filter(Boolean).join(' · ')}
+                {[displayGrade, displayLevel, readingMarathon, completedCount, attendance, subProg].filter(Boolean).join(' · ')}
               </span>
 
               {student && (
@@ -872,6 +875,8 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
         open={isAddBookOpen}
         onOpenChange={setIsAddBookOpen}
         studentName={studentName}
+        level={student?.level}
+        readingMarathon={student?.readingMarathon}
         books={data?.books || []}
         existingBookIds={optimisticCurriculum.map(c => c.bookId)}
         onSelect={(selectedBook) => handleAddCurriculum(selectedBook)}
