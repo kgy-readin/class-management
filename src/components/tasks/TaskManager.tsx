@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Task, Student, getTagColor, getShortHash } from '../../types';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { 
   Plus, 
   ChevronDown, 
@@ -546,7 +546,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmitting(false);
     }
@@ -563,7 +563,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmitting(false);
     }
@@ -584,7 +584,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmitting(false);
     }
@@ -633,7 +633,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmitting(false);
     }
@@ -697,7 +697,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
       await fetchTasks();
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmitting(false);
     }
@@ -867,7 +867,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                       type="button"
                       onClick={() => setIsFilterExpanded(true)}
                       className="absolute left-0 w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 hover:bg-zinc-100 text-zinc-500 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center z-10"
-                      title="필터링 섹션 펼치기"
+                      title={TITLES.tasks.expandFilter}
                     >
                       <ListFilter className="w-4 h-4" />
                     </button>
@@ -885,7 +885,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                         navigate('/tasks/work');
                       }}
                       className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-[#2563eb] hover:bg-blue-100 transition-colors cursor-pointer shrink-0 scale-[0.8] origin-center"
-                      title="필터링 섹션 접기"
+                      title={TITLES.tasks.collapseFilter}
                     >
                       <ListFilter className="w-4 h-4" />
                     </button>
@@ -1173,7 +1173,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           }
                         }}
                         className="rounded-full w-8 h-8 p-0 flex items-center justify-center border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-750 transition-all shrink-0 cursor-pointer"
-                        title="할일 추가"
+                        title={TITLES.tasks.addTodo}
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -1251,7 +1251,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                                   <button 
                                     onClick={() => handleOpenInlineAdd('todo')}
                                     className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
-                                    title="예정 업무 추가"
+                                    title={TITLES.tasks.addUpcomingTask}
                                   >
                                     <Plus className="w-4 h-4" />
                                   </button>
@@ -1412,7 +1412,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           <button 
                             onClick={() => handleOpenInlineAdd('nextWeek')}
                             className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
-                            title="다음주 업무 추가"
+                            title={TITLES.tasks.addNextWeekTask}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -1463,7 +1463,7 @@ export default function TaskManager({ students = [], onRefreshGlobal }: TaskMana
                           <button 
                             onClick={() => handleOpenInlineAdd('familyView')}
                             className="w-full py-1.5 flex items-center justify-center rounded-lg border border-solid border-zinc-200/40 hover:border-zinc-300/80 hover:bg-zinc-50 text-zinc-400 hover:text-zinc-700 transition-all bg-white"
-                            title="가정통신문 추가"
+                            title={TITLES.tasks.addFamilyLetter}
                           >
                             <Plus className="w-4 h-4" />
                           </button>

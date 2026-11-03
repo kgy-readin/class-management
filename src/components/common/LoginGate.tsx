@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 
 interface LoginGateProps {
   onLoginSuccess: () => void;
@@ -28,11 +29,11 @@ export default function LoginGate({ onLoginSuccess }: LoginGateProps) {
     // Simulate minor delay for polished feel
     setTimeout(() => {
       if (password === correctPassword) {
-        toast.success('성공적으로 로그인되었습니다.');
+        toast.success(MESSAGES.auth.loginSuccess);
         onLoginSuccess();
       } else {
         setError(true);
-        toast.error('비밀번호가 일치하지 않습니다.');
+        toast.error(MESSAGES.auth.wrongPassword);
       }
       setIsSubmitting(false);
     }, 400);
@@ -80,7 +81,7 @@ export default function LoginGate({ onLoginSuccess }: LoginGateProps) {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 transition-colors p-1 rounded-lg cursor-pointer"
-                title={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                title={TITLES.auth.togglePassword(showPassword)}
               >
                 {showPassword ? <EyeOff className="w-5 h-5 text-zinc-500" /> : <Eye className="w-5 h-5 text-zinc-500" />}
               </button>

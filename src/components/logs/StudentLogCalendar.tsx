@@ -16,6 +16,7 @@ import {
 import { ko } from 'date-fns/locale';
 import { StudentLogEntry } from '../../types';
 import { renderBoldBrackets } from '../common/TextHelpers';
+import { TITLES } from '@/src/constants/messages';
 
 interface StudentLogCalendarProps {
   currentMonth: Date;
@@ -81,7 +82,7 @@ export default function StudentLogCalendar({
               onClick={() => {
                 setViewMode('monthly-detail');
               }}
-              title="월별상세로 보기"
+              title={TITLES.logs.viewMonthly}
             >
               <CalendarCheck className="w-5 h-5" />
             </Button>
@@ -93,7 +94,7 @@ export default function StudentLogCalendar({
                 setViewMode('student');
                 setCurrentPage(1);
               }}
-              title="학생뷰로 보기"
+              title={TITLES.logs.viewStudent}
             >
               <User className="w-5 h-5" />
             </Button>

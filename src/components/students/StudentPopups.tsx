@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog, SquareCheckBig, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowUpCircle, Trash2, Pencil, Plus, UserCog, SquareCheckBig, Loader2, RefreshCw, ChevronDown } from 'lucide-react';
 import { getWeeksSince } from '@/lib/utils';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
 import { studentApi, taskApi, bookApi } from '@/src/services/api';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { Student, DashboardData } from '../../types';
 
 const getCurrentTimeHHMM = () => {
@@ -16,6 +16,98 @@ const getCurrentTimeHHMM = () => {
   const mm = String(now.getMinutes()).padStart(2, '0');
   return `${hh}:${mm}`;
 };
+
+const GRADE_OPTIONS = [
+  { label: '유7', value: '유7' },
+  { label: '초1', value: '초1' },
+  { label: '초2', value: '초2' },
+  { label: '초3', value: '초3' },
+  { label: '초4', value: '초4' },
+  { label: '초5', value: '초5' },
+  { label: '초6', value: '초6' },
+  { label: '중1', value: '중1' },
+  { label: '중2', value: '중2' },
+  { label: '중3', value: '중3' },
+];
+
+const LEVEL_OPTIONS = [
+  { label: '기초', value: '0' },
+  { label: 'Lv.1', value: '1' },
+  { label: 'Lv.2', value: '2' },
+  { label: 'Lv.3', value: '3' },
+  { label: 'Lv.4', value: '4' },
+  { label: 'Lv.5', value: '5' },
+  { label: 'Lv.6', value: '6' },
+  { label: 'Lv.7', value: '7' },
+  { label: 'Lv.8', value: '8' },
+  { label: 'Lv.9', value: '9' },
+  { label: 'Lv.10', value: '10' },
+];
+
+const MARATHON_OPTIONS = ['1코스', '2코스', '어휘', '사실', '추론', '비판', '4코스'];
+
+interface PopupSelectProps {
+  options: { label: string; value: string }[];
+  selectedValue: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}
+
+function PopupSelect({ options, selectedValue, onChange, placeholder }: PopupSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const selectedOption = options.find((opt) => opt.value === selectedValue || opt.label === selectedValue);
+  const buttonText = selectedOption ? selectedOption.label : (selectedValue ? selectedValue : placeholder);
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-normal focus:ring-2 focus:ring-primary/20 outline-none flex items-center justify-between text-left cursor-pointer w-full text-neutral-700 hover:border-neutral-300 transition-colors"
+      >
+        <span className="truncate">{buttonText}</span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform shrink-0 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-lg p-1.5 max-h-[220px] overflow-y-auto">
+          {options.map((option) => {
+            const isSelected = selectedValue === option.value || selectedValue === option.label;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 hover:bg-neutral-50 rounded-md cursor-pointer transition-colors text-sm font-medium select-none flex items-center justify-between ${
+                  isSelected ? 'bg-primary/5 text-primary font-bold' : 'text-zinc-700'
+                }`}
+              >
+                <span className="truncate">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ----------------------------------------------------
 // 1. 일괄하원 팝업
@@ -134,54 +226,65 @@ export function AddStudentDialog({ open, onOpenChange, onAdd, isSubmitting }: Ad
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer text-neutral-700"
-                >
-                  <option value="" disabled hidden>학년 선택</option>
-                  <option value="유7">유7</option>
-                  <option value="초1">초1</option>
-                  <option value="초2">초2</option>
-                  <option value="초3">초3</option>
-                  <option value="초4">초4</option>
-                  <option value="초5">초5</option>
-                  <option value="초6">초6</option>
-                  <option value="중1">중1</option>
-                  <option value="중2">중2</option>
-                  <option value="중3">중3</option>
-                </select>
+                <PopupSelect
+                  options={GRADE_OPTIONS}
+                  selectedValue={grade}
+                  onChange={setGrade}
+                  placeholder="학년 선택"
+                />
               </div>
 
               <div className="space-y-1">
-                <select 
-                  value={level} 
-                  onChange={(e) => setLevel(e.target.value)}
-                  className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer text-neutral-700"
-                >
-                  <option value="" disabled hidden>레벨 선택</option>
-                  <option value="0">기초</option>
-                  <option value="1">Lv.1</option>
-                  <option value="2">Lv.2</option>
-                  <option value="3">Lv.3</option>
-                  <option value="4">Lv.4</option>
-                  <option value="5">Lv.5</option>
-                  <option value="6">Lv.6</option>
-                  <option value="7">Lv.7</option>
-                  <option value="8">Lv.8</option>
-                  <option value="9">Lv.9</option>
-                  <option value="10">Lv.10</option>
-                </select>
+                <PopupSelect
+                  options={LEVEL_OPTIONS}
+                  selectedValue={level}
+                  onChange={setLevel}
+                  placeholder="레벨 선택"
+                />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Input
-                placeholder="독서마라톤"
-                value={readingMarathon}
-                onChange={(e) => setReadingMarathon(e.target.value)}
-                className="rounded-xl h-10 border-neutral-200 text-sm"
-              />
+              <div className="grid grid-cols-7 gap-1 pt-1">
+                {MARATHON_OPTIONS.map((opt) => {
+                  const isSelected = readingMarathon
+                    .split(/[,/]/)
+                    .map((s) => s.trim())
+                    .includes(opt);
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        let list = readingMarathon
+                          ? readingMarathon.split(/[,/]/).map((s) => s.trim()).filter(Boolean)
+                          : [];
+                        if (list.includes(opt)) {
+                          list = list.filter((item) => item !== opt);
+                        } else {
+                          list.push(opt);
+                        }
+                        list.sort((a, b) => {
+                          const idxA = MARATHON_OPTIONS.indexOf(a);
+                          const idxB = MARATHON_OPTIONS.indexOf(b);
+                          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                          if (idxA !== -1) return -1;
+                          if (idxB !== -1) return 1;
+                          return a.localeCompare(b);
+                        });
+                        setReadingMarathon(list.join(', '));
+                      }}
+                      className={`h-9 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary border-primary text-white shadow-sm font-bold'
+                          : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -610,7 +713,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
         onRefresh();
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setIsLevelingUp(false);
     }
@@ -637,7 +740,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
         <div className="space-y-5">
           <div className="flex items-center justify-between border-b border-solid border-zinc-100 pb-3 text-left">
             <h3 className="text-[19px] font-bold text-zinc-800">{student?.name} 학생 정보 수정</h3>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors select-none mr-4" title="목록에서 학생 숨기기">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition-colors select-none mr-4" title={TITLES.students.hideStudent}>
               <input
                 type="checkbox"
                 checked={isHidden}
@@ -651,54 +754,65 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer text-neutral-700"
-                >
-                  <option value="" disabled hidden>학년 선택</option>
-                  <option value="유7">유7</option>
-                  <option value="초1">초1</option>
-                  <option value="초2">초2</option>
-                  <option value="초3">초3</option>
-                  <option value="초4">초4</option>
-                  <option value="초5">초5</option>
-                  <option value="초6">초6</option>
-                  <option value="중1">중1</option>
-                  <option value="중2">중2</option>
-                  <option value="중3">중3</option>
-                </select>
+                <PopupSelect
+                  options={GRADE_OPTIONS}
+                  selectedValue={grade}
+                  onChange={setGrade}
+                  placeholder="학년 선택"
+                />
               </div>
 
               <div className="space-y-1">
-                <select 
-                  value={level} 
-                  onChange={(e) => setLevel(e.target.value)}
-                  className="w-full bg-white border border-neutral-200 rounded-xl px-3 h-10 text-sm focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer text-neutral-700"
-                >
-                  <option value="" disabled hidden>레벨 선택</option>
-                  <option value="0">기초</option>
-                  <option value="1">Lv.1</option>
-                  <option value="2">Lv.2</option>
-                  <option value="3">Lv.3</option>
-                  <option value="4">Lv.4</option>
-                  <option value="5">Lv.5</option>
-                  <option value="6">Lv.6</option>
-                  <option value="7">Lv.7</option>
-                  <option value="8">Lv.8</option>
-                  <option value="9">Lv.9</option>
-                  <option value="10">Lv.10</option>
-                </select>
+                <PopupSelect
+                  options={LEVEL_OPTIONS}
+                  selectedValue={level}
+                  onChange={setLevel}
+                  placeholder="레벨 선택"
+                />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Input
-                placeholder="독서마라톤"
-                value={readingMarathon}
-                onChange={(e) => setReadingMarathon(e.target.value)}
-                className="rounded-xl h-10 border-neutral-200 text-sm"
-              />
+              <div className="grid grid-cols-7 gap-1 pt-1">
+                {MARATHON_OPTIONS.map((opt) => {
+                  const isSelected = readingMarathon
+                    .split(/[,/]/)
+                    .map((s) => s.trim())
+                    .includes(opt);
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        let list = readingMarathon
+                          ? readingMarathon.split(/[,/]/).map((s) => s.trim()).filter(Boolean)
+                          : [];
+                        if (list.includes(opt)) {
+                          list = list.filter((item) => item !== opt);
+                        } else {
+                          list.push(opt);
+                        }
+                        list.sort((a, b) => {
+                          const idxA = MARATHON_OPTIONS.indexOf(a);
+                          const idxB = MARATHON_OPTIONS.indexOf(b);
+                          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                          if (idxA !== -1) return -1;
+                          if (idxB !== -1) return 1;
+                          return a.localeCompare(b);
+                        });
+                        setReadingMarathon(list.join(', '));
+                      }}
+                      className={`h-9 rounded-xl border text-xs font-semibold transition-all flex items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary border-primary text-white shadow-sm font-bold'
+                          : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -755,7 +869,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                    />
                  </div>
 
-                 <div className="w-10 h-10 shrink-0 flex items-center justify-center border border-neutral-200 rounded-xl bg-white" title="숙제 없음">
+                 <div className="w-10 h-10 shrink-0 flex items-center justify-center border border-neutral-200 rounded-xl bg-white" title={TITLES.students.noHomework}>
                    <label className="w-full h-full flex items-center justify-center cursor-pointer">
                      <input
                        type="checkbox"
@@ -784,7 +898,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                  disabled={isLevelingUp}
                  onClick={() => setIsLevelUpConfirmOpen(true)}
                  className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-center"
-                 title="레벨업 (커리큘럼 초기화)"
+                 title={TITLES.students.levelUp}
                >
                  {isLevelingUp ? (
                    <Loader2 className="w-5 h-5 animate-spin" />
@@ -821,7 +935,7 @@ export function StudentEditInfoDialog({ open, onOpenChange, student, onSave, isS
                   disabled={isProcessingTask}
                   onClick={handleTaskCompletion}
                   className="h-10 w-10 shrink-0 rounded-xl border-neutral-200 text-neutral-500 hover:text-green-600 hover:bg-green-50 transition-all flex items-center justify-center cursor-pointer"
-                  title="결과물 배부 완료 처리"
+                  title={TITLES.students.distributeResult}
                 >
                   {isProcessingTask ? (
                     <Loader2 className="w-5 h-5 animate-spin text-green-600" />
@@ -1029,6 +1143,17 @@ export function AddCurriculumDialog({
   const marathon = readingMarathon ? readingMarathon.trim() : '';
   const badgeText = [displayLevel, marathon].filter(Boolean).join(' ');
 
+  const [filterPreset, setFilterPreset] = useState<{ level?: string; readingMarathon?: string; timestamp: number } | null>(null);
+
+  const handleBadgeDoubleClick = () => {
+    setFilterPreset({
+      level,
+      readingMarathon,
+      timestamp: Date.now()
+    });
+    toast.success(MESSAGES.students.filterAutoSelected);
+  };
+
   const handleSync = async () => {
     setIsSyncing(true);
     try {
@@ -1037,10 +1162,10 @@ export function AddCurriculumDialog({
       } else {
         await bookApi.get(true);
       }
-      toast.success('도서 목록이 구글 시트와 동기화되었습니다.');
+      toast.success(MESSAGES.students.bookSyncSuccess);
     } catch (error) {
       console.error('Failed to sync books:', error);
-      toast.error('도서 목록 동기화에 실패했습니다.');
+      toast.error(MESSAGES.students.bookSyncError);
     } finally {
       setIsSyncing(false);
     }
@@ -1053,7 +1178,11 @@ export function AddCurriculumDialog({
           <div className="flex items-center gap-2 mt-2 ml-1 flex-wrap">
             <DialogTitle className="text-[21px] font-bold leading-tight">{studentName} 학생 도서 추가</DialogTitle>
             {badgeText && (
-              <span className="text-[16px] font-normal text-neutral-500 bg-neutral-50 border border-neutral-200/80 rounded-xl px-2.5 py-0.5 inline-flex items-center whitespace-nowrap">
+              <span
+                onDoubleClick={handleBadgeDoubleClick}
+                title={TITLES.students.filterAutoSelect}
+                className="text-[16px] font-normal text-neutral-500 bg-neutral-50 hover:bg-neutral-100 hover:text-neutral-700 border border-neutral-200/80 hover:border-neutral-300 rounded-xl px-2.5 py-0.5 inline-flex items-center whitespace-nowrap cursor-pointer transition-all select-none"
+              >
                 {badgeText}
               </span>
             )}
@@ -1062,7 +1191,7 @@ export function AddCurriculumDialog({
             type="button"
             onClick={handleSync}
             disabled={isSyncing}
-            title="구글 시트 도서목록 동기화"
+            title={TITLES.students.syncBooks}
             aria-label="구글 시트 도서목록 동기화"
             className="p-2 rounded-xl border border-neutral-200 hover:border-neutral-300 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-900 transition-all disabled:opacity-50 mt-1 cursor-pointer shrink-0"
           >
@@ -1073,6 +1202,7 @@ export function AddCurriculumDialog({
           <BookSearch 
             books={books} 
             existingBookIds={existingBookIds}
+            filterPreset={filterPreset}
             onSelect={(selectedBook) => {
               onSelect(selectedBook);
             }} 

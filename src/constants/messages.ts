@@ -1,6 +1,6 @@
 /**
- * Centralized notification and alert messages template file.
- * Edit user-facing alert, success, and error message templates here.
+ * Centralized notification, alert, and tooltip/hover title messages template file.
+ * Edit user-facing alert, success, error, and button hover title strings here.
  */
 
 export const MESSAGES = {
@@ -10,6 +10,13 @@ export const MESSAGES = {
     loadError: (msg: string) => `데이터를 불러오는데 실패했습니다: ${msg}`,
     copySuccess: '클립보드에 복사되었습니다!',
     copyFailure: '복사에 실패했습니다.',
+    actionError: (msg: string) => msg || '오류가 발생했습니다.',
+  },
+
+  // Auth / Login Messages
+  auth: {
+    loginSuccess: '성공적으로 로그인되었습니다.',
+    wrongPassword: '비밀번호가 일치하지 않습니다.',
   },
 
   // 1. Student Cards & Dashboard Messages
@@ -20,6 +27,12 @@ export const MESSAGES = {
     homeworkDone: '숙제 완료 처리되었습니다.',
     homeworkNotSubmitted: '숙제 미제출 건이 기록되었습니다.',
     progressUpdated: '진도가 업데이트되었습니다.',
+    attendanceSaveError: (msg: string) => `출결 저장 실패: ${msg}`,
+    subprogramSaveError: (msg: string) => `세부프로그램 저장 실패: ${msg}`,
+    writingAddError: (msg: string) => `글쓰기 추가 실패: ${msg}`,
+    dismissalSaveError: (msg: string) => `하원 처리 실패: ${msg}`,
+    homeworkSaveError: (msg: string) => `숙제 상태 저장 실패: ${msg}`,
+    progressSaveError: (msg: string) => `진도 저장 실패: ${msg}`,
   },
 
   // 2. Student Log (학생 기록부) Page
@@ -41,6 +54,12 @@ export const MESSAGES = {
     deleteSuccess: '기록이 삭제되었습니다.',
     clearMonthlySuccess: '글쓰기 현황 데이터가 리셋 되었습니다.',
     updateSuccess: '정보가 업데이트되었습니다.',
+    writingAddErrorRevert: (msg: string) => `글쓰기 추가 실패: ${msg}. 이전 상태로 되돌립니다.`,
+    deleteErrorRestore: (msg: string) => `삭제 실패: ${msg}. 복구합니다.`,
+    updateErrorRevert: (msg: string) => `수정 실패: ${msg}. 되돌립니다.`,
+    enterDateRange: '시작일과 종료일을 입력해 주세요.',
+    invalidDateRange: '시작일은 종료일보다 이전이어야 합니다.',
+    dateRangeDeleted: (start: string, end: string) => `${start} ~ ${end} 기간의 데이터가 삭제되었습니다.`,
   },
 
   // 4. Task Manager (업무/숙제 관리) Messages
@@ -61,6 +80,7 @@ export const MESSAGES = {
     loadError: (msg: string) => `메모 데이터를 불러오는데 실패했습니다: ${msg}`,
     saveSuccess: '메모가 저장되었습니다.',
     saveError: (msg: string) => `네트워크 저장 중 오류가 발생했습니다: ${msg}. 작성한 메모는 브라우저 내에 보존됩니다.`,
+    saveFailed: (msg: string) => `메모 저장 실패: ${msg}`,
     cancelInfo: '편집이 취소되었습니다.',
   },
 
@@ -117,6 +137,13 @@ export const MESSAGES = {
     dismissalSuccess: (name: string) => `${name} 학생 하원 처리되었습니다.`,
     levelUpSuccess: (name: string) => `${name} 학생이 레벨업되었습니다!`,
     bulkDismissalSuccess: '등원 중 학생이 모두 일괄 하원 처리되었습니다.',
+    memoSaveSuccess: (name: string) => `${name} 학생의 메모를 저장했습니다.`,
+    memoSaveError: (msg: string) => `메모 저장에 실패했습니다: ${msg}`,
+    attendanceSaveError: (msg: string) => `출결 저장 실패: ${msg}`,
+    dismissalSaveError: (msg: string) => `하원 처리 실패: ${msg}`,
+    filterAutoSelected: '도서 필터가 자동 선택되었습니다.',
+    bookSyncSuccess: '도서 목록이 구글 시트와 동기화되었습니다.',
+    bookSyncError: '도서 목록 동기화에 실패했습니다.',
   },
 
   // 10. Service / API Messages
@@ -149,4 +176,144 @@ export const MESSAGES = {
     memoUrlRequiredForSave: '메모 데이터를 저장하려면 GAS 웹 앱 URL 설정이 필요합니다.',
     gasResponseHtmlCheck: 'GAS Web App이 JSON이 아닌 HTML을 반환했습니다. GAS 배포 설정과 환경 변수 내 URL을 확인해 주세요.',
   },
+
+  // 11. Button / Element Hover Titles (Tooltips)
+  tooltips: {
+    common: {
+      save: '저장',
+      cancel: '취소',
+      edit: '수정',
+      editAction: '수정',
+      delete: '삭제',
+      deleteAction: '삭제',
+      add: '추가',
+      copy: '복사',
+      refresh: '새로고침',
+      close: '닫기',
+    },
+    auth: {
+      togglePassword: (show: boolean) => show ? '비밀번호 숨기기' : '비밀번호 보기',
+    },
+    topbar: {
+      menu: 'Menu',
+      memo: '메모',
+      refresh: '새로고침',
+      cancelEdit: '편집 취소',
+      completeEdit: '편집 완료',
+      memoEdit: '메모 수정',
+      quickLink: '바로가기 링크 열기',
+      assistantMode: '보조모드',
+      classMode: '수업모드',
+      taskMode: '업무모드',
+    },
+    dashboard: {
+      writing: 'Writing',
+      students: 'Students',
+      viewLog: (name: string) => `${name} 교무기록 보기`,
+      vehicle: '차량',
+      changeDismissalTime: '하원 예정시간 변경',
+      passAndSave: '통과',
+      save: '저장',
+      doubleClickEditStatus: '더블클릭하여 수정',
+    },
+    students: {
+      dayFilter: '요일 필터',
+      toggleHidden: (show: boolean) => show ? '일반 학생 목록 보기' : '숨긴 학생 목록 보기',
+      bulkDismissal: '일괄 하원',
+      addStudent: '학생 추가',
+      toggleManage: (isDeleteMode: boolean) => isDeleteMode ? '관리 종료' : '학생 관리',
+      studentDetail: (name: string, isDeleteMode: boolean) => isDeleteMode ? '삭제 모드에서는 상세 정보를 열 수 없습니다' : `${name} 학생 상세 정보`,
+      editStudent: '수정',
+      deleteStudent: '삭제',
+      hideStudent: '학생 숨기기',
+      noHomework: '숙제 없음',
+      levelUp: '레벨업',
+      distributeResult: '결과물 배부 완료',
+      filterAutoSelect: '더블클릭하여 필터 적용',
+      syncBooks: '동기화',
+      editOrder: '더블클릭하여 수정',
+      editBookTitle: '더블클릭하여 수정',
+      editStatus: '더블클릭하여 수정',
+      addWritingStatus: '글쓰기 기록',
+      studentMemo: (name: string) => `${name} 학생 메모`,
+      editMemo: '메모 수정',
+    },
+    tasks: {
+      expandFilter: '펼치기',
+      collapseFilter: '접기',
+      addTodo: '업무 추가',
+      addUpcomingTask: '업무 추가',
+      addNextWeekTask: '업무 추가',
+      addFamilyLetter: '업무 추가',
+      filterSettings: '필터 설정',
+      filterReset: '필터 초기화',
+      reserveFamilyLetter: '가정통신문 예약',
+      completeTodayAndSave: '완료 후 저장',
+      save: '저장',
+      deleteTask: '삭제',
+      cancel: '취소',
+      editTask: '수정하기',
+      markdownHelp: '마크다운 도움말',
+      cancelEdit: '편집 취소',
+      completeEdit: '편집 완료',
+      fullMemoEdit: '메모 전체 편집',
+    },
+    writing: {
+      viewMonthAll: (monthStr: string) => `${monthStr} 전체 보기`,
+      deleteWritingData: '삭제',
+      addWritingRecord: '추가',
+      pickDateCalendar: '날짜 선택',
+      editDate: '더블클릭하여 수정',
+      editGeneric: '더블클릭하여 수정',
+      editBookTitle: '더블클릭하여 수정',
+      editStatus: '더블클릭하여 수정',
+      save: '저장',
+      cancel: '취소',
+      delete: '삭제',
+    },
+    logs: {
+      viewMonthly: '먼슬리 상세',
+      viewStudent: '학생뷰',
+      viewCalendar: '먼슬리뷰',
+      addNewLog: '새 기록 등록',
+      add: '추가',
+      save: '저장',
+      cancel: '취소',
+      edit: '수정',
+      delete: '삭제',
+    },
+    meeting: {
+      addMeeting: '회의록 작성',
+      saveToSheet: '저장',
+      cancel: '취소',
+      copy: '복사',
+      editContent: '수정',
+      deleteMeeting: '삭제',
+      syncSheet: '동기화',
+    },
+    notice: {
+      save: '저장',
+      cancel: '취소',
+      copy: '복사하기',
+      edit: '수정하기',
+      syncDocs: '동기화',
+    },
+    beginners: {
+      saveToSheet: '저장',
+      cancel: '취소',
+      copyReplaced: '복사',
+      editContent: '수정',
+      syncSheet: '동기화',
+    },
+    familyLetters: {
+      save: '저장',
+      cancel: '취소',
+      copy: '복사',
+      edit: '수정',
+      syncDocs: '동기화',
+    },
+  },
 };
+
+export const TITLES = MESSAGES.tooltips;
+export const TOOLTIPS = MESSAGES.tooltips;

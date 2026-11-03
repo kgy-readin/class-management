@@ -10,6 +10,11 @@ interface BookSearchProps {
   books: Book[];
   existingBookIds: string[];
   onSelect: (book: Book) => void;
+  filterPreset?: {
+    level?: string;
+    readingMarathon?: string;
+    timestamp: number;
+  } | null;
 }
 
 interface SingleSelectPopoverProps {
@@ -51,32 +56,23 @@ function SingleSelectPopover({ options, selectedValue, onChange, placeholder }: 
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-2xl p-1.5 max-h-[220px] overflow-y-auto">
+        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-lg p-1.5 max-h-[220px] overflow-y-auto">
           {options.map((option) => {
             const isChecked = selectedValue === option.value;
             return (
-              <label
+              <button
                 key={option.value}
+                type="button"
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`flex items-center gap-2 px-2.5 py-1.5 hover:bg-neutral-50 rounded-xl cursor-pointer transition-colors text-[13px] font-medium select-none ${
-                  isChecked ? 'bg-neutral-50 text-neutral-900 font-semibold' : 'text-zinc-700'
+                className={`w-full text-left px-2.5 py-1.5 hover:bg-neutral-50 rounded-md cursor-pointer transition-colors text-[13px] font-medium select-none flex items-center justify-between ${
+                  isChecked ? 'bg-primary/5 text-primary font-bold' : 'text-zinc-700'
                 }`}
               >
-                <input
-                  type="radio"
-                  name="levelFilterOption"
-                  checked={isChecked}
-                  onChange={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className="w-4 h-4 rounded-full border-neutral-300 text-primary focus:ring-primary cursor-pointer shrink-0"
-                />
                 <span className="truncate">{option.label}</span>
-              </label>
+              </button>
             );
           })}
         </div>
@@ -162,13 +158,13 @@ function MultiSelectPopover({ label, options, selectedValues, onChange, placehol
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-2xl p-1.5 max-h-[220px] overflow-y-auto">
+        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-neutral-200 shadow-xl rounded-lg p-1.5 max-h-[220px] overflow-y-auto">
           {options.map((option) => {
             const isChecked = selectedValues.includes(option);
             return (
               <label
                 key={option}
-                className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-neutral-50 rounded-xl cursor-pointer transition-colors text-[13px] text-zinc-700 font-medium select-none"
+                className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-neutral-50 rounded-md cursor-pointer transition-colors text-[13px] text-zinc-700 font-medium select-none"
               >
                 <input
                   type="checkbox"
@@ -192,7 +188,7 @@ function MultiSelectPopover({ label, options, selectedValues, onChange, placehol
   );
 }
 
-export default function BookSearch({ books, existingBookIds, onSelect }: BookSearchProps) {
+export default function BookSearch({ books, existingBookIds, onSelect, filterPreset }: BookSearchProps) {
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [difficultyFilters, setDifficultyFilters] = useState<string[]>([]);
@@ -200,6 +196,40 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
   const [therapyFilters, setTherapyFilters] = useState<string[]>([]);
   const [requiredOnly, setRequiredOnly] = useState(false);
   const [careerOnly, setCareerOnly] = useState(false);
+
+  useEffect(() => {
+    if (!filterPreset) return;
+
+    // 1. 레벨 -> 레벨 선택
+    if (filterPreset.level !== undefined && filterPreset.level !== null && String(filterPreset.level).trim() !== '') {
+      setLevelFilter(normalizeLevelKey(filterPreset.level));
+    }
+
+    // 2. 독서마라톤에 적힌 것
+    // 1코스 -> 영역에 문학, 인문
+    // 2코스 -> 영역에 사회, 과학, 예술
+    // 그 외 항상 어휘, 추론 / 사실, 추론 << 이런식으로 테라피가 2가지 적혀있을 때가 있을 거임
+    // 그럴때 해당 테라피 자동 선택
+    if (filterPreset.readingMarathon && filterPreset.readingMarathon.trim() !== '') {
+      const marathonStr = filterPreset.readingMarathon;
+
+      const newCategories: string[] = [];
+      if (marathonStr.includes('1코스')) {
+        newCategories.push('문학', '인문');
+      }
+      if (marathonStr.includes('2코스')) {
+        newCategories.push('사회', '과학', '예술');
+      }
+      setCategoryFilters(Array.from(new Set(newCategories)));
+
+      const knownTherapies = ['어휘', '사실', '추론', '비판'];
+      const matchedTherapies = knownTherapies.filter(th => marathonStr.includes(th));
+      setTherapyFilters(matchedTherapies);
+    } else {
+      setCategoryFilters([]);
+      setTherapyFilters([]);
+    }
+  }, [filterPreset]);
 
   const levels = useMemo(() => {
     const keySet = new Set<string>();
@@ -301,7 +331,7 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
   }, [search, books, levelFilter, difficultyFilters, categoryFilters, therapyFilters, requiredOnly, careerOnly]);
 
   return (
-    <div className="space-y-4 py-4 -mt-[28px]">
+    <div className="space-y-4 pt-4 pb-0 -mt-[28px]">
       <div className="flex flex-col gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -372,7 +402,7 @@ export default function BookSearch({ books, existingBookIds, onSelect }: BookSea
         </div>
       </div>
 
-      <ScrollArea className="h-[300px] rounded-xl border border-neutral-100 bg-neutral-50/50">
+      <ScrollArea className="h-[300px] rounded-lg border border-neutral-100 bg-neutral-50/50">
         <div className="p-2 space-y-1">
           {filteredBooks.length > 0 ? (
             filteredBooks.map((book, idx) => {

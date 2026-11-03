@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Student, Curriculum, DashboardData, getShortHash } from '../../types';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { LogOut, Save, Star, User, BookA, FilePlus, X, Smile, Check, Circle, Pencil } from 'lucide-react';
 import { formatTime, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, homeworkApi, curriculumApi, writingStatusApi, studentApi } from '@/src/services/api';
@@ -77,7 +77,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         onRefresh(); // silent sync
       })
       .catch((error: any) => {
-        toast.error(`출결 저장 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.attendanceSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -105,7 +105,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
     // Background call
     studentApi.update(student.name, { subProgram: subProgramValue })
       .catch((error: any) => {
-        toast.error(`세부프로그램 저장 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.subprogramSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -124,7 +124,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`글쓰기 추가 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.writingAddError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -157,7 +157,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`하원 처리 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.dismissalSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -208,7 +208,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`숙제 상태 저장 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.homeworkSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -279,7 +279,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`진도 저장 실패: ${error.message}`);
+        toast.error(MESSAGES.dashboard.progressSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -297,21 +297,21 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
               type="button"
               onClick={() => navigate(`/logs/students/${getShortHash(student.name)}`)}
               className="text-[19px] font-bold text-foreground hover:text-primary transition-colors cursor-pointer text-left translate-x-[4px] translate-y-[1px] select-none"
-              title={`${student.name} 교무기록 보기`}
+              title={TITLES.dashboard.viewLog(student.name)}
             >
               {student.name}
             </button>
             <div className="flex items-center gap-2 translate-x-[4px] translate-y-[2px]">
               <div className="flex items-center gap-0.5">
                 {hasBusMemo && (
-                  <span title="차량" className="inline-flex items-center text-[13px] leading-none select-none -translate-y-[1px]">
+                  <span title={TITLES.dashboard.vehicle} className="inline-flex items-center text-[13px] leading-none select-none -translate-y-[1px]">
                     🚍
                   </span>
                 )}
                 <span 
                   onClick={() => setIsAttendanceOpen(true)}
                   className="text-sm font-semibold text-foreground/60 hover:text-primary transition-colors cursor-pointer hover:underline decoration-dotted decoration-primary/50 underline-offset-4"
-                  title="하원 예정시간 변경"
+                  title={TITLES.dashboard.changeDismissalTime}
                 >
                   {formatTime(student.dismissalTime)}
                 </span>
@@ -502,7 +502,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                       }`}
                       onClick={() => handleStatusUpdate(item.bookId, item.index, '통과')}
                       disabled={updating === key}
-                      title="통과로 바로 저장"
+                      title={TITLES.dashboard.passAndSave}
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
                     </Button>
@@ -530,7 +530,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                           className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 transition-all flex items-center justify-center cursor-pointer border-0 shadow-none"
                           onClick={() => handleStatusUpdate(item.bookId, item.index)}
                           disabled={updating === key}
-                          title="저장"
+                          title={TITLES.common.save}
                         >
                           <Save className="w-3.5 h-3.5 stroke-[2]" />
                         </Button>
@@ -559,7 +559,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, progressList, onRefr
                     ) : (
                       <span 
                         onDoubleClick={() => setEditingCurriculumKeys(prev => ({ ...prev, [key]: true }))}
-                        title="더블클릭하여 상태 수정"
+                        title={TITLES.dashboard.doubleClickEditStatus}
                         className={`px-2.5 py-0.5 rounded-full text-[12px] font-medium cursor-pointer select-none transition-all hover:opacity-80 shadow-sm ${
                           currentStatus.status === '진행'
                             ? 'bg-amber-50 text-amber-700 border border-amber-200'

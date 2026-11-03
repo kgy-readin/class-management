@@ -13,7 +13,7 @@ import {
 } from '../../types';
 import { studentLogApi } from '@/src/services/api';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { 
   CalendarDays, 
   Trash2, 
@@ -120,7 +120,7 @@ export default function StudentLogMobileCalendar({
       setDeletingItem(null);
       fetchLogs();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setIsDeleting(false);
     }
@@ -150,7 +150,7 @@ export default function StudentLogMobileCalendar({
       setEditForm(null);
       fetchLogs();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setSubmittingEdit(false);
     }
@@ -194,7 +194,7 @@ export default function StudentLogMobileCalendar({
                 variant="outline"
                 className="h-10 w-10 rounded-full text-zinc-650 hover:text-zinc-900 border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer flex items-center justify-center shrink-0"
                 onClick={() => setViewMode('student')}
-                title="학생뷰로 보기"
+                title={TITLES.logs.viewStudent}
               >
                 <User className="w-5 h-5" />
               </Button>
@@ -287,7 +287,7 @@ export default function StudentLogMobileCalendar({
             variant="outline"
             className="h-10 w-10 rounded-full text-foreground border border-solid border-zinc-100 bg-white/50 hover:bg-white/80 shadow-sm transition-all cursor-pointer"
             onClick={() => handleOpenAddDialog(selectedDate)}
-            title="새 기록 등록"
+            title={TITLES.logs.addNewLog}
           >
             <Plus className="w-5 h-5" />
           </Button>
@@ -356,7 +356,7 @@ export default function StudentLogMobileCalendar({
                               disabled={submittingEdit}
                               onClick={handleUpdateLog}
                               className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                              title="저장"
+                              title={TITLES.common.save}
                             >
                               <Save className="w-3.5 h-3.5" />
                             </Button>
@@ -369,7 +369,7 @@ export default function StudentLogMobileCalendar({
                                 setEditForm(null);
                               }}
                               className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg cursor-pointer"
-                              title="취소"
+                              title={TITLES.common.cancel}
                             >
                               <X className="w-3.5 h-3.5" />
                             </Button>
@@ -389,7 +389,7 @@ export default function StudentLogMobileCalendar({
                                   name: log.name
                                 });
                               }}
-                              title="수정"
+                              title={TITLES.logs.editLog}
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
@@ -398,7 +398,7 @@ export default function StudentLogMobileCalendar({
                               variant="ghost"
                               className="h-7 w-7 text-zinc-400 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
                               onClick={() => setDeletingItem(log)}
-                              title="삭제"
+                              title={TITLES.common.delete}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

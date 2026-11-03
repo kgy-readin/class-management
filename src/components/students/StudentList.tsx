@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardData, Student } from '../../types';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { User, ArrowUpCircle, Search, Trash2, Plus, LogOut, UserCog, Pencil, ListFilter, Eye, EyeOff } from 'lucide-react';
 import { formatLevel, getWeeksSince, isResultDelayed } from '@/lib/utils';
 import { attendanceApi, studentApi } from '@/src/services/api';
@@ -108,7 +108,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       setIsEditOpen(false);
       setEditingStudent(null);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
       onRefresh();
     } finally {
       setIsSavingEdit(false);
@@ -154,7 +154,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       setIsAddOpen(false);
       onRefresh();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setIsAdding(false);
     }
@@ -169,7 +169,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       setDeletingStudent(null);
       onRefresh();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setIsDeleting(false);
     }
@@ -208,7 +208,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`출결 저장 실패: ${error.message}`);
+        toast.error(MESSAGES.students.attendanceSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -242,7 +242,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
         onRefresh();
       })
       .catch((error: any) => {
-        toast.error(`하원 처리 실패: ${error.message}`);
+        toast.error(MESSAGES.students.dismissalSaveError(error.message));
         onRefresh(); // rollback/resync on error
       });
   };
@@ -255,7 +255,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       setLevelUpStudent(null);
       onRefresh();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     }
   };
 
@@ -267,7 +267,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
       setIsBulkDismissOpen(false);
       onRefresh();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setIsBulkDismissing(false);
     }
@@ -363,7 +363,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                 type="button"
                 variant="ghost"
                 onClick={() => setShowDayFilter(!showDayFilter)}
-                title="요일 필터"
+                title={TITLES.students.dayFilter}
                 className={`hidden md:flex rounded-xl w-10 h-10 p-0 items-center justify-center transition-all shrink-0 border-none shadow-none ${
                   showDayFilter 
                     ? 'bg-primary/10 text-primary hover:bg-primary/20' 
@@ -423,7 +423,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                   type="button"
                   variant="outline"
                   onClick={() => setShowHidden(!showHidden)}
-                  title={showHidden ? "일반 학생 목록 보기" : "숨긴 학생 목록 보기"}
+                  title={TITLES.students.toggleHidden(showHidden)}
                   className={`rounded-xl w-10 h-10 p-0 flex items-center justify-center shadow-sm transition-all ${
                     showHidden
                       ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
@@ -439,7 +439,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                 variant="outline"
                 disabled={attendingStudentsCount === 0}
                 onClick={() => setIsBulkDismissOpen(true)}
-                title="일괄 하원"
+                title={TITLES.students.bulkDismissal}
                 className="rounded-xl w-10 h-10 p-0 flex items-center justify-center border-red-100 bg-red-50 text-red-600 hover:bg-red-100/80 transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm"
               >
                 <LogOut className="w-4 h-4" />
@@ -449,7 +449,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
               <Button 
                 variant="outline"
                 onClick={() => setIsAddOpen(true)}
-                title="학생 추가"
+                title={TITLES.students.addStudent}
                 className="rounded-xl w-10 h-10 p-0 flex items-center justify-center border-neutral-200 hover:bg-neutral-50 shadow-sm"
               >
                 <Plus className="w-4 h-4 text-neutral-600" />
@@ -459,7 +459,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
               <Button 
                 variant={isDeleteMode ? "destructive" : "outline"}
                 onClick={() => setIsDeleteMode(!isDeleteMode)}
-                title={isDeleteMode ? "관리 종료" : "학생 관리"}
+                title={TITLES.students.toggleManage(isDeleteMode)}
                 className={`rounded-xl w-10 h-10 p-0 flex items-center justify-center transition-all ${
                   isDeleteMode 
                     ? 'shadow-md shadow-destructive/15 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:text-primary' 
@@ -496,7 +496,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                     : 'bg-background text-muted-foreground border border-zinc-100 hover:bg-secondary'
                 } ${isDeleteMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => !isDeleteMode && onSelectStudent(student.name)}
-                title={isDeleteMode ? "삭제 모드에서는 상세 정보를 열 수 없습니다" : `${student.name} 학생 상세 정보`}
+                title={TITLES.students.studentDetail(student.name, isDeleteMode)}
               >
                 <User className="w-6 h-6" />
               </Button>
@@ -541,7 +541,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                   <Button
                     variant="outline"
                     size="icon"
-                    title="수정"
+                    title={TITLES.students.editStudent}
                     onClick={() => handleOpenEdit(student)}
                     className="rounded-2xl w-11 h-11 border-neutral-200 bg-white hover:bg-neutral-50 hover:text-primary transition-all text-neutral-600 flex items-center justify-center shadow-sm"
                   >
@@ -552,7 +552,7 @@ export default function StudentList({ data, onRefresh, onSelectStudent, setData 
                   <Button 
                     variant="outline" 
                     size="icon"
-                    title="삭제"
+                    title={TITLES.students.deleteStudent}
                     onClick={() => setDeletingStudent(student)}
                     className="rounded-2xl w-11 h-11 border-red-100 bg-red-50 text-red-600 hover:bg-red-100/80 transition-all flex items-center justify-center shadow-sm"
                   >

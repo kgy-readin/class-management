@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WritingStatus, getTagColor, Student, getShortHash } from '../../types';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { BookText, Calendar as CalendarIcon, Trash2, Save, X, Pencil, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isSameDay, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -259,7 +259,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
         fetchWritingStatus(true); // silent background sync
       })
       .catch((error: any) => {
-        toast.error(`글쓰기 추가 실패: ${error.message}. 이전 상태로 되돌립니다.`);
+        toast.error(MESSAGES.writing.writingAddErrorRevert(error.message));
         setStatuses(oldStatuses);
         localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
@@ -289,7 +289,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
         fetchWritingStatus(true); // silent background sync
       })
       .catch((error: any) => {
-        toast.error(`삭제 실패: ${error.message}. 복구합니다.`);
+        toast.error(MESSAGES.writing.deleteErrorRestore(error.message));
         setStatuses(oldStatuses);
         localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
@@ -307,7 +307,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     } catch (error: any) {
       console.warn('Failed to load writing statuses:', error);
       if (!hasCache) {
-        toast.error(error.message);
+        toast.error(MESSAGES.general.actionError(error.message));
       }
     } finally {
       setLoading(false);
@@ -376,11 +376,11 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
   const handleClearMonth = async () => {
     if (clearType === 'period') {
       if (!clearStartDate || !clearEndDate) {
-        toast.error('시작일과 종료일을 입력해 주세요.');
+        toast.error(MESSAGES.writing.enterDateRange);
         return;
       }
       if (clearStartDate > clearEndDate) {
-        toast.error('시작일은 종료일보다 이전이어야 합니다.');
+        toast.error(MESSAGES.writing.invalidDateRange);
         return;
       }
     }
@@ -389,7 +389,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
     try {
       if (clearType === 'period') {
         await writingStatusApi.clear(clearStartDate, clearEndDate);
-        toast.success(`${clearStartDate} ~ ${clearEndDate} 기간의 데이터가 삭제되었습니다.`);
+        toast.success(MESSAGES.writing.dateRangeDeleted(clearStartDate, clearEndDate));
       } else {
         await writingStatusApi.clear();
         toast.success(MESSAGES.writing.clearMonthlySuccess);
@@ -397,7 +397,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
       setClearDialogOpen(false);
       fetchWritingStatus();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setClearing(false);
     }
@@ -488,7 +488,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
         fetchWritingStatus(true); // silent background sync
       })
       .catch((error: any) => {
-        toast.error(`수정 실패: ${error.message}. 되돌립니다.`);
+        toast.error(MESSAGES.writing.updateErrorRevert(error.message));
         setStatuses(oldStatuses);
         localStorage.setItem('cachedWritingStatuses', JSON.stringify(oldStatuses));
       });
@@ -659,7 +659,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 const targetDate = selectedDate || currentMonth || new Date();
                 navigate(`/writing/month/${formatMonthValue(targetDate)}`);
               }}
-              title={`${format(currentMonth, 'M월')} 전체 보기`}
+              title={TITLES.writing.viewMonthAll(format(currentMonth, 'M월'))}
             >
               <CalendarIcon className="w-4 h-4" />
             </Button>
@@ -672,7 +672,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                 setClearType('period');
                 setClearDialogOpen(true);
               }}
-              title="글쓰기 데이터 삭제"
+              title={TITLES.writing.deleteWritingData}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -729,7 +729,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
               variant="outline"
               className="h-10 w-10 rounded-full text-foreground border-zinc-200/80 bg-white/50 hover:bg-white/80 shadow-sm transition-all"
               onClick={handleOpenAddDialog}
-              title="글쓰기 기록 추가"
+              title={TITLES.writing.addWritingRecord}
             >
               <Plus className="w-5 h-5" />
             </Button>
@@ -797,7 +797,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                       setDateInputText(formatDateToYYMMDD(e.target.value));
                                     }
                                   }}
-                                  title="달력으로 날짜 선택"
+                                  title={TITLES.writing.pickDateCalendar}
                                 />
                                 <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
                               </div>
@@ -805,7 +805,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           ) : (
                             <div
                               className="cursor-pointer select-none inline-block hover:opacity-80"
-                              title="더블클릭하여 날짜 수정"
+                              title={TITLES.writing.editDate}
                               onDoubleClick={() => {
                                 setEditingCell({ key, field: 'date' });
                                 setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -819,7 +819,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         <td className="px-5 py-2.5 whitespace-nowrap">
                           <div
                             className="cursor-pointer select-none inline-block hover:opacity-80"
-                            title="더블클릭하여 수정"
+                            title={TITLES.writing.editGeneric}
                             onDoubleClick={() => {
                               setEditingCell({ key, field: 'bookTitle' });
                               setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -844,7 +844,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                           ) : (
                             <div
                               className="cursor-pointer select-none hover:opacity-80"
-                              title="더블클릭하여 도서명 수정"
+                              title={TITLES.writing.editBookTitle}
                               onDoubleClick={() => {
                                 setEditingCell({ key, field: 'bookTitle' });
                                 setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -873,7 +873,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                             ) : (
                               <div
                                 className="cursor-pointer select-none hover:opacity-80 transition-transform hover:scale-105"
-                                title="더블클릭하여 상태 수정"
+                                title={TITLES.writing.editStatus}
                                 onDoubleClick={() => {
                                   setEditingCell({ key, field: 'progress' });
                                   setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -901,7 +901,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                   className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg" 
                                   onClick={() => handleStatusUpdate(status)} 
                                   disabled={updatingStatus === key}
-                                  title="저장"
+                                  title={TITLES.common.save}
                                 >
                                   <Save className="w-4 h-4" />
                                 </Button>
@@ -910,7 +910,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                   variant="ghost" 
                                   className="h-8 w-8 text-muted-foreground hover:bg-secondary rounded-lg" 
                                   onClick={handleCancelEdit}
-                                  title="취소"
+                                  title={TITLES.common.cancel}
                                 >
                                   <X className="w-4 h-4" />
                                 </Button>
@@ -921,7 +921,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                 variant="ghost"
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                                 onClick={() => setDeletingItem(status)}
-                                title="삭제"
+                                title={TITLES.common.delete}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -985,7 +985,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                                     setDateInputText(formatDateToYYMMDD(e.target.value));
                                   }
                                 }}
-                                title="달력으로 날짜 선택"
+                                title={TITLES.writing.pickDateCalendar}
                               />
                               <CalendarIcon className="w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
                             </div>
@@ -993,7 +993,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         ) : (
                           <span 
                             className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg cursor-pointer select-none"
-                            title="더블클릭하여 날짜 수정"
+                            title={TITLES.writing.editDate}
                             onDoubleClick={() => {
                               setEditingCell({ key, field: 'date' });
                               setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -1005,7 +1005,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         )}
                         <span 
                           className="text-sm font-normal text-foreground whitespace-nowrap shrink-0 cursor-pointer select-none"
-                          title="더블클릭하여 수정"
+                          title={TITLES.writing.editGeneric}
                           onDoubleClick={() => {
                             setEditingCell({ key, field: 'bookTitle' });
                             setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -1017,7 +1017,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                         {(!isRowEditing || (editingCell && editingCell.field !== 'progress')) && (
                           <div
                             className="cursor-pointer select-none inline-block"
-                            title="더블클릭하여 상태 수정"
+                            title={TITLES.writing.editStatus}
                             onDoubleClick={() => {
                               setEditingCell({ key, field: 'progress' });
                               setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });
@@ -1037,8 +1037,8 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                       <div className="flex items-center gap-2">
                         {isRowEditing ? (
                           <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key} title="저장"><Save className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={handleCancelEdit} title="취소"><X className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleStatusUpdate(status)} disabled={updatingStatus === key} title={TITLES.common.save}><Save className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:bg-secondary" onClick={handleCancelEdit} title={TITLES.common.cancel}><X className="w-4 h-4" /></Button>
                           </div>
                         ) : (
                           <div className="flex gap-1">
@@ -1047,7 +1047,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                               variant="ghost"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                               onClick={() => setDeletingItem(status)}
-                              title="삭제"
+                              title={TITLES.common.delete}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -1088,7 +1088,7 @@ export default function WritingTracker({ students = [] }: { students?: Student[]
                       ) : (
                         <p 
                           className="text-[15px] font-normal text-foreground leading-tight cursor-pointer select-none"
-                          title="더블클릭하여 도서명 수정"
+                          title={TITLES.writing.editBookTitle}
                           onDoubleClick={() => {
                             setEditingCell({ key, field: 'bookTitle' });
                             setEditValues({ date: status.date, bookTitle: status.bookTitle, progress: status.progress });

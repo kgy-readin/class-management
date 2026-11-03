@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Student, getShortHash } from '../../types';
 import StudentCombobox from '../common/StudentCombobox';
 import { motion, AnimatePresence } from 'motion/react';
+import { TITLES } from '@/src/constants/messages';
 
 interface MobileFilterBarProps {
   taskSearchQuery: string;
@@ -149,7 +150,7 @@ export default function MobileFilterBar({
                 ? 'bg-blue-50 text-[#2563eb]'
                 : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-500'
             }`}
-            title="필터 설정"
+            title={TITLES.tasks.filterSettings}
           >
             <ListFilter className="w-4 h-4" />
           </button>
@@ -230,7 +231,7 @@ export default function MobileFilterBar({
                   <button
                     onClick={handleClearFilters}
                     className="h-[34px] w-[34px] border border-solid border-zinc-200 hover:border-blue-400 text-zinc-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl font-bold flex items-center justify-center bg-white transition-all shadow-none shrink-0 cursor-pointer"
-                    title="필터 초기화"
+                    title={TITLES.tasks.filterReset}
                   >
                     <X className="w-3.5 h-3.5 text-zinc-400" />
                   </button>

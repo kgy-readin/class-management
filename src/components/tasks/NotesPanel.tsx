@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { 
   Pencil, 
   Check, 
@@ -108,7 +108,7 @@ export default function NotesPanel() {
               <button
                 onClick={() => setIsHelpOpen(true)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
-                title="마크다운 도움말"
+                title={TITLES.tasks.markdownHelp}
               >
                 <HelpCircle className="w-4 h-4" />
               </button>
@@ -116,7 +116,7 @@ export default function NotesPanel() {
                 onClick={handleCancel}
                 disabled={loading}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors cursor-pointer"
-                title="편집 취소"
+                title={TITLES.tasks.cancelEdit}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -124,7 +124,7 @@ export default function NotesPanel() {
                 onClick={handleSaveAll}
                 disabled={loading}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800 text-white hover:bg-zinc-900 transition-colors cursor-pointer"
-                title="편집 완료"
+                title={TITLES.tasks.completeEdit}
               >
                 <Check className="w-3.5 h-3.5" />
               </button>
@@ -134,14 +134,14 @@ export default function NotesPanel() {
               <button
                 onClick={() => setIsHelpOpen(true)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
-                title="마크다운 도움말"
+                title={TITLES.tasks.markdownHelp}
               >
                 <HelpCircle className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsEditing(true)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors cursor-pointer"
-                title="메모 전체 편집"
+                title={TITLES.tasks.fullMemoEdit}
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>

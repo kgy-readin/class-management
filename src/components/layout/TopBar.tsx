@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { Button } from '@/components/ui/button';
 import { 
   BookOpen, 
@@ -96,10 +97,10 @@ export default function TopBar({
       setMemoText(textToSave);
       localStorage.setItem('webapp_note_data_backup', textToSave);
       setIsEditingMemo(false);
-      toast.success('메모가 저장되었습니다.');
+      toast.success(MESSAGES.notes.saveSuccess);
     } catch (e: any) {
       console.error('Failed to save memo in popover:', e);
-      toast.error(`메모 저장 실패: ${e.message || e}`);
+      toast.error(MESSAGES.notes.saveFailed(e.message || e));
     } finally {
       setIsSavingMemo(false);
     }
@@ -234,7 +235,7 @@ export default function TopBar({
               if (isMemoOpen) setIsMemoOpen(false);
             }}
             className="h-9 w-9 p-0 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100 rounded-full cursor-pointer transition-colors"
-            title="Menu"
+            title={TITLES.topbar.menu}
           >
             <Menu className="w-5.5 h-5.5" />
           </Button>
@@ -252,7 +253,7 @@ export default function TopBar({
               }
             }}
             className="h-9 w-9 p-0 text-zinc-650 hover:text-zinc-900 hover:bg-zinc-100 rounded-full cursor-pointer transition-colors"
-            title="메모"
+            title={TITLES.topbar.memo}
           >
             <Heart className="w-5 h-5" />
           </Button>
@@ -261,7 +262,7 @@ export default function TopBar({
           <button 
             onClick={handleTitleClick}
             className="hidden portrait:max-sm:block text-[16px] font-semibold text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight portrait:max-sm:ml-[12px]"
-            title="새로고침"
+            title={TITLES.topbar.refresh}
           >
             {getPageTitle(activeTab)}
           </button>
@@ -359,7 +360,7 @@ export default function TopBar({
                             disabled={isSavingMemo}
                             onClick={() => setIsEditingMemo(false)}
                             className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors cursor-pointer"
-                            title="편집 취소"
+                            title={TITLES.topbar.cancelEdit}
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -368,7 +369,7 @@ export default function TopBar({
                             disabled={isSavingMemo}
                             onClick={handleSaveMemo}
                             className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800 text-white hover:bg-zinc-900 transition-colors cursor-pointer"
-                            title="편집 완료"
+                            title={TITLES.topbar.completeEdit}
                           >
                             {isSavingMemo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                           </button>
@@ -381,7 +382,7 @@ export default function TopBar({
                             setIsEditingMemo(true);
                           }}
                           className="text-neutral-400 hover:text-zinc-700 transition-colors cursor-pointer p-1 rounded-md hover:bg-neutral-50 flex items-center justify-center"
-                          title="메모 수정"
+                          title={TITLES.topbar.memoEdit}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -427,7 +428,7 @@ export default function TopBar({
           <button 
             onClick={handleTitleClick}
             className="text-[16px] font-medium text-zinc-800 hover:text-zinc-500 select-none transition-colors cursor-pointer tracking-tight"
-            title="새로고침"
+            title={TITLES.topbar.refresh}
           >
             {getPageTitle(activeTab)}
           </button>
@@ -441,7 +442,7 @@ export default function TopBar({
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center h-8 w-8 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-700 hover:text-blue-600 cursor-pointer transition-all shadow-sm shrink-0 portrait:max-sm:hidden"
-              title="바로가기 링크 열기"
+              title={TITLES.topbar.quickLink}
             >
               <Link className="w-4 h-4" />
             </a>
@@ -468,7 +469,7 @@ export default function TopBar({
                   ? 'text-primary font-semibold' 
                   : 'text-zinc-500 hover:text-zinc-800'
               }`}
-              title="보조모드"
+              title={TITLES.topbar.assistantMode}
             >
               <Star className="w-4.5 h-4.5" />
             </button>
@@ -481,7 +482,7 @@ export default function TopBar({
                   ? 'text-primary font-semibold' 
                   : 'text-zinc-500 hover:text-zinc-800'
               }`}
-              title="수업모드"
+              title={TITLES.topbar.classMode}
             >
               <BookOpen className="w-4.5 h-4.5" />
             </button>
@@ -494,7 +495,7 @@ export default function TopBar({
                   ? 'text-primary font-semibold' 
                   : 'text-zinc-500 hover:text-zinc-800'
               }`}
-              title="업무모드"
+              title={TITLES.topbar.taskMode}
             >
               <BriefcaseBusiness className="w-4.5 h-4.5" />
             </button>

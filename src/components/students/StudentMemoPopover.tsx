@@ -5,6 +5,7 @@ import { MessageSquareMore, MessageSquareText, Pencil, Check, X, Loader2, Save }
 import { Student, DashboardData } from '../../types';
 import { studentApi } from '../../services/api';
 import { toast } from 'sonner';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { Button } from '@/components/ui/button';
 
 interface StudentMemoPopoverProps {
@@ -134,11 +135,11 @@ export default function StudentMemoPopover({
     }
     try {
       await studentApi.update(student.name, { studentMemo: memoText });
-      toast.success(`${student.name} 학생의 메모를 저장했습니다.`);
+      toast.success(MESSAGES.students.memoSaveSuccess(student.name));
       setIsOpen(false);
       setIsEditing(false);
     } catch (error: any) {
-      toast.error('메모 저장에 실패했습니다: ' + error.message);
+      toast.error(MESSAGES.students.memoSaveError(error.message));
       if (onRefresh) onRefresh();
     } finally {
       setIsSaving(false);
@@ -168,7 +169,7 @@ export default function StudentMemoPopover({
           type="button"
           onClick={handleToggle}
           className={buttonStyle}
-          title={`${student.name} 학생 메모`}
+          title={TITLES.students.studentMemo(student.name)}
         >
           {hasMemo ? (
             <MessageSquareText className={iconSizeClass || "w-5 h-5"} />
@@ -184,7 +185,7 @@ export default function StudentMemoPopover({
           size="icon"
           onClick={handleToggle}
           className={buttonStyle}
-          title={`${student.name} 학생 메모`}
+          title={TITLES.students.studentMemo(student.name)}
         >
           {hasMemo ? (
             <MessageSquareText className={iconSizeClass || "w-5 h-5 stroke-[2.2]"} />
@@ -223,7 +224,7 @@ export default function StudentMemoPopover({
                         onClick={handleCancel}
                         disabled={isSaving}
                         className="text-neutral-400 hover:text-neutral-600 transition-colors cursor-pointer p-1 rounded-md hover:bg-neutral-50 flex items-center justify-center"
-                        title="취소"
+                        title={TITLES.common.cancel}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -232,7 +233,7 @@ export default function StudentMemoPopover({
                         onClick={handleSave}
                         disabled={isSaving}
                         className="text-neutral-400 hover:text-primary transition-colors cursor-pointer p-1 rounded-md hover:bg-neutral-50 flex items-center justify-center"
-                        title="저장"
+                        title={TITLES.common.save}
                       >
                         {isSaving ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -259,7 +260,7 @@ export default function StudentMemoPopover({
                       setIsEditing(true);
                     }}
                     className="absolute -top-1 -right-1 text-neutral-400 hover:text-primary transition-colors cursor-pointer p-1 rounded-md hover:bg-neutral-50"
-                    title="메모 수정"
+                    title={TITLES.students.editMemo}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>

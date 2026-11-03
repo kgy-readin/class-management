@@ -5,7 +5,7 @@ import { Task, Student } from '../../types';
 import StudentCombobox from '../common/StudentCombobox';
 import { isTaskOverdue, isTodayTask, formatRelativeTaskDate, formatTaskDateYYMMDD } from './dateUtils';
 import { getCategoryBadgeClass, getStatusBadgeClass, getFamilyClassBadgeClass, getStatusDotColor } from './badgeUtils';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import { toast } from 'sonner';
 
 interface TaskRowProps {
@@ -165,7 +165,7 @@ export default function TaskRow({
                 setReservingTask({ ...task, name: studentName });
               }}
               className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
-              title="가정통신문 예약하기"
+              title={TITLES.tasks.reserveFamilyLetter}
             >
               예약
             </Button>
@@ -177,7 +177,7 @@ export default function TaskRow({
               disabled={submitting}
               onClick={() => handleQuickComplete(task.sheetRowIndex!)}
               className="h-7 text-xs bg-zinc-100/70 hover:bg-zinc-200 text-zinc-700 border border-zinc-200 font-semibold px-2 rounded-lg transition-colors cursor-pointer"
-              title="오늘 완료 처리 후 바로 저장"
+              title={TITLES.tasks.completeTodayAndSave}
             >
               완료
             </Button>
@@ -190,7 +190,7 @@ export default function TaskRow({
                 disabled={submitting}
                 onClick={() => handleSaveEdit(task.sheetRowIndex!)}
                 className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg cursor-pointer"
-                title="저장"
+                title={TITLES.common.save}
               >
                 <Save className="w-3.5 h-3.5" />
               </Button>
@@ -202,7 +202,7 @@ export default function TaskRow({
                 disabled={submitting}
                 onClick={() => handleDeleteTask(task.sheetRowIndex!)}
                 className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer"
-                title="이 업무 삭제"
+                title={TITLES.tasks.deleteTask}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
@@ -214,7 +214,7 @@ export default function TaskRow({
                 disabled={submitting}
                 onClick={() => setEditingRowIndex(null)}
                 className="h-7 w-7 text-zinc-400 hover:text-zinc-550 hover:bg-zinc-50 rounded-lg cursor-pointer"
-                title="취소"
+                title={TITLES.common.cancel}
               >
                 <X className="w-3.5 h-3.5" />
               </Button>
@@ -248,7 +248,7 @@ export default function TaskRow({
               disabled={submitting}
               onClick={() => handleStartEdit(task)}
               className="h-6 w-6 text-zinc-400 opacity-30 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center justify-center cursor-pointer"
-              title="수정하기"
+              title={TITLES.tasks.editTask}
             >
               <Pencil className="w-3.5 h-3.5" />
             </Button>
@@ -308,7 +308,7 @@ export default function TaskRow({
               disabled={submitting}
               onClick={() => handleStartEdit(task)}
               className="h-[15px] w-[15px] min-h-0 min-w-0 p-0 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded flex items-center justify-center cursor-pointer"
-              title="수정하기"
+              title={TITLES.tasks.editTask}
             >
               <Pencil className="w-2.5 h-2.5" />
             </Button>

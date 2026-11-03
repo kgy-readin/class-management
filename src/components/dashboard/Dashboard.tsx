@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { UsersRound, Feather } from 'lucide-react';
 import { DashboardData } from '../../types';
 import StudentCard from './StudentCard';
+import { TITLES } from '@/src/constants/messages';
 
 interface DashboardProps {
   data: DashboardData | null;
@@ -57,7 +58,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
             <button
               onClick={onNavigateToWriting}
               className="flex items-center justify-center w-8.5 h-8.5 rounded-full border border-zinc-200/60 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-zinc-700 cursor-pointer"
-              title="Writing"
+              title={TITLES.dashboard.writing}
             >
               <Feather className="w-4 h-4" />
             </button>
@@ -65,7 +66,7 @@ export default function Dashboard({ data, onRefresh, onSelectStudent, onNavigate
             <button
               onClick={onNavigateToStudents}
               className="flex items-center justify-center w-8.5 h-8.5 rounded-full border border-zinc-200/60 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all text-zinc-500 hover:text-zinc-700 cursor-pointer"
-              title="Students"
+              title={TITLES.dashboard.students}
             >
               <UsersRound className="w-4 h-4" />
             </button>

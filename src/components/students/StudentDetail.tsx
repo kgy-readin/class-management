@@ -7,7 +7,7 @@ import { ChevronLeft, Plus, Save, PlusCircle, FilePlus, Trash2, Pencil, BookOpen
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import BookSearch from './BookSearch';
 import { toast } from 'sonner';
-import { MESSAGES } from '@/src/constants/messages';
+import { MESSAGES, TITLES } from '@/src/constants/messages';
 import StudentMemoPopover from './StudentMemoPopover';
 import {
   AddCurriculumDialog,
@@ -213,7 +213,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           });
         }
       } catch (error: any) {
-        toast.error(error.message);
+        toast.error(MESSAGES.general.actionError(error.message));
       }
     });
   };
@@ -250,7 +250,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       });
       toast.success(MESSAGES.students.writingAdded);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
     } finally {
       setAddingWriting(null);
       setWritingConfirmItem(null);
@@ -325,7 +325,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           });
         }
       } catch (error: any) {
-        toast.error(error.message);
+        toast.error(MESSAGES.general.actionError(error.message));
       }
     });
   };
@@ -353,7 +353,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           });
         }
       } catch (error: any) {
-        toast.error(error.message);
+        toast.error(MESSAGES.general.actionError(error.message));
       } finally {
         setIsDeleting(false);
       }
@@ -430,7 +430,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
           });
         }
       } catch (error: any) {
-        toast.error(error.message);
+        toast.error(MESSAGES.general.actionError(error.message));
       }
     });
   };
@@ -532,7 +532,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
       toast.success(MESSAGES.students.editSuccess(student.name));
       setIsEditOpen(false);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(MESSAGES.general.actionError(error.message));
       onRefresh();
     } finally {
       setIsSavingEdit(false);
@@ -663,7 +663,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                     ) : (
                       <span 
                         className="font-normal text-zinc-600 text-xs sm:text-sm cursor-pointer hover:text-primary transition-colors select-none"
-                        title="더블클릭하여 순서 수정"
+                        title={TITLES.students.editOrder}
                         onDoubleClick={() => {
                           setEditingCell({ index: item.index, field: 'index' });
                           setEditValues({ index: item.index });
@@ -688,7 +688,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                     ) : (
                       <div 
                         className="flex flex-col cursor-pointer select-none group"
-                        title="더블클릭하여 도서명 수정"
+                        title={TITLES.students.editBookTitle}
                         onDoubleClick={() => {
                           setEditingCell({ index: item.index, field: 'bookTitle' });
                           setEditValues({ bookTitle: item.bookTitle });
@@ -725,7 +725,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                     ) : (
                       <div 
                         className="cursor-pointer inline-block select-none"
-                        title="더블클릭하여 상태 수정"
+                        title={TITLES.students.editStatus}
                         onDoubleClick={() => {
                           setEditingCell({ index: item.index, field: 'status' });
                           setEditValues({ status: item.status });
@@ -750,7 +750,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                           variant="ghost" 
                           className="h-8 w-8 text-primary hover:bg-primary/10"
                           onClick={() => handleUpdate(item.bookId)}
-                          title="저장"
+                          title={TITLES.common.save}
                         >
                           <Save className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                         </Button>
@@ -759,7 +759,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                           variant="ghost" 
                           className="h-8 w-8 text-muted-foreground hover:bg-secondary"
                           onClick={handleCancelEdit}
-                          title="취소"
+                          title={TITLES.common.cancel}
                         >
                           <Plus className="w-[15px] h-[15px] sm:w-4 sm:h-4 rotate-45" />
                         </Button>
@@ -775,7 +775,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                                 className={`h-8 w-8 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/10 ${addingWriting === item.bookId ? 'animate-pulse' : ''}`}
                                 onClick={() => setWritingConfirmItem(item)}
                                 disabled={addingWriting === item.bookId}
-                                title="글쓰기 현황 추가"
+                                title={TITLES.students.addWritingStatus}
                               >
                                 <PlusCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                               </Button>
@@ -820,7 +820,7 @@ export default function StudentDetail({ studentName, data, setData, onBack, onRe
                               variant="ghost"
                               className="h-8 w-8 rounded-xl text-destructive/40 hover:text-destructive hover:bg-destructive/10"
                               onClick={() => setDeletingItem(item)}
-                              title="삭제"
+                              title={TITLES.common.delete}
                             >
                               <Trash2 className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
                             </Button>
